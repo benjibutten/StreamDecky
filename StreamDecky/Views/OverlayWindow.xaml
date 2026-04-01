@@ -1,0 +1,336 @@
+<Window x:Class="StreamDecky.Views.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:helpers="clr-namespace:StreamDecky.Helpers"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        WindowState="Maximized"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        KeyDown="Window_KeyDown"
+        Loaded="Window_Loaded"
+        Background="Transparent">
+
+    <Window.Resources>
+        <helpers:StringToBrushConverter x:Key="StringToBrush"/>
+        <helpers:DoubleToCornerRadiusConverter x:Key="DoubleToCornerRadius"/>
+        <helpers:SpacingToThicknessConverter x:Key="SpacingToThickness"/>
+        <helpers:HasTextToVisibilityConverter x:Key="HasTextVisibility"/>
+        <helpers:PathToImageSourceConverter x:Key="PathToImageSource"/>
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <helpers:ButtonShapeToGeometryConverter x:Key="ShapeToGeometry"/>
+        <helpers:CellImageBrushConverter x:Key="CellImageBrush"/>
+    </Window.Resources>
+
+    <!-- Full screen overlay background with slight transparency -->
+    <Grid Background="#20808080">
+        
+        <!-- Top bar with close button -->
+        <DockPanel VerticalAlignment="Top" Margin="20,15,20,0" Panel.ZIndex="10">
+            <Button Content="✕ Close (Esc)" 
+                    DockPanel.Dock="Right"
+                    Click="CloseButton_Click"
+                    Background="#44FFFFFF" 
+                    Foreground="White"
+                    BorderThickness="0"
+                    Padding="16,8"
+                    FontSize="14"
+                    Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" 
+                                            CornerRadius="6" 
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#66FFFFFF"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                <Path Data="M1,0 H3 A1,1,0,0,1,4,1 V3 A1,1,0,0,1,3,4 H1 A1,1,0,0,1,0,3 V1 A1,1,0,0,1,1,0 Z M6,0 H8 A1,1,0,0,1,9,1 V3 A1,1,0,0,1,8,4 H6 A1,1,0,0,1,5,3 V1 A1,1,0,0,1,6,0 Z M1,5 H3 A1,1,0,0,1,4,6 V8 A1,1,0,0,1,3,9 H1 A1,1,0,0,1,0,8 V6 A1,1,0,0,1,1,5 Z M6,5 H8 A1,1,0,0,1,9,6 V8 A1,1,0,0,1,8,9 H6 A1,1,0,0,1,5,8 V6 A1,1,0,0,1,6,5 Z"
+                      Fill="#AAAAAA" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                <TextBlock Text="StreamDecky" 
+                           Foreground="#AAAAAA" 
+                           FontSize="16" 
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"/>
+            </StackPanel>
+
+            <!-- Page navigation in overlay -->
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0"
+                        Visibility="{Binding HasMultiplePages, Converter={StaticResource BoolToVisibility}}">
+                <Button Content="◀" Click="OverlayPrevPage_Click"
+                        Background="#44FFFFFF" Foreground="White"
+                        FontSize="14" Padding="10,4"
+                        BorderThickness="0" Cursor="Hand">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#66FFFFFF"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <TextBlock Text="{Binding PageIndicator}" 
+                           Foreground="White" FontSize="14"
+                           VerticalAlignment="Center" Margin="10,0"/>
+                <Button Content="▶" Click="OverlayNextPage_Click"
+                        Background="#44FFFFFF" Foreground="White"
+                        FontSize="14" Padding="10,4"
+                        BorderThickness="0" Cursor="Hand">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#66FFFFFF"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+
+            <Border/>
+        </DockPanel>
+
+        <!-- Draggable button grid container -->
+        <Border x:Name="ButtonGridContainer"
+                HorizontalAlignment="Center" 
+                VerticalAlignment="Center"
+                Background="Transparent"
+                Padding="0">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="GridTranslate"
+                                    X="{Binding GridOffsetX, Mode=TwoWay}"
+                                    Y="{Binding GridOffsetY, Mode=TwoWay}"/>
+            </Border.RenderTransform>
+
+            <StackPanel>
+                <!-- Drag handle (visible only on hover) -->
+                <Border x:Name="DragHandle"
+                        CornerRadius="6,6,0,0"
+                        Padding="0,6"
+                        Cursor="SizeAll"
+                        MouseLeftButtonDown="DragHandle_MouseLeftButtonDown"
+                        MouseMove="DragHandle_MouseMove"
+                        MouseLeftButtonUp="DragHandle_MouseLeftButtonUp">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#22FFFFFF"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                        <Border Width="40" Height="4" CornerRadius="2">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsMouseOver, ElementName=DragHandle}" Value="True">
+                                            <Setter Property="Background" Value="#44FFFFFF"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Deck button grid -->
+                <Border x:Name="GridClipBorder" 
+                        Background="Transparent" 
+                        CornerRadius="12" Padding="0">
+                    <Grid>
+                        <Grid.OpacityMask>
+                            <VisualBrush>
+                                <VisualBrush.Visual>
+                                    <Border Background="Black" CornerRadius="12"
+                                            Width="{Binding ActualWidth, ElementName=GridClipBorder}"
+                                            Height="{Binding ActualHeight, ElementName=GridClipBorder}"/>
+                                </VisualBrush.Visual>
+                            </VisualBrush>
+                        </Grid.OpacityMask>
+                    <ItemsControl ItemsSource="{Binding Buttons}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="{Binding Columns}" Rows="{Binding Rows}"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <!-- CellBg fills the entire UniformGrid cell, slight overlap kills hairline gaps -->
+                                <Border x:Name="CellBg"
+                                        Margin="-0.5"
+                                        ClipToBounds="True"
+                                        Background="{Binding DataContext.OverlayBackgroundColor, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource StringToBrush}}">
+                                <Grid>
+                                    <!-- Global background image portion for this cell -->
+                                    <Rectangle x:Name="BgImageRect">
+                                        <Rectangle.Fill>
+                                            <MultiBinding Converter="{StaticResource CellImageBrush}">
+                                                <Binding Path="DataContext.OverlayBackgroundImagePath" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                <Binding Path="Index"/>
+                                                <Binding Path="DataContext.Columns" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                <Binding Path="DataContext.Rows" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            </MultiBinding>
+                                        </Rectangle.Fill>
+                                    </Rectangle>
+                                    <!-- Button content with spacing margin -->
+                                    <Button x:Name="CellButton"
+                                        Margin="{Binding DataContext.ButtonSpacing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SpacingToThickness}}"
+                                        Width="{Binding DataContext.ButtonSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        Height="{Binding DataContext.ButtonSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        Click="DeckButton_Click"
+                                        Tag="{Binding}"
+                                        Cursor="Hand">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Grid>
+                                                            <!-- Regular background (non-shaped) -->
+                                                            <Border x:Name="RegularBg"
+                                                                    CornerRadius="{Binding CornerRadius, Converter={StaticResource DoubleToCornerRadius}}"
+                                                                    BorderThickness="2"
+                                                                    BorderBrush="Transparent"
+                                                                    Background="{Binding BackgroundColor, Converter={StaticResource StringToBrush}}">
+                                                                <Grid>
+                                                                    <Grid.OpacityMask>
+                                                                        <VisualBrush>
+                                                                            <VisualBrush.Visual>
+                                                                                <Border Background="Black" 
+                                                                                        CornerRadius="{Binding CornerRadius, Converter={StaticResource DoubleToCornerRadius}}"
+                                                                                        Width="{Binding ActualWidth, ElementName=RegularBg}"
+                                                                                        Height="{Binding ActualHeight, ElementName=RegularBg}"/>
+                                                                            </VisualBrush.Visual>
+                                                                        </VisualBrush>
+                                                                    </Grid.OpacityMask>
+                                                                    <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageSource}}"
+                                                                           Stretch="UniformToFill"
+                                                                           Visibility="{Binding ImagePath, Converter={StaticResource HasTextVisibility}}"/>
+                                                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                                        <TextBlock Text="{Binding IconText}" 
+                                                                                   FontSize="24"
+                                                                                   HorizontalAlignment="Center"
+                                                                                   Foreground="{Binding TextColor, Converter={StaticResource StringToBrush}}"
+                                                                                   Visibility="{Binding IconText, Converter={StaticResource HasTextVisibility}}"/>
+                                                                        <TextBlock Text="{Binding DisplayTitle}" 
+                                                                                   FontSize="13"
+                                                                                   TextWrapping="Wrap"
+                                                                                   TextAlignment="Center"
+                                                                                   HorizontalAlignment="Center"
+                                                                                   Foreground="{Binding TextColor, Converter={StaticResource StringToBrush}}"
+                                                                                   Margin="4,2,4,0"/>
+                                                                    </StackPanel>
+                                                                </Grid>
+                                                            </Border>
+                                                            <!-- Shape background (shaped buttons) -->
+                                                            <Grid x:Name="ShapeGrid" Visibility="Collapsed">
+                                                                <Path x:Name="ShapeBg"
+                                                                      Data="{Binding Shape, Converter={StaticResource ShapeToGeometry}}"
+                                                                      Fill="{Binding BackgroundColor, Converter={StaticResource StringToBrush}}"
+                                                                      Stretch="Fill"
+                                                                      StrokeThickness="2"
+                                                                      Stroke="Transparent"/>
+                                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="15">
+                                                                    <TextBlock Text="{Binding IconText}" 
+                                                                               FontSize="24"
+                                                                               HorizontalAlignment="Center"
+                                                                               Foreground="{Binding TextColor, Converter={StaticResource StringToBrush}}"
+                                                                               Visibility="{Binding IconText, Converter={StaticResource HasTextVisibility}}"/>
+                                                                    <TextBlock Text="{Binding DisplayTitle}" 
+                                                                               FontSize="13"
+                                                                               TextWrapping="Wrap"
+                                                                               TextAlignment="Center"
+                                                                               HorizontalAlignment="Center"
+                                                                               Foreground="{Binding TextColor, Converter={StaticResource StringToBrush}}"
+                                                                               Margin="4,2,4,0"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Grid>
+                                                        <ControlTemplate.Triggers>
+                                                            <DataTrigger Binding="{Binding HasShape}" Value="True">
+                                                                <Setter TargetName="RegularBg" Property="Visibility" Value="Collapsed"/>
+                                                                <Setter TargetName="ShapeGrid" Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="RegularBg" Property="BorderBrush" Value="#88FFFFFF"/>
+                                                                <Setter TargetName="ShapeBg" Property="Stroke" Value="#88FFFFFF"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsPressed" Value="True">
+                                                                <Setter TargetName="RegularBg" Property="Opacity" Value="0.8"/>
+                                                                <Setter TargetName="ShapeBg" Property="Opacity" Value="0.8"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsConfigured}" Value="False">
+                                        <Setter TargetName="CellBg" Property="Background" Value="Transparent"/>
+                                        <Setter TargetName="BgImageRect" Property="Visibility" Value="Collapsed"/>
+                                        <Setter TargetName="CellButton" Property="Visibility" Value="Hidden"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Bottom status -->
+        <TextBlock VerticalAlignment="Bottom"
+                   Foreground="#666666" 
+                   FontSize="12"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,15">
+            <Run Text="Press Esc to close · Drag bar to reposition · "/>
+            <Run Text="{Binding HotkeyDisplayText, Mode=OneWay}" FontWeight="Bold"/>
+            <Run Text=" to toggle"/>
+        </TextBlock>
+    </Grid>
+</Window>

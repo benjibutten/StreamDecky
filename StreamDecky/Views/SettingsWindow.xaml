@@ -1,0 +1,209 @@
+<Window x:Class="StreamDecky.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:helpers="clr-namespace:StreamDecky.Helpers"
+        Title="Settings"
+        Width="420" Height="580"
+        WindowStartupLocation="CenterOwner"
+        Background="#1E1E2E"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="False">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" 
+                      ResizeBorderThickness="0" 
+                      GlassFrameThickness="0"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <helpers:StringToBrushConverter x:Key="StringToBrush"/>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- Custom Title Bar -->
+        <Border DockPanel.Dock="Top" Background="#16162A" Height="32" MouseLeftButtonDown="SettingsTitleBar_MouseDown">
+            <DockPanel LastChildFill="False">
+                <TextBlock DockPanel.Dock="Left" Text="⚙ Settings" Foreground="#CCCCCC" FontSize="13" 
+                           VerticalAlignment="Center" Margin="12,0,0,0"/>
+                <Button DockPanel.Dock="Right" Content="✕" Click="SettingsClose_Click"
+                        Width="40" Height="32" FontSize="13"
+                        Foreground="#999" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                        WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#C42B1C"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </DockPanel>
+        </Border>
+
+    <StackPanel Margin="24">
+        <TextBlock Text="OVERLAY" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <TextBlock Text="Background Color" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="30"/>
+            </Grid.ColumnDefinitions>
+            <TextBox Text="{Binding OverlayBackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                     Background="#2D2D44" Foreground="White" FontSize="13" Padding="8,6"
+                     BorderBrush="#444" BorderThickness="1"/>
+            <Border Grid.Column="1" 
+                    Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
+                    CornerRadius="4" Margin="4,0,0,0"
+                    BorderBrush="#444" BorderThickness="1"
+                    Cursor="Hand"
+                    MouseLeftButtonDown="OverlayBgColorPicker_Click"/>
+        </Grid>
+
+        <TextBlock Text="Background Image" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Background="#2D2D44" BorderBrush="#444" BorderThickness="1" CornerRadius="4" Padding="8,6">
+                <TextBlock Text="{Binding OverlayBackgroundImagePath}" 
+                           Foreground="#888" FontSize="12"
+                           TextTrimming="CharacterEllipsis"/>
+            </Border>
+            <Button Grid.Column="1" Content="📂 Browse" 
+                    Click="BgImageBrowse_Click"
+                    Background="#2D2D44" Foreground="White"
+                    FontSize="12" Padding="10,5" Margin="4,0,0,0"
+                    BorderThickness="0" Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Grid.Column="2" Content="✕" 
+                    Click="BgImageClear_Click"
+                    Background="#2D2D44" Foreground="#888"
+                    FontSize="12" Padding="8,5" Margin="4,0,0,0"
+                    BorderThickness="0" Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
+
+        <TextBlock Text="Button Size" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <DockPanel Margin="0,0,0,14">
+            <TextBlock DockPanel.Dock="Right" 
+                       Text="{Binding ButtonSize, StringFormat={}{0:0}}" 
+                       Foreground="#888" FontSize="12" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+            <Slider Value="{Binding ButtonSize, Mode=TwoWay}" 
+                    Minimum="60" Maximum="200" 
+                    TickFrequency="5" IsSnapToTickEnabled="True"/>
+        </DockPanel>
+
+        <TextBlock Text="Button Spacing" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <DockPanel Margin="0,0,0,14">
+            <TextBlock DockPanel.Dock="Right" 
+                       Text="{Binding ButtonSpacing, StringFormat={}{0:0}}" 
+                       Foreground="#888" FontSize="12" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+            <Slider Value="{Binding ButtonSpacing, Mode=TwoWay}" 
+                    Minimum="2" Maximum="30" 
+                    TickFrequency="1" IsSnapToTickEnabled="True"/>
+        </DockPanel>
+
+        <!-- Separator -->
+        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+
+        <!-- Hotkey Section -->
+        <TextBlock Text="HOTKEY" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <TextBlock Text="Toggle Overlay" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <Grid Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Background="#2D2D44" BorderBrush="#444" BorderThickness="1" CornerRadius="4" Padding="8,6">
+                <TextBlock Text="{Binding HotkeyDisplayText}" 
+                           Foreground="#6C5CE7" 
+                           FontSize="13" 
+                           FontWeight="Bold"/>
+            </Border>
+            <Button x:Name="RecordHotkeyButton" 
+                    Grid.Column="1" 
+                    Content="⌨ Record" 
+                    Click="RecordHotkey_Click"
+                    Background="#2D2D44" Foreground="White"
+                    FontSize="12" Padding="10,5" Margin="4,0,0,0"
+                    BorderThickness="0" Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
+
+        <!-- Separator -->
+        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+
+        <!-- Startup Section -->
+        <TextBlock Text="STARTUP" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+        <CheckBox IsChecked="{Binding StartWithWindows, Mode=TwoWay}" 
+                  Content="Start with Windows" 
+                  Foreground="#CCC" FontSize="13" Margin="0,0,0,10" Cursor="Hand"/>
+    </StackPanel>
+    </DockPanel>
+</Window>

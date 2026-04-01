@@ -1,0 +1,84 @@
+﻿<Application x:Class="StreamDecky.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:StreamDecky"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <DrawingImage x:Key="AppIcon">
+            <DrawingImage.Drawing>
+                <GeometryDrawing Brush="#6C5CE7" 
+                                 Geometry="M1,0 H3 A1,1,0,0,1,4,1 V3 A1,1,0,0,1,3,4 H1 A1,1,0,0,1,0,3 V1 A1,1,0,0,1,1,0 Z M6,0 H8 A1,1,0,0,1,9,1 V3 A1,1,0,0,1,8,4 H6 A1,1,0,0,1,5,3 V1 A1,1,0,0,1,6,0 Z M1,5 H3 A1,1,0,0,1,4,6 V8 A1,1,0,0,1,3,9 H1 A1,1,0,0,1,0,8 V6 A1,1,0,0,1,1,5 Z M6,5 H8 A1,1,0,0,1,9,6 V8 A1,1,0,0,1,8,9 H6 A1,1,0,0,1,5,8 V6 A1,1,0,0,1,6,5 Z"/>
+            </DrawingImage.Drawing>
+        </DrawingImage>
+
+        <!-- Modern dark slider style -->
+        <Style x:Key="ModernSliderThumb" TargetType="Thumb">
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Ellipse x:Name="ThumbEllipse" 
+                                 Fill="#6C5CE7" 
+                                 Width="16" Height="16"
+                                 Effect="{x:Null}"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ThumbEllipse" Property="Fill" Value="#7C6CF7"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="ThumbEllipse" Property="Fill" Value="#5C4CD7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Slider">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto" MinHeight="{TemplateBinding MinHeight}"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Border x:Name="TrackBackground"
+                                    Grid.Row="1"
+                                    Height="4"
+                                    CornerRadius="2"
+                                    Background="#333355"
+                                    VerticalAlignment="Center"
+                                    Margin="5,0"/>
+                            <Track x:Name="PART_Track" Grid.Row="1">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" CornerRadius="2" Background="#6C5CE7" Margin="5,0,0,0"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource ModernSliderThumb}"/>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</Application>
