@@ -17,6 +17,9 @@ public class DeckProfile
 
     public void Initialize()
     {
+        if (Pages.Count == 0)
+            Pages.Add(new DeckPage());
+
         foreach (var page in Pages)
             page.EnsureButtonCount();
     }

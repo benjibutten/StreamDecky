@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Timers;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StreamDecky.Models;
@@ -159,8 +158,26 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    public int Columns => CurrentPage.Columns;
-    public int Rows => CurrentPage.Rows;
+    public int Rows
+    {
+        get => CurrentPage.Rows;
+        set => UpdateCurrentPageLayout(value, Columns);
+    }
+
+    public int Columns
+    {
+        get => CurrentPage.Columns;
+        set => UpdateCurrentPageLayout(Rows, value);
+    }
+
+    public int MinRows => DeckPage.MinRows;
+    public int MaxRows => DeckPage.MaxRows;
+    public int MinColumns => DeckPage.MinColumns;
+    public int MaxColumns => DeckPage.MaxColumns;
+    public int MaxButtonsPerPage => DeckPage.MaxButtonsPerPage;
+    public int ButtonSlots => Rows * Columns;
+    public string LayoutSummary => $"{Rows} x {Columns} ({ButtonSlots} slots)";
+
     public string CurrentPageName => CurrentPage.Name;
     public int PageCount => _profile.Pages.Count;
     public bool CanGoToPreviousPage => CurrentPageIndex > 0;
@@ -170,8 +187,10 @@ public partial class MainViewModel : ObservableObject
 
     private DeckPage CurrentPage => _profile.Pages[CurrentPageIndex];
 
-    private void LoadCurrentPage()
+    private void LoadCurrentPage(int? preferredSelectedIndex = null)
     {
+        int? selectedIndex = preferredSelectedIndex ?? SelectedButton?.Index;
+
         CurrentPage.EnsureButtonCount();
         Buttons.Clear();
         for (int i = 0; i < CurrentPage.Buttons.Count; i++)
@@ -180,9 +199,42 @@ public partial class MainViewModel : ObservableObject
             bvm.PropertyChanged += (_, _) => ScheduleAutoSave();
             Buttons.Add(bvm);
         }
-        SelectedButton = null;
-        OnPropertyChanged(nameof(Columns));
+
+        if (selectedIndex.HasValue && selectedIndex.Value >= 0 && selectedIndex.Value < Buttons.Count)
+        {
+            SelectButton(Buttons[selectedIndex.Value]);
+        }
+        else
+        {
+            if (SelectedButton != null)
+                SelectedButton.IsSelected = false;
+            SelectedButton = null;
+        }
+
+        NotifyLayoutChanged();
+    }
+
+    private void NotifyLayoutChanged()
+    {
         OnPropertyChanged(nameof(Rows));
+        OnPropertyChanged(nameof(Columns));
+        OnPropertyChanged(nameof(ButtonSlots));
+        OnPropertyChanged(nameof(LayoutSummary));
+    }
+
+    private void UpdateCurrentPageLayout(int rows, int columns)
+    {
+        rows = Math.Clamp(rows, MinRows, MaxRows);
+        columns = Math.Clamp(columns, MinColumns, MaxColumns);
+
+        if (CurrentPage.Rows == rows && CurrentPage.Columns == columns)
+            return;
+
+        int? selectedIndex = SelectedButton?.Index;
+        CurrentPage.Rows = rows;
+        CurrentPage.Columns = columns;
+        LoadCurrentPage(selectedIndex);
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
@@ -191,9 +243,9 @@ public partial class MainViewModel : ObservableObject
         // Deselect previous
         if (SelectedButton != null)
             SelectedButton.IsSelected = false;
-        
+
         SelectedButton = button;
-        
+
         // Select new
         if (SelectedButton != null)
             SelectedButton.IsSelected = true;
@@ -263,6 +315,30 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void IncreaseRows()
+    {
+        Rows += 1;
+    }
+
+    [RelayCommand]
+    private void DecreaseRows()
+    {
+        Rows -= 1;
+    }
+
+    [RelayCommand]
+    private void IncreaseColumns()
+    {
+        Columns += 1;
+    }
+
+    [RelayCommand]
+    private void DecreaseColumns()
+    {
+        Columns -= 1;
+    }
+
+    [RelayCommand]
     private void AddPage()
     {
         var newPage = new DeckPage
@@ -306,6 +382,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanGoToNextPage));
         OnPropertyChanged(nameof(PageIndicator));
         OnPropertyChanged(nameof(HasMultiplePages));
+        NotifyLayoutChanged();
     }
 
     [RelayCommand]

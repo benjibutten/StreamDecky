@@ -2,6 +2,12 @@ namespace StreamDecky.Models;
 
 public class DeckPage
 {
+    public const int MinRows = 1;
+    public const int MaxRows = 10;
+    public const int MinColumns = 1;
+    public const int MaxColumns = 10;
+    public const int MaxButtonsPerPage = MaxRows * MaxColumns;
+
     public string Name { get; set; } = "Page 1";
     public int Rows { get; set; } = 3;
     public int Columns { get; set; } = 5;
@@ -9,7 +15,13 @@ public class DeckPage
 
     public void EnsureButtonCount()
     {
+        Rows = Math.Clamp(Rows, MinRows, MaxRows);
+        Columns = Math.Clamp(Columns, MinColumns, MaxColumns);
+
         int total = Rows * Columns;
+        if (total > MaxButtonsPerPage)
+            total = MaxButtonsPerPage;
+
         while (Buttons.Count < total)
             Buttons.Add(new ButtonConfig());
         if (Buttons.Count > total)

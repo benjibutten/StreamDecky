@@ -477,10 +477,21 @@
             </Border>
 
             <!-- Button Grid -->
-            <Border Grid.Row="2" 
-                    Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}" 
+            <Border Grid.Row="2"
                     CornerRadius="12"
-                    Padding="16">
+                    ClipToBounds="True">
+                <Grid>
+                    <Border Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
+                            CornerRadius="12"/>
+                    <Rectangle Opacity="0.9"
+                               Visibility="{Binding OverlayBackgroundImagePath, Converter={StaticResource HasTextVisibility}}">
+                        <Rectangle.Fill>
+                            <ImageBrush ImageSource="{Binding OverlayBackgroundImagePath, Converter={StaticResource PathToImageSource}}"
+                                        Stretch="UniformToFill"/>
+                        </Rectangle.Fill>
+                    </Rectangle>
+
+                    <Border Padding="16" Background="#11000000">
                 <ItemsControl ItemsSource="{Binding Buttons}"
                               HorizontalAlignment="Center" 
                               VerticalAlignment="Center">
@@ -525,7 +536,7 @@
                                                                 <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageSource}}"
                                                                        Stretch="UniformToFill"
                                                                        Visibility="{Binding ImagePath, Converter={StaticResource HasTextVisibility}}"/>
-                                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                                 <StackPanel x:Name="ConfiguredContent" VerticalAlignment="Center" HorizontalAlignment="Center">
                                                                     <TextBlock Text="{Binding IconText}" 
                                                                                FontSize="22"
                                                                                HorizontalAlignment="Center"
@@ -538,6 +549,27 @@
                                                                                HorizontalAlignment="Center"
                                                                                Foreground="{Binding TextColor, Converter={StaticResource StringToBrush}}"
                                                                                Margin="4,2,4,0"/>
+                                                                </StackPanel>
+                                                                <StackPanel x:Name="EmptyContent"
+                                                                            VerticalAlignment="Center"
+                                                                            HorizontalAlignment="Center"
+                                                                            Visibility="Collapsed">
+                                                                    <TextBlock Text="+"
+                                                                               FontSize="24"
+                                                                               FontWeight="Bold"
+                                                                               Foreground="#90D0F0"
+                                                                               HorizontalAlignment="Center"/>
+                                                                    <TextBlock Text="{Binding SlotLabel}"
+                                                                               FontSize="11"
+                                                                               FontWeight="SemiBold"
+                                                                               Foreground="#D7EDF8"
+                                                                               HorizontalAlignment="Center"
+                                                                               Margin="0,2,0,0"/>
+                                                                    <TextBlock Text="Click to configure"
+                                                                               FontSize="9"
+                                                                               Foreground="#9EB5C4"
+                                                                               HorizontalAlignment="Center"
+                                                                               Margin="0,2,0,0"/>
                                                                 </StackPanel>
                                                             </Grid>
                                                         </Border>
@@ -570,6 +602,12 @@
                                                             <Setter TargetName="RegularBg" Property="Visibility" Value="Collapsed"/>
                                                             <Setter TargetName="ShapeGrid" Property="Visibility" Value="Visible"/>
                                                         </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsConfigured}" Value="False">
+                                                            <Setter TargetName="RegularBg" Property="Background" Value="#273445"/>
+                                                            <Setter TargetName="RegularBg" Property="BorderBrush" Value="#4A6880"/>
+                                                            <Setter TargetName="ConfiguredContent" Property="Visibility" Value="Collapsed"/>
+                                                            <Setter TargetName="EmptyContent" Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
                                                         <Trigger Property="IsMouseOver" Value="True">
                                                             <Setter TargetName="RegularBg" Property="BorderBrush" Value="#88FFFFFF"/>
                                                             <Setter TargetName="ShapeBg" Property="Stroke" Value="#88FFFFFF"/>
@@ -594,6 +632,8 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                    </Border>
+                </Grid>
             </Border>
         </Grid>
 
@@ -606,6 +646,73 @@
                                FontWeight="Bold" 
                                Foreground="White"
                                Margin="0,0,0,16"/>
+
+                    <TextBlock Text="PAGE LAYOUT" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <Border Background="#2D2D44" CornerRadius="8" Padding="10" Margin="0,0,0,16">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,8">
+                                <TextBlock Text="{Binding LayoutSummary}" Foreground="#DDD" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding MaxButtonsPerPage, StringFormat=Max {0}}"
+                                           Foreground="#7E8AA0"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"/>
+                            </DockPanel>
+
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock Text="Rows" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="−" Command="{Binding DecreaseRowsCommand}"
+                                            Width="22" Height="22"
+                                            Background="#1E1E2E" Foreground="#DDD"
+                                            BorderBrush="#444" BorderThickness="1"
+                                            Cursor="Hand"/>
+                                    <Border Background="#1E1E2E" BorderBrush="#444" BorderThickness="1"
+                                            CornerRadius="3" Margin="4,0" MinWidth="34" Height="22">
+                                        <TextBlock Text="{Binding Rows}" Foreground="#DDD" FontSize="12"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
+                                    <Button Content="+" Command="{Binding IncreaseRowsCommand}"
+                                            Width="22" Height="22"
+                                            Background="#1E1E2E" Foreground="#DDD"
+                                            BorderBrush="#444" BorderThickness="1"
+                                            Cursor="Hand"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <Slider Value="{Binding Rows, Mode=TwoWay}"
+                                    Minimum="{Binding MinRows}"
+                                    Maximum="{Binding MaxRows}"
+                                    TickFrequency="1"
+                                    IsSnapToTickEnabled="True"
+                                    Margin="0,0,0,8"/>
+
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock Text="Columns" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="−" Command="{Binding DecreaseColumnsCommand}"
+                                            Width="22" Height="22"
+                                            Background="#1E1E2E" Foreground="#DDD"
+                                            BorderBrush="#444" BorderThickness="1"
+                                            Cursor="Hand"/>
+                                    <Border Background="#1E1E2E" BorderBrush="#444" BorderThickness="1"
+                                            CornerRadius="3" Margin="4,0" MinWidth="34" Height="22">
+                                        <TextBlock Text="{Binding Columns}" Foreground="#DDD" FontSize="12"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
+                                    <Button Content="+" Command="{Binding IncreaseColumnsCommand}"
+                                            Width="22" Height="22"
+                                            Background="#1E1E2E" Foreground="#DDD"
+                                            BorderBrush="#444" BorderThickness="1"
+                                            Cursor="Hand"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <Slider Value="{Binding Columns, Mode=TwoWay}"
+                                    Minimum="{Binding MinColumns}"
+                                    Maximum="{Binding MaxColumns}"
+                                    TickFrequency="1"
+                                    IsSnapToTickEnabled="True"/>
+                        </StackPanel>
+                    </Border>
 
                     <!-- No selection state -->
                     <TextBlock Text="Select a button to edit" 
