@@ -28,6 +28,7 @@
         <helpers:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <helpers:PathToImageSourceConverter x:Key="PathToImageSource"/>
         <helpers:ButtonShapeToGeometryConverter x:Key="ShapeToGeometry"/>
+        <helpers:AdaptiveButtonSizeConverter x:Key="AdaptiveButtonSize"/>
         
         <!-- TextMode enum values for ComboBox -->
         <ObjectDataProvider x:Key="TextModeValues" 
@@ -492,9 +493,10 @@
                     </Rectangle>
 
                     <Border Padding="16" Background="#11000000">
+                        <Grid x:Name="EditorDeckItemsHost">
                 <ItemsControl ItemsSource="{Binding Buttons}"
-                              HorizontalAlignment="Center" 
-                              VerticalAlignment="Center">
+                              HorizontalAlignment="Stretch" 
+                              VerticalAlignment="Stretch">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <UniformGrid Columns="{Binding Columns}" Rows="{Binding Rows}"/>
@@ -505,11 +507,29 @@
                             <Button Margin="{Binding DataContext.ButtonSpacing, 
                                         RelativeSource={RelativeSource AncestorType=Window}, 
                                         Converter={StaticResource SpacingToThickness}}"
-                                    Width="{Binding DataContext.ButtonSize, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    Height="{Binding DataContext.ButtonSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                     Command="{Binding DataContext.SelectButtonCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"
                                     Cursor="Hand">
+                                <Button.Width>
+                                    <MultiBinding Converter="{StaticResource AdaptiveButtonSize}" ConverterParameter="0,0,24">
+                                        <Binding Path="DataContext.ButtonSize" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.ButtonSpacing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.Columns" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.Rows" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding ElementName="EditorDeckItemsHost" Path="ActualWidth"/>
+                                        <Binding ElementName="EditorDeckItemsHost" Path="ActualHeight"/>
+                                    </MultiBinding>
+                                </Button.Width>
+                                <Button.Height>
+                                    <MultiBinding Converter="{StaticResource AdaptiveButtonSize}" ConverterParameter="0,0,24">
+                                        <Binding Path="DataContext.ButtonSize" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.ButtonSpacing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.Columns" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.Rows" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding ElementName="EditorDeckItemsHost" Path="ActualWidth"/>
+                                        <Binding ElementName="EditorDeckItemsHost" Path="ActualHeight"/>
+                                    </MultiBinding>
+                                </Button.Height>
                                 <Button.Style>
                                     <Style TargetType="Button">
                                         <Setter Property="Template">
@@ -632,6 +652,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                        </Grid>
                     </Border>
                 </Grid>
             </Border>
@@ -646,73 +667,6 @@
                                FontWeight="Bold" 
                                Foreground="White"
                                Margin="0,0,0,16"/>
-
-                    <TextBlock Text="PAGE LAYOUT" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                    <Border Background="#2D2D44" CornerRadius="8" Padding="10" Margin="0,0,0,16">
-                        <StackPanel>
-                            <DockPanel Margin="0,0,0,8">
-                                <TextBlock Text="{Binding LayoutSummary}" Foreground="#DDD" FontSize="12" FontWeight="SemiBold"/>
-                                <TextBlock DockPanel.Dock="Right"
-                                           Text="{Binding MaxButtonsPerPage, StringFormat=Max {0}}"
-                                           Foreground="#7E8AA0"
-                                           FontSize="11"
-                                           VerticalAlignment="Center"/>
-                            </DockPanel>
-
-                            <DockPanel Margin="0,0,0,4">
-                                <TextBlock Text="Rows" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                    <Button Content="−" Command="{Binding DecreaseRowsCommand}"
-                                            Width="22" Height="22"
-                                            Background="#1E1E2E" Foreground="#DDD"
-                                            BorderBrush="#444" BorderThickness="1"
-                                            Cursor="Hand"/>
-                                    <Border Background="#1E1E2E" BorderBrush="#444" BorderThickness="1"
-                                            CornerRadius="3" Margin="4,0" MinWidth="34" Height="22">
-                                        <TextBlock Text="{Binding Rows}" Foreground="#DDD" FontSize="12"
-                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                    </Border>
-                                    <Button Content="+" Command="{Binding IncreaseRowsCommand}"
-                                            Width="22" Height="22"
-                                            Background="#1E1E2E" Foreground="#DDD"
-                                            BorderBrush="#444" BorderThickness="1"
-                                            Cursor="Hand"/>
-                                </StackPanel>
-                            </DockPanel>
-                            <Slider Value="{Binding Rows, Mode=TwoWay}"
-                                    Minimum="{Binding MinRows}"
-                                    Maximum="{Binding MaxRows}"
-                                    TickFrequency="1"
-                                    IsSnapToTickEnabled="True"
-                                    Margin="0,0,0,8"/>
-
-                            <DockPanel Margin="0,0,0,4">
-                                <TextBlock Text="Columns" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                    <Button Content="−" Command="{Binding DecreaseColumnsCommand}"
-                                            Width="22" Height="22"
-                                            Background="#1E1E2E" Foreground="#DDD"
-                                            BorderBrush="#444" BorderThickness="1"
-                                            Cursor="Hand"/>
-                                    <Border Background="#1E1E2E" BorderBrush="#444" BorderThickness="1"
-                                            CornerRadius="3" Margin="4,0" MinWidth="34" Height="22">
-                                        <TextBlock Text="{Binding Columns}" Foreground="#DDD" FontSize="12"
-                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                    </Border>
-                                    <Button Content="+" Command="{Binding IncreaseColumnsCommand}"
-                                            Width="22" Height="22"
-                                            Background="#1E1E2E" Foreground="#DDD"
-                                            BorderBrush="#444" BorderThickness="1"
-                                            Cursor="Hand"/>
-                                </StackPanel>
-                            </DockPanel>
-                            <Slider Value="{Binding Columns, Mode=TwoWay}"
-                                    Minimum="{Binding MinColumns}"
-                                    Maximum="{Binding MaxColumns}"
-                                    TickFrequency="1"
-                                    IsSnapToTickEnabled="True"/>
-                        </StackPanel>
-                    </Border>
 
                     <!-- No selection state -->
                     <TextBlock Text="Select a button to edit" 

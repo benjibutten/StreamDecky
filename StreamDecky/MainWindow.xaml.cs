@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using StreamDecky.Helpers;
 using StreamDecky.ViewModels;
@@ -22,8 +23,23 @@ public partial class MainWindow : Window
     {
         DataContext = _viewModel;
         InitializeComponent();
+        ApplyWindowIcon();
         InitializeTrayIcon();
         SyncStartWithWindows();
+    }
+
+    private void ApplyWindowIcon()
+    {
+        try
+        {
+            var iconPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StreamDecky.ico");
+            if (System.IO.File.Exists(iconPath))
+                Icon = BitmapFrame.Create(new Uri(iconPath, UriKind.Absolute));
+        }
+        catch
+        {
+            // Fall back to XAML icon resource if runtime icon cannot be loaded.
+        }
     }
 
     private void InitializeTrayIcon()

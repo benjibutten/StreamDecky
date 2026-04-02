@@ -52,6 +52,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isOverlayOpen;
 
+    [ObservableProperty]
+    private int _buttonVisualVersion;
+
     public bool IsButtonSelected => SelectedButton != null;
 
     public DeckProfile Profile => _profile;
@@ -196,9 +199,24 @@ public partial class MainViewModel : ObservableObject
         for (int i = 0; i < CurrentPage.Buttons.Count; i++)
         {
             var bvm = new ButtonViewModel(CurrentPage.Buttons[i], i);
-            bvm.PropertyChanged += (_, _) => ScheduleAutoSave();
+            bvm.PropertyChanged += (_, e) =>
+            {
+                ScheduleAutoSave();
+
+                if (e.PropertyName is nameof(ButtonViewModel.IsConfigured)
+                    or nameof(ButtonViewModel.ActionType)
+                    or nameof(ButtonViewModel.Title)
+                    or nameof(ButtonViewModel.IconText)
+                    or nameof(ButtonViewModel.ImagePath)
+                    or null)
+                {
+                    ButtonVisualVersion++;
+                }
+            };
             Buttons.Add(bvm);
         }
+
+        ButtonVisualVersion++;
 
         if (selectedIndex.HasValue && selectedIndex.Value >= 0 && selectedIndex.Value < Buttons.Count)
         {

@@ -21,6 +21,8 @@
         <helpers:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <helpers:ButtonShapeToGeometryConverter x:Key="ShapeToGeometry"/>
         <helpers:CellImageBrushConverter x:Key="CellImageBrush"/>
+        <helpers:AdaptiveButtonSizeConverter x:Key="AdaptiveButtonSize"/>
+        <helpers:CellClusterCornerRadiusConverter x:Key="CellClusterCornerRadius"/>
     </Window.Resources>
 
     <!-- Full screen overlay background with slight transparency -->
@@ -196,29 +198,65 @@
                             <DataTemplate>
                                 <!-- CellBg fills the entire UniformGrid cell, slight overlap kills hairline gaps -->
                                 <Border x:Name="CellBg"
-                                        Margin="-0.5"
+                                        Margin="-1"
                                         ClipToBounds="True"
                                         Background="{Binding DataContext.OverlayBackgroundColor, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource StringToBrush}}">
+                                    <Border.CornerRadius>
+                                        <MultiBinding Converter="{StaticResource CellClusterCornerRadius}" ConverterParameter="14">
+                                            <Binding Path="Index"/>
+                                            <Binding Path="DataContext.Columns" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="DataContext.Rows" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="DataContext.Buttons" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="DataContext.ButtonVisualVersion" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        </MultiBinding>
+                                    </Border.CornerRadius>
                                 <Grid>
                                     <!-- Global background image portion for this cell -->
-                                    <Rectangle x:Name="BgImageRect">
-                                        <Rectangle.Fill>
+                                    <Border x:Name="BgImageLayer">
+                                        <Border.Background>
                                             <MultiBinding Converter="{StaticResource CellImageBrush}">
                                                 <Binding Path="DataContext.OverlayBackgroundImagePath" RelativeSource="{RelativeSource AncestorType=Window}"/>
                                                 <Binding Path="Index"/>
                                                 <Binding Path="DataContext.Columns" RelativeSource="{RelativeSource AncestorType=Window}"/>
                                                 <Binding Path="DataContext.Rows" RelativeSource="{RelativeSource AncestorType=Window}"/>
                                             </MultiBinding>
-                                        </Rectangle.Fill>
-                                    </Rectangle>
+                                        </Border.Background>
+                                        <Border.CornerRadius>
+                                            <MultiBinding Converter="{StaticResource CellClusterCornerRadius}" ConverterParameter="14">
+                                                <Binding Path="Index"/>
+                                                <Binding Path="DataContext.Columns" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                <Binding Path="DataContext.Rows" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                <Binding Path="DataContext.Buttons" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                <Binding Path="DataContext.ButtonVisualVersion" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            </MultiBinding>
+                                        </Border.CornerRadius>
+                                    </Border>
                                     <!-- Button content with spacing margin -->
                                     <Button x:Name="CellButton"
                                         Margin="{Binding DataContext.ButtonSpacing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SpacingToThickness}}"
-                                        Width="{Binding DataContext.ButtonSize, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        Height="{Binding DataContext.ButtonSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                         Click="DeckButton_Click"
                                         Tag="{Binding}"
                                         Cursor="Hand">
+                                    <Button.Width>
+                                        <MultiBinding Converter="{StaticResource AdaptiveButtonSize}" ConverterParameter="180,220,22">
+                                            <Binding Path="DataContext.ButtonSize" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="DataContext.ButtonSpacing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="DataContext.Columns" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="DataContext.Rows" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="ActualHeight" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        </MultiBinding>
+                                    </Button.Width>
+                                    <Button.Height>
+                                        <MultiBinding Converter="{StaticResource AdaptiveButtonSize}" ConverterParameter="180,220,22">
+                                            <Binding Path="DataContext.ButtonSize" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="DataContext.ButtonSpacing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="DataContext.Columns" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="DataContext.Rows" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                            <Binding Path="ActualHeight" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        </MultiBinding>
+                                    </Button.Height>
                                     <Button.Style>
                                         <Style TargetType="Button">
                                             <Setter Property="Template">
@@ -310,7 +348,7 @@
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding IsConfigured}" Value="False">
                                         <Setter TargetName="CellBg" Property="Background" Value="Transparent"/>
-                                        <Setter TargetName="BgImageRect" Property="Visibility" Value="Collapsed"/>
+                                        <Setter TargetName="BgImageLayer" Property="Visibility" Value="Collapsed"/>
                                         <Setter TargetName="CellButton" Property="Visibility" Value="Hidden"/>
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
