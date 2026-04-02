@@ -17,6 +17,10 @@ public partial class OverlayWindow : Window
     private double _startOffsetX;
     private double _startOffsetY;
     private IntPtr _previousForegroundWindow;
+    private StickyNoteViewModel? _draggingStickyNote;
+    private System.Windows.Point _stickyDragStart;
+    private double _stickyStartX;
+    private double _stickyStartY;
 
     public OverlayWindow(MainViewModel viewModel)
     {
@@ -121,6 +125,62 @@ public partial class OverlayWindow : Window
     private void OverlayNextPage_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.NextPageCommand.Execute(null);
+    }
+
+    private void StickyNoteHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is StickyNoteViewModel note)
+        {
+            _draggingStickyNote = note;
+            _stickyDragStart = e.GetPosition(this);
+            _stickyStartX = note.X;
+            _stickyStartY = note.Y;
+            element.CaptureMouse();
+            e.Handled = true;
+        }
+    }
+
+    private void StickyNoteHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_draggingStickyNote == null)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        var dx = pos.X - _stickyDragStart.X;
+        var dy = pos.Y - _stickyDragStart.Y;
+
+        double maxX = Math.Max(0, ActualWidth - _draggingStickyNote.Width - 12);
+        double maxY = Math.Max(42, ActualHeight - _draggingStickyNote.Height - 12);
+
+        _draggingStickyNote.X = Math.Clamp(_stickyStartX + dx, 0, maxX);
+        _draggingStickyNote.Y = Math.Clamp(_stickyStartY + dy, 42, maxY);
+    }
+
+    private void StickyNoteHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _draggingStickyNote = null;
+    }
+
+    private void StickyNoteRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is StickyNoteViewModel note)
+            _viewModel.RemoveStickyNoteCommand.Execute(note);
+    }
+
+    private void StickyNoteColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element
+            && element.DataContext is StickyNoteViewModel note
+            && element.Tag is string color)
+        {
+            _viewModel.SetStickyNoteColor(note, color);
+        }
     }
 
     protected override void OnDeactivated(EventArgs e)

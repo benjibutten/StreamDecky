@@ -185,38 +185,31 @@ public class CellImageBrushConverter : IMultiValueConverter
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
         if (values.Length >= 4
-            && values[0] is string path && !string.IsNullOrEmpty(path) && System.IO.File.Exists(path)
+            && values[0] is string path && !string.IsNullOrEmpty(path)
             && values[1] is int index
             && values[2] is int columns && columns > 0
             && values[3] is int rows && rows > 0)
         {
-            try
+            var bitmap = OverlayImageCache.TryGet(path);
+            if (bitmap == null)
             {
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = new Uri(path, UriKind.Absolute);
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.EndInit();
-                bitmap.Freeze();
-
-                int col = index % columns;
-                int row = index / columns;
-
-                return new ImageBrush(bitmap)
-                {
-                    Viewbox = new Rect(
-                        (double)col / columns,
-                        (double)row / rows,
-                        1.0 / columns,
-                        1.0 / rows),
-                    ViewboxUnits = BrushMappingMode.RelativeToBoundingBox,
-                    Stretch = Stretch.Fill
-                };
-            }
-            catch
-            {
+                _ = OverlayImageCache.EnsureLoadedAsync(path);
                 return Brushes.Transparent;
             }
+
+            int col = index % columns;
+            int row = index / columns;
+
+            return new ImageBrush(bitmap)
+            {
+                Viewbox = new Rect(
+                    (double)col / columns,
+                    (double)row / rows,
+                    1.0 / columns,
+                    1.0 / rows),
+                ViewboxUnits = BrushMappingMode.RelativeToBoundingBox,
+                Stretch = Stretch.Fill
+            };
         }
         return Brushes.Transparent;
     }

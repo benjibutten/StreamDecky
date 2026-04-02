@@ -12,11 +12,13 @@ public class DeckPage
     public int Rows { get; set; } = 3;
     public int Columns { get; set; } = 5;
     public List<ButtonConfig> Buttons { get; set; } = new();
+    public List<StickyNote> StickyNotes { get; set; } = new();
 
     public void EnsureButtonCount()
     {
         Rows = Math.Clamp(Rows, MinRows, MaxRows);
         Columns = Math.Clamp(Columns, MinColumns, MaxColumns);
+        StickyNotes ??= new List<StickyNote>();
 
         int total = Rows * Columns;
         if (total > MaxButtonsPerPage)

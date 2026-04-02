@@ -5,6 +5,7 @@ public class DeckProfile
     public string Name { get; set; } = "Default";
     public string OverlayBackgroundColor { get; set; } = "#1E1E2E";
     public string OverlayBackgroundImagePath { get; set; } = string.Empty;
+    public double ButtonOverlayOpacity { get; set; } = 1.0;
     public double ButtonSpacing { get; set; } = 10;
     public double ButtonSize { get; set; } = 100;
     public double GridOffsetX { get; set; } = 0;
@@ -17,6 +18,8 @@ public class DeckProfile
 
     public void Initialize()
     {
+        ButtonOverlayOpacity = Math.Clamp(ButtonOverlayOpacity, 0.2, 1.0);
+
         if (Pages.Count == 0)
             Pages.Add(new DeckPage());
 
