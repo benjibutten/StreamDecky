@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
-using System.Timers;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using StreamDecky.Helpers;
 using StreamDecky.Models;
 using StreamDecky.Services;
 
@@ -19,6 +19,7 @@ public partial class MainViewModel : ObservableObject
     {
         _profile = _profileService.Load();
         LoadCurrentPage();
+        StickyNotesVisible = _profile.StickyNotesVisible;
 
         // Auto-save: debounce 1 second after last change
         _autoSaveTimer = new System.Timers.Timer(1000) { AutoReset = false };
@@ -32,6 +33,8 @@ public partial class MainViewModel : ObservableObject
 
         // Listen for any property change to trigger auto-save
         PropertyChanged += (_, _) => ScheduleAutoSave();
+
+        _ = RefreshOverlayBackgroundImageAsync();
     }
 
     private void ScheduleAutoSave()
@@ -53,6 +56,23 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isOverlayOpen;
 
+    [ObservableProperty]
+    private int _buttonVisualVersion;
+
+    [ObservableProperty]
+    private int _overlayBackgroundImageVersion;
+
+    [ObservableProperty]
+    private ObservableCollection<StickyNoteViewModel> _stickyNotes = new();
+
+    [ObservableProperty]
+    private bool _stickyNotesVisible;
+
+    partial void OnStickyNotesVisibleChanged(bool value)
+    {
+        _profile.StickyNotesVisible = value;
+    }
+
     public bool IsButtonSelected => SelectedButton != null;
 
     public DeckProfile Profile => _profile;
@@ -72,7 +92,25 @@ public partial class MainViewModel : ObservableObject
         get => _profile.OverlayBackgroundImagePath;
         set
         {
+            if (string.Equals(_profile.OverlayBackgroundImagePath, value, StringComparison.OrdinalIgnoreCase))
+                return;
+
             _profile.OverlayBackgroundImagePath = value;
+            OnPropertyChanged();
+            _ = RefreshOverlayBackgroundImageAsync();
+        }
+    }
+
+    public double ButtonOverlayOpacity
+    {
+        get => _profile.ButtonOverlayOpacity;
+        set
+        {
+            double clamped = Math.Clamp(value, 0.2, 1.0);
+            if (Math.Abs(_profile.ButtonOverlayOpacity - clamped) < 0.001)
+                return;
+
+            _profile.ButtonOverlayOpacity = clamped;
             OnPropertyChanged();
         }
     }
@@ -159,30 +197,115 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    public int Columns => CurrentPage.Columns;
-    public int Rows => CurrentPage.Rows;
+    public int Rows
+    {
+        get => _profile.LayoutRows;
+        set => UpdateProfileLayout(value, Columns);
+    }
+
+    public int Columns
+    {
+        get => _profile.LayoutColumns;
+        set => UpdateProfileLayout(Rows, value);
+    }
+
+    public int MinRows => DeckPage.MinRows;
+    public int MaxRows => DeckPage.MaxRows;
+    public int MinColumns => DeckPage.MinColumns;
+    public int MaxColumns => DeckPage.MaxColumns;
+    public int MaxButtonsPerPage => DeckPage.MaxButtonsPerPage;
+    public int ButtonSlots => Rows * Columns;
+    public string LayoutSummary => $"{Rows} x {Columns} ({ButtonSlots} slots)";
+
     public string CurrentPageName => CurrentPage.Name;
     public int PageCount => _profile.Pages.Count;
     public bool CanGoToPreviousPage => CurrentPageIndex > 0;
     public bool CanGoToNextPage => CurrentPageIndex < _profile.Pages.Count - 1;
     public string PageIndicator => $"{CurrentPageIndex + 1} / {PageCount}";
     public bool HasMultiplePages => _profile.Pages.Count > 1;
+    public bool HasStickyNotes => StickyNotes.Count > 0;
 
     private DeckPage CurrentPage => _profile.Pages[CurrentPageIndex];
 
-    private void LoadCurrentPage()
+    private void LoadCurrentPage(int? preferredSelectedIndex = null)
     {
-        CurrentPage.EnsureButtonCount();
+        int? selectedIndex = preferredSelectedIndex ?? SelectedButton?.Index;
+
+        CurrentPage.EnsureButtonCount(Rows, Columns);
         Buttons.Clear();
         for (int i = 0; i < CurrentPage.Buttons.Count; i++)
         {
             var bvm = new ButtonViewModel(CurrentPage.Buttons[i], i);
-            bvm.PropertyChanged += (_, _) => ScheduleAutoSave();
+            bvm.PropertyChanged += (_, e) =>
+            {
+                ScheduleAutoSave();
+
+                if (e.PropertyName is nameof(ButtonViewModel.IsConfigured)
+                    or nameof(ButtonViewModel.ActionType)
+                    or nameof(ButtonViewModel.Title)
+                    or nameof(ButtonViewModel.IconText)
+                    or nameof(ButtonViewModel.ImagePath)
+                    or null)
+                {
+                    ButtonVisualVersion++;
+                }
+            };
             Buttons.Add(bvm);
         }
-        SelectedButton = null;
-        OnPropertyChanged(nameof(Columns));
+
+        ButtonVisualVersion++;
+
+        if (selectedIndex.HasValue && selectedIndex.Value >= 0 && selectedIndex.Value < Buttons.Count)
+        {
+            SelectButton(Buttons[selectedIndex.Value]);
+        }
+        else
+        {
+            if (SelectedButton != null)
+                SelectedButton.IsSelected = false;
+            SelectedButton = null;
+        }
+
+        LoadStickyNotes();
+        NotifyLayoutChanged();
+    }
+
+    private void LoadStickyNotes()
+    {
+        StickyNotes.Clear();
+        foreach (var note in CurrentPage.StickyNotes)
+        {
+            StickyNotes.Add(new StickyNoteViewModel(note, ScheduleAutoSave));
+        }
+
+        OnPropertyChanged(nameof(HasStickyNotes));
+    }
+
+    private void NotifyLayoutChanged()
+    {
         OnPropertyChanged(nameof(Rows));
+        OnPropertyChanged(nameof(Columns));
+        OnPropertyChanged(nameof(ButtonSlots));
+        OnPropertyChanged(nameof(LayoutSummary));
+    }
+
+    private void UpdateProfileLayout(int rows, int columns)
+    {
+        rows = Math.Clamp(rows, MinRows, MaxRows);
+        columns = Math.Clamp(columns, MinColumns, MaxColumns);
+
+        if (_profile.LayoutRows == rows && _profile.LayoutColumns == columns)
+            return;
+
+        int? selectedIndex = SelectedButton?.Index;
+        _profile.LayoutRows = rows;
+        _profile.LayoutColumns = columns;
+
+        foreach (var page in _profile.Pages)
+            page.EnsureButtonCount(rows, columns);
+
+        LoadCurrentPage(selectedIndex);
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
@@ -191,9 +314,9 @@ public partial class MainViewModel : ObservableObject
         // Deselect previous
         if (SelectedButton != null)
             SelectedButton.IsSelected = false;
-        
+
         SelectedButton = button;
-        
+
         // Select new
         if (SelectedButton != null)
             SelectedButton.IsSelected = true;
@@ -202,6 +325,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void OpenOverlay()
     {
+        _ = RefreshOverlayBackgroundImageAsync();
         IsOverlayOpen = true;
     }
 
@@ -263,13 +387,37 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void IncreaseRows()
+    {
+        Rows += 1;
+    }
+
+    [RelayCommand]
+    private void DecreaseRows()
+    {
+        Rows -= 1;
+    }
+
+    [RelayCommand]
+    private void IncreaseColumns()
+    {
+        Columns += 1;
+    }
+
+    [RelayCommand]
+    private void DecreaseColumns()
+    {
+        Columns -= 1;
+    }
+
+    [RelayCommand]
     private void AddPage()
     {
         var newPage = new DeckPage
         {
             Name = $"Page {_profile.Pages.Count + 1}",
-            Rows = CurrentPage.Rows,
-            Columns = CurrentPage.Columns
+            Rows = Rows,
+            Columns = Columns
         };
         _profile.Pages.Add(newPage);
         CurrentPageIndex = _profile.Pages.Count - 1;
@@ -306,6 +454,88 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanGoToNextPage));
         OnPropertyChanged(nameof(PageIndicator));
         OnPropertyChanged(nameof(HasMultiplePages));
+        NotifyLayoutChanged();
+    }
+
+    [RelayCommand]
+    private void ToggleStickyNotes()
+    {
+        StickyNotesVisible = !StickyNotesVisible;
+    }
+
+    [RelayCommand]
+    private void AddStickyNote()
+    {
+        int offset = StickyNotes.Count * 20;
+        var note = new StickyNote
+        {
+            Title = $"Sticky note {StickyNotes.Count + 1}",
+            Text = string.Empty,
+            X = 96 + offset,
+            Y = 140 + offset,
+            Width = 230,
+            Height = 180,
+            Color = "#F8E784"
+        };
+
+        CurrentPage.StickyNotes.Add(note);
+        StickyNotes.Add(new StickyNoteViewModel(note, ScheduleAutoSave));
+
+        StickyNotesVisible = true;
+        OnPropertyChanged(nameof(HasStickyNotes));
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void RemoveStickyNote(StickyNoteViewModel? note)
+    {
+        if (note == null)
+            return;
+
+        CurrentPage.StickyNotes.Remove(note.Model);
+        StickyNotes.Remove(note);
+
+        if (StickyNotes.Count == 0)
+            StickyNotesVisible = false;
+
+        OnPropertyChanged(nameof(HasStickyNotes));
+        ScheduleAutoSave();
+    }
+
+    public void SetStickyNoteColor(StickyNoteViewModel? note, string color)
+    {
+        if (note == null || string.IsNullOrWhiteSpace(color))
+            return;
+
+        note.Color = color;
+    }
+
+    private async Task RefreshOverlayBackgroundImageAsync()
+    {
+        string pathSnapshot = _profile.OverlayBackgroundImagePath;
+        if (string.IsNullOrWhiteSpace(pathSnapshot))
+        {
+            OverlayBackgroundImageVersion++;
+            return;
+        }
+
+        bool loaded = await OverlayImageCache.EnsureLoadedAsync(pathSnapshot);
+        if (!loaded)
+            return;
+
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher != null)
+        {
+            await dispatcher.InvokeAsync(() =>
+            {
+                if (string.Equals(pathSnapshot, _profile.OverlayBackgroundImagePath, StringComparison.OrdinalIgnoreCase))
+                    OverlayBackgroundImageVersion++;
+            });
+            return;
+        }
+
+        if (string.Equals(pathSnapshot, _profile.OverlayBackgroundImagePath, StringComparison.OrdinalIgnoreCase))
+            OverlayBackgroundImageVersion++;
     }
 
     [RelayCommand]

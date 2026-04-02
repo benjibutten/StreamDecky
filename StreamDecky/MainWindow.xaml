@@ -28,6 +28,7 @@
         <helpers:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <helpers:PathToImageSourceConverter x:Key="PathToImageSource"/>
         <helpers:ButtonShapeToGeometryConverter x:Key="ShapeToGeometry"/>
+        <helpers:AdaptiveButtonSizeConverter x:Key="AdaptiveButtonSize"/>
         
         <!-- TextMode enum values for ComboBox -->
         <ObjectDataProvider x:Key="TextModeValues" 
@@ -477,13 +478,25 @@
             </Border>
 
             <!-- Button Grid -->
-            <Border Grid.Row="2" 
-                    Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}" 
+            <Border Grid.Row="2"
                     CornerRadius="12"
-                    Padding="16">
+                    ClipToBounds="True">
+                <Grid>
+                    <Border Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
+                            CornerRadius="12"/>
+                    <Rectangle Opacity="0.9"
+                               Visibility="{Binding OverlayBackgroundImagePath, Converter={StaticResource HasTextVisibility}}">
+                        <Rectangle.Fill>
+                            <ImageBrush ImageSource="{Binding OverlayBackgroundImagePath, Converter={StaticResource PathToImageSource}}"
+                                        Stretch="UniformToFill"/>
+                        </Rectangle.Fill>
+                    </Rectangle>
+
+                    <Border Padding="16" Background="#11000000">
+                        <Grid x:Name="EditorDeckItemsHost">
                 <ItemsControl ItemsSource="{Binding Buttons}"
-                              HorizontalAlignment="Center" 
-                              VerticalAlignment="Center">
+                              HorizontalAlignment="Stretch" 
+                              VerticalAlignment="Stretch">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <UniformGrid Columns="{Binding Columns}" Rows="{Binding Rows}"/>
@@ -494,11 +507,29 @@
                             <Button Margin="{Binding DataContext.ButtonSpacing, 
                                         RelativeSource={RelativeSource AncestorType=Window}, 
                                         Converter={StaticResource SpacingToThickness}}"
-                                    Width="{Binding DataContext.ButtonSize, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    Height="{Binding DataContext.ButtonSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                     Command="{Binding DataContext.SelectButtonCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"
                                     Cursor="Hand">
+                                <Button.Width>
+                                    <MultiBinding Converter="{StaticResource AdaptiveButtonSize}" ConverterParameter="0,0,24">
+                                        <Binding Path="DataContext.ButtonSize" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.ButtonSpacing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.Columns" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.Rows" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding ElementName="EditorDeckItemsHost" Path="ActualWidth"/>
+                                        <Binding ElementName="EditorDeckItemsHost" Path="ActualHeight"/>
+                                    </MultiBinding>
+                                </Button.Width>
+                                <Button.Height>
+                                    <MultiBinding Converter="{StaticResource AdaptiveButtonSize}" ConverterParameter="0,0,24">
+                                        <Binding Path="DataContext.ButtonSize" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.ButtonSpacing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.Columns" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding Path="DataContext.Rows" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        <Binding ElementName="EditorDeckItemsHost" Path="ActualWidth"/>
+                                        <Binding ElementName="EditorDeckItemsHost" Path="ActualHeight"/>
+                                    </MultiBinding>
+                                </Button.Height>
                                 <Button.Style>
                                     <Style TargetType="Button">
                                         <Setter Property="Template">
@@ -522,10 +553,10 @@
                                                                         </VisualBrush.Visual>
                                                                     </VisualBrush>
                                                                 </Grid.OpacityMask>
-                                                                <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageSource}}"
+                                                                 <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageSource}, ConverterParameter=256}"
                                                                        Stretch="UniformToFill"
                                                                        Visibility="{Binding ImagePath, Converter={StaticResource HasTextVisibility}}"/>
-                                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                                 <StackPanel x:Name="ConfiguredContent" VerticalAlignment="Center" HorizontalAlignment="Center">
                                                                     <TextBlock Text="{Binding IconText}" 
                                                                                FontSize="22"
                                                                                HorizontalAlignment="Center"
@@ -538,6 +569,27 @@
                                                                                HorizontalAlignment="Center"
                                                                                Foreground="{Binding TextColor, Converter={StaticResource StringToBrush}}"
                                                                                Margin="4,2,4,0"/>
+                                                                </StackPanel>
+                                                                <StackPanel x:Name="EmptyContent"
+                                                                            VerticalAlignment="Center"
+                                                                            HorizontalAlignment="Center"
+                                                                            Visibility="Collapsed">
+                                                                    <TextBlock Text="+"
+                                                                               FontSize="24"
+                                                                               FontWeight="Bold"
+                                                                               Foreground="#90D0F0"
+                                                                               HorizontalAlignment="Center"/>
+                                                                    <TextBlock Text="{Binding SlotLabel}"
+                                                                               FontSize="11"
+                                                                               FontWeight="SemiBold"
+                                                                               Foreground="#D7EDF8"
+                                                                               HorizontalAlignment="Center"
+                                                                               Margin="0,2,0,0"/>
+                                                                    <TextBlock Text="Click to configure"
+                                                                               FontSize="9"
+                                                                               Foreground="#9EB5C4"
+                                                                               HorizontalAlignment="Center"
+                                                                               Margin="0,2,0,0"/>
                                                                 </StackPanel>
                                                             </Grid>
                                                         </Border>
@@ -570,6 +622,12 @@
                                                             <Setter TargetName="RegularBg" Property="Visibility" Value="Collapsed"/>
                                                             <Setter TargetName="ShapeGrid" Property="Visibility" Value="Visible"/>
                                                         </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsConfigured}" Value="False">
+                                                            <Setter TargetName="RegularBg" Property="Background" Value="#273445"/>
+                                                            <Setter TargetName="RegularBg" Property="BorderBrush" Value="#4A6880"/>
+                                                            <Setter TargetName="ConfiguredContent" Property="Visibility" Value="Collapsed"/>
+                                                            <Setter TargetName="EmptyContent" Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
                                                         <Trigger Property="IsMouseOver" Value="True">
                                                             <Setter TargetName="RegularBg" Property="BorderBrush" Value="#88FFFFFF"/>
                                                             <Setter TargetName="ShapeBg" Property="Stroke" Value="#88FFFFFF"/>
@@ -594,6 +652,9 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Border>
         </Grid>
 
@@ -785,7 +846,7 @@
                         <Border Height="60" Margin="0,0,0,16"
                                 Background="#1A1A2A" CornerRadius="4"
                                 Visibility="{Binding SelectedButton.ImagePath, Converter={StaticResource HasTextVisibility}}">
-                            <Image Source="{Binding SelectedButton.ImagePath, Converter={StaticResource PathToImageSource}}"
+                            <Image Source="{Binding SelectedButton.ImagePath, Converter={StaticResource PathToImageSource}, ConverterParameter=256}"
                                    Stretch="Uniform" Margin="4"/>
                         </Border>
 

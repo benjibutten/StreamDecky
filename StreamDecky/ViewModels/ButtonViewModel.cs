@@ -22,15 +22,45 @@ public partial class ButtonViewModel : ObservableObject
     public string Title
     {
         get => _config.Title;
-        set { _config.Title = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayTitle)); }
+        set
+        {
+            _config.Title = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(DisplayTitle));
+            OnPropertyChanged(nameof(IsConfigured));
+        }
     }
 
-    public string DisplayTitle => string.IsNullOrEmpty(Title) ? $"[{_index + 1}]" : Title;
+    public string DisplayTitle
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Title))
+                return Title;
+
+            return ActionType switch
+            {
+                ActionType.TextInput => "Text Input",
+                ActionType.KeyPress => "Key Press",
+                ActionType.MultiAction => "Multi Action",
+                _ => "Unconfigured"
+            };
+        }
+    }
+
+    public string SlotLabel => $"Slot {_index + 1}";
 
     public ActionType ActionType
     {
         get => _config.ActionType;
-        set { _config.ActionType = value; OnPropertyChanged(); }
+        set
+        {
+            _config.ActionType = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasAction));
+            OnPropertyChanged(nameof(IsConfigured));
+            OnPropertyChanged(nameof(DisplayTitle));
+        }
     }
 
     public string BackgroundColor
@@ -48,7 +78,12 @@ public partial class ButtonViewModel : ObservableObject
     public string IconText
     {
         get => _config.IconText;
-        set { _config.IconText = value; OnPropertyChanged(); }
+        set
+        {
+            _config.IconText = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsConfigured));
+        }
     }
 
     public double CornerRadius
@@ -60,7 +95,13 @@ public partial class ButtonViewModel : ObservableObject
     public string ImagePath
     {
         get => _config.ImagePath;
-        set { _config.ImagePath = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasImage)); }
+        set
+        {
+            _config.ImagePath = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasImage));
+            OnPropertyChanged(nameof(IsConfigured));
+        }
     }
 
     public bool HasImage => !string.IsNullOrEmpty(ImagePath);

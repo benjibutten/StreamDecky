@@ -1,8 +1,11 @@
 using System.Globalization;
+using System.Collections;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+
+using StreamDecky.ViewModels;
 
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
@@ -109,7 +112,15 @@ public class PathToImageSourceConverter : IValueConverter
                 bitmap.BeginInit();
                 bitmap.UriSource = new Uri(path, UriKind.Absolute);
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.DecodePixelWidth = 256;
+
+                // Background images should keep full resolution. Button/icon images can still opt into downscaling.
+                if (parameter is string p
+                    && int.TryParse(p, NumberStyles.Integer, CultureInfo.InvariantCulture, out int decodeWidth)
+                    && decodeWidth > 0)
+                {
+                    bitmap.DecodePixelWidth = decodeWidth;
+                }
+
                 bitmap.EndInit();
                 bitmap.Freeze();
                 return bitmap;
@@ -182,38 +193,31 @@ public class CellImageBrushConverter : IMultiValueConverter
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
         if (values.Length >= 4
-            && values[0] is string path && !string.IsNullOrEmpty(path) && System.IO.File.Exists(path)
+            && values[0] is string path && !string.IsNullOrEmpty(path)
             && values[1] is int index
             && values[2] is int columns && columns > 0
             && values[3] is int rows && rows > 0)
         {
-            try
+            var bitmap = OverlayImageCache.TryGet(path);
+            if (bitmap == null)
             {
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = new Uri(path, UriKind.Absolute);
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.EndInit();
-                bitmap.Freeze();
-
-                int col = index % columns;
-                int row = index / columns;
-
-                return new ImageBrush(bitmap)
-                {
-                    Viewbox = new Rect(
-                        (double)col / columns,
-                        (double)row / rows,
-                        1.0 / columns,
-                        1.0 / rows),
-                    ViewboxUnits = BrushMappingMode.RelativeToBoundingBox,
-                    Stretch = Stretch.Fill
-                };
-            }
-            catch
-            {
+                _ = OverlayImageCache.EnsureLoadedAsync(path);
                 return Brushes.Transparent;
             }
+
+            int col = index % columns;
+            int row = index / columns;
+
+            return new ImageBrush(bitmap)
+            {
+                Viewbox = new Rect(
+                    (double)col / columns,
+                    (double)row / rows,
+                    1.0 / columns,
+                    1.0 / rows),
+                ViewboxUnits = BrushMappingMode.RelativeToBoundingBox,
+                Stretch = Stretch.Fill
+            };
         }
         return Brushes.Transparent;
     }
@@ -221,5 +225,142 @@ public class CellImageBrushConverter : IMultiValueConverter
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
+    }
+}
+
+public class AdaptiveButtonSizeConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 6)
+            return 80.0;
+
+        double requestedSize = GetDouble(values[0], 80);
+        double spacing = Math.Max(0, GetDouble(values[1], 0));
+        int columns = Math.Max(1, GetInt(values[2], 1));
+        int rows = Math.Max(1, GetInt(values[3], 1));
+        double availableWidth = GetDouble(values[4], 0);
+        double availableHeight = GetDouble(values[5], 0);
+
+        double widthPadding = 0;
+        double heightPadding = 0;
+        double minSize = 20;
+
+        if (parameter is string p && !string.IsNullOrWhiteSpace(p))
+        {
+            var parts = p.Split(',');
+            if (parts.Length > 0 && double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var wPad))
+                widthPadding = Math.Max(0, wPad);
+            if (parts.Length > 1 && double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var hPad))
+                heightPadding = Math.Max(0, hPad);
+            if (parts.Length > 2 && double.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedMin))
+                minSize = Math.Max(8, parsedMin);
+        }
+
+        availableWidth = Math.Max(0, availableWidth - widthPadding);
+        availableHeight = Math.Max(0, availableHeight - heightPadding);
+
+        if (availableWidth <= 0 || availableHeight <= 0)
+            return requestedSize;
+
+        double fitByWidth = (availableWidth / columns) - spacing;
+        double fitByHeight = (availableHeight / rows) - spacing;
+        double fitted = Math.Min(fitByWidth, fitByHeight);
+
+        if (double.IsNaN(fitted) || double.IsInfinity(fitted) || fitted <= 0)
+            return minSize;
+
+        return Math.Max(minSize, Math.Min(requestedSize, fitted));
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+
+    private static double GetDouble(object value, double fallback)
+    {
+        if (value is double d)
+            return d;
+
+        if (value is float f)
+            return f;
+
+        if (value is int i)
+            return i;
+
+        return fallback;
+    }
+
+    private static int GetInt(object value, int fallback)
+    {
+        if (value is int i)
+            return i;
+
+        if (value is double d)
+            return (int)d;
+
+        return fallback;
+    }
+}
+
+public class CellClusterCornerRadiusConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 4
+            || values[0] is not int index
+            || values[1] is not int columns || columns <= 0
+            || values[2] is not int rows || rows <= 0
+            || values[3] is not IList items)
+        {
+            return new CornerRadius(0);
+        }
+
+        if (!IsConfigured(items, index))
+            return new CornerRadius(0);
+
+        double radius = 14;
+        if (parameter is string p
+            && double.TryParse(p, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedRadius))
+        {
+            radius = Math.Max(0, parsedRadius);
+        }
+
+        int col = index % columns;
+        int row = index / columns;
+
+        bool hasUp = row > 0 && IsConfigured(items, index - columns);
+        bool hasDown = row < rows - 1 && IsConfigured(items, index + columns);
+        bool hasLeft = col > 0 && IsConfigured(items, index - 1);
+        bool hasRight = col < columns - 1 && IsConfigured(items, index + 1);
+
+        double topLeft = !hasUp && !hasLeft ? radius : 0;
+        double topRight = !hasUp && !hasRight ? radius : 0;
+        double bottomRight = !hasDown && !hasRight ? radius : 0;
+        double bottomLeft = !hasDown && !hasLeft ? radius : 0;
+
+        return new CornerRadius(topLeft, topRight, bottomRight, bottomLeft);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+
+    private static bool IsConfigured(IList items, int index)
+    {
+        if (index < 0 || index >= items.Count)
+            return false;
+
+        var item = items[index];
+
+        if (item is ButtonViewModel vm)
+            return vm.IsConfigured;
+
+        var prop = item?.GetType().GetProperty("IsConfigured");
+        return prop?.PropertyType == typeof(bool)
+            && prop.GetValue(item) is bool configured
+            && configured;
     }
 }
