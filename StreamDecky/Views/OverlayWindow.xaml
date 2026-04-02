@@ -300,7 +300,7 @@
                                                                             </VisualBrush.Visual>
                                                                         </VisualBrush>
                                                                     </Grid.OpacityMask>
-                                                                    <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageSource}}"
+                                                                         <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageSource}, ConverterParameter=256}"
                                                                            Stretch="UniformToFill"
                                                                            Visibility="{Binding ImagePath, Converter={StaticResource HasTextVisibility}}"/>
                                                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -375,6 +375,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
                     </Grid>
                 </Border>
 
@@ -384,7 +385,7 @@
                         Padding="8,4"
                         Background="#16000000"
                         CornerRadius="7"
-                        Visibility="{Binding HasMultiplePages, Converter={StaticResource BoolToVisibility}}">
+                    Visibility="{Binding HasMultiplePages, Converter={StaticResource BoolToVisibility}}">
                     <Border.Style>
                         <Style TargetType="Border">
                             <Setter Property="Opacity" Value="0.58"/>
@@ -453,7 +454,7 @@
         <!-- Sticky notes layer (per page) -->
         <ItemsControl ItemsSource="{Binding StickyNotes}"
                       Visibility="{Binding StickyNotesVisible, Converter={StaticResource BoolToVisibility}}"
-                      Margin="22,64,22,30"
+                      Margin="0"
                       Panel.ZIndex="8">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -469,7 +470,8 @@
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
                     <Border Width="{Binding Width}"
-                            Height="{Binding Height}"
+                            Height="{Binding DisplayHeight}"
+                            Opacity="{Binding DataContext.ButtonOverlayOpacity, RelativeSource={RelativeSource AncestorType=Window}}"
                             Background="{Binding Color, Converter={StaticResource StringToBrush}}"
                             CornerRadius="10"
                             BorderBrush="#20000000"
@@ -504,6 +506,27 @@
                                         <Button Tag="#D4F7B0" Click="StickyNoteColor_Click"
                                                 Background="#D4F7B0" BorderBrush="#44000000" BorderThickness="1"
                                                 Width="14" Height="14" Margin="0,0,8,0" Cursor="Hand"/>
+                                        <Button Click="StickyNoteMinimize_Click"
+                                                Background="Transparent"
+                                                Foreground="#4C4C4C"
+                                                BorderThickness="0"
+                                                FontSize="11"
+                                                Padding="0"
+                                                Width="18"
+                                                Height="18"
+                                                Margin="0,0,4,0"
+                                                Cursor="Hand">
+                                            <Button.Style>
+                                                <Style TargetType="Button">
+                                                    <Setter Property="Content" Value="_"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsMinimized}" Value="True">
+                                                            <Setter Property="Content" Value="[]"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
                                         <Button Content="✕"
                                                 Click="StickyNoteRemove_Click"
                                                 Background="Transparent"
@@ -515,16 +538,35 @@
                                                 Height="18"
                                                 Cursor="Hand"/>
                                     </StackPanel>
-                                    <TextBlock Text="Sticky note"
-                                               Foreground="#4A4A4A"
-                                               FontWeight="SemiBold"
-                                               FontSize="11"
-                                               VerticalAlignment="Center"/>
+                                    <Grid VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}"
+                                                   Foreground="#4A4A4A"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="11"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Visibility="{Binding IsEditingTitle, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
+                                        <TextBox Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                 Tag="StickyNoteTitleEditor"
+                                                 Foreground="#2D2D2D"
+                                                 FontSize="11"
+                                                 FontWeight="SemiBold"
+                                                 BorderThickness="0"
+                                                 Padding="2,0"
+                                                 Background="#17FFFFFF"
+                                                 VerticalContentAlignment="Center"
+                                                 VerticalAlignment="Center"
+                                                 Visibility="{Binding IsEditingTitle, Converter={StaticResource BoolToVisibility}}"
+                                                 LostKeyboardFocus="StickyNoteTitleEditor_LostKeyboardFocus"
+                                                 KeyDown="StickyNoteTitleEditor_KeyDown"/>
+                                    </Grid>
                                 </DockPanel>
                             </Border>
 
                             <TextBox Grid.Row="1"
                                      Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     MouseDoubleClick="StickyNoteText_MouseDoubleClick"
+                                     Visibility="{Binding IsMinimized, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"
                                      BorderThickness="0"
                                      Background="Transparent"
                                      Foreground="#2D2D2D"

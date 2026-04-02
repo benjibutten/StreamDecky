@@ -5,6 +5,11 @@ namespace StreamDecky.ViewModels;
 
 public partial class StickyNoteViewModel : ObservableObject
 {
+    public const double MinimizedHeight = 28;
+
+    [ObservableProperty]
+    private bool _isEditingTitle;
+
     private readonly StickyNote _model;
     private readonly Action _onChanged;
 
@@ -16,6 +21,21 @@ public partial class StickyNoteViewModel : ObservableObject
 
     public StickyNote Model => _model;
     public string Id => _model.Id;
+
+    public string Title
+    {
+        get => string.IsNullOrWhiteSpace(_model.Title) ? "Sticky note" : _model.Title;
+        set
+        {
+            string normalized = string.IsNullOrWhiteSpace(value) ? "Sticky note" : value.Trim();
+            if (string.Equals(_model.Title, normalized, StringComparison.Ordinal))
+                return;
+
+            _model.Title = normalized;
+            OnPropertyChanged();
+            _onChanged();
+        }
+    }
 
     public string Text
     {
@@ -85,9 +105,27 @@ public partial class StickyNoteViewModel : ObservableObject
 
             _model.Height = clamped;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(DisplayHeight));
             _onChanged();
         }
     }
+
+    public bool IsMinimized
+    {
+        get => _model.IsMinimized;
+        set
+        {
+            if (_model.IsMinimized == value)
+                return;
+
+            _model.IsMinimized = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(DisplayHeight));
+            _onChanged();
+        }
+    }
+
+    public double DisplayHeight => IsMinimized ? MinimizedHeight : Height;
 
     public string Color
     {

@@ -112,7 +112,15 @@ public class PathToImageSourceConverter : IValueConverter
                 bitmap.BeginInit();
                 bitmap.UriSource = new Uri(path, UriKind.Absolute);
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.DecodePixelWidth = 256;
+
+                // Background images should keep full resolution. Button/icon images can still opt into downscaling.
+                if (parameter is string p
+                    && int.TryParse(p, NumberStyles.Integer, CultureInfo.InvariantCulture, out int decodeWidth)
+                    && decodeWidth > 0)
+                {
+                    bitmap.DecodePixelWidth = decodeWidth;
+                }
+
                 bitmap.EndInit();
                 bitmap.Freeze();
                 return bitmap;

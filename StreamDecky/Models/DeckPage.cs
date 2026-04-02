@@ -14,10 +14,10 @@ public class DeckPage
     public List<ButtonConfig> Buttons { get; set; } = new();
     public List<StickyNote> StickyNotes { get; set; } = new();
 
-    public void EnsureButtonCount()
+    public void EnsureButtonCount(int? rows = null, int? columns = null)
     {
-        Rows = Math.Clamp(Rows, MinRows, MaxRows);
-        Columns = Math.Clamp(Columns, MinColumns, MaxColumns);
+        Rows = Math.Clamp(rows ?? Rows, MinRows, MaxRows);
+        Columns = Math.Clamp(columns ?? Columns, MinColumns, MaxColumns);
         StickyNotes ??= new List<StickyNote>();
 
         int total = Rows * Columns;

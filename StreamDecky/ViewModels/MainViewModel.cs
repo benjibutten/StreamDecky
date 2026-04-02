@@ -19,6 +19,7 @@ public partial class MainViewModel : ObservableObject
     {
         _profile = _profileService.Load();
         LoadCurrentPage();
+        StickyNotesVisible = _profile.StickyNotesVisible;
 
         // Auto-save: debounce 1 second after last change
         _autoSaveTimer = new System.Timers.Timer(1000) { AutoReset = false };
@@ -66,6 +67,11 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _stickyNotesVisible;
+
+    partial void OnStickyNotesVisibleChanged(bool value)
+    {
+        _profile.StickyNotesVisible = value;
+    }
 
     public bool IsButtonSelected => SelectedButton != null;
 
@@ -193,14 +199,14 @@ public partial class MainViewModel : ObservableObject
 
     public int Rows
     {
-        get => CurrentPage.Rows;
-        set => UpdateCurrentPageLayout(value, Columns);
+        get => _profile.LayoutRows;
+        set => UpdateProfileLayout(value, Columns);
     }
 
     public int Columns
     {
-        get => CurrentPage.Columns;
-        set => UpdateCurrentPageLayout(Rows, value);
+        get => _profile.LayoutColumns;
+        set => UpdateProfileLayout(Rows, value);
     }
 
     public int MinRows => DeckPage.MinRows;
@@ -225,7 +231,7 @@ public partial class MainViewModel : ObservableObject
     {
         int? selectedIndex = preferredSelectedIndex ?? SelectedButton?.Index;
 
-        CurrentPage.EnsureButtonCount();
+        CurrentPage.EnsureButtonCount(Rows, Columns);
         Buttons.Clear();
         for (int i = 0; i < CurrentPage.Buttons.Count; i++)
         {
@@ -283,17 +289,21 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(LayoutSummary));
     }
 
-    private void UpdateCurrentPageLayout(int rows, int columns)
+    private void UpdateProfileLayout(int rows, int columns)
     {
         rows = Math.Clamp(rows, MinRows, MaxRows);
         columns = Math.Clamp(columns, MinColumns, MaxColumns);
 
-        if (CurrentPage.Rows == rows && CurrentPage.Columns == columns)
+        if (_profile.LayoutRows == rows && _profile.LayoutColumns == columns)
             return;
 
         int? selectedIndex = SelectedButton?.Index;
-        CurrentPage.Rows = rows;
-        CurrentPage.Columns = columns;
+        _profile.LayoutRows = rows;
+        _profile.LayoutColumns = columns;
+
+        foreach (var page in _profile.Pages)
+            page.EnsureButtonCount(rows, columns);
+
         LoadCurrentPage(selectedIndex);
         ScheduleAutoSave();
     }
@@ -316,7 +326,6 @@ public partial class MainViewModel : ObservableObject
     private void OpenOverlay()
     {
         _ = RefreshOverlayBackgroundImageAsync();
-        StickyNotesVisible = false;
         IsOverlayOpen = true;
     }
 
@@ -407,8 +416,8 @@ public partial class MainViewModel : ObservableObject
         var newPage = new DeckPage
         {
             Name = $"Page {_profile.Pages.Count + 1}",
-            Rows = CurrentPage.Rows,
-            Columns = CurrentPage.Columns
+            Rows = Rows,
+            Columns = Columns
         };
         _profile.Pages.Add(newPage);
         CurrentPageIndex = _profile.Pages.Count - 1;
@@ -460,6 +469,7 @@ public partial class MainViewModel : ObservableObject
         int offset = StickyNotes.Count * 20;
         var note = new StickyNote
         {
+            Title = $"Sticky note {StickyNotes.Count + 1}",
             Text = string.Empty,
             X = 96 + offset,
             Y = 140 + offset,

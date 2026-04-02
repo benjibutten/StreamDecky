@@ -131,11 +131,62 @@ public partial class OverlayWindow : Window
     {
         if (sender is FrameworkElement element && element.DataContext is StickyNoteViewModel note)
         {
+            if (e.ClickCount >= 2)
+            {
+                StartInlineTitleEdit(note);
+                e.Handled = true;
+                return;
+            }
+
             _draggingStickyNote = note;
             _stickyDragStart = e.GetPosition(this);
             _stickyStartX = note.X;
             _stickyStartY = note.Y;
             element.CaptureMouse();
+            e.Handled = true;
+        }
+    }
+
+    private void StickyNoteText_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is StickyNoteViewModel note)
+        {
+            StartInlineTitleEdit(note);
+            e.Handled = true;
+        }
+    }
+
+    private void StickyNoteTitleEditor_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox editor
+            || editor.DataContext is not StickyNoteViewModel note)
+        {
+            return;
+        }
+
+        editor.GetBindingExpression(System.Windows.Controls.TextBox.TextProperty)?.UpdateSource();
+        note.IsEditingTitle = false;
+    }
+
+    private void StickyNoteTitleEditor_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox editor
+            || editor.DataContext is not StickyNoteViewModel note)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            editor.GetBindingExpression(System.Windows.Controls.TextBox.TextProperty)?.UpdateSource();
+            note.IsEditingTitle = false;
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            // Revert to the currently stored title.
+            editor.Text = note.Title;
+            note.IsEditingTitle = false;
             e.Handled = true;
         }
     }
@@ -153,10 +204,10 @@ public partial class OverlayWindow : Window
         var dy = pos.Y - _stickyDragStart.Y;
 
         double maxX = Math.Max(0, ActualWidth - _draggingStickyNote.Width - 12);
-        double maxY = Math.Max(42, ActualHeight - _draggingStickyNote.Height - 12);
+        double maxY = Math.Max(0, ActualHeight - _draggingStickyNote.DisplayHeight - 12);
 
         _draggingStickyNote.X = Math.Clamp(_stickyStartX + dx, 0, maxX);
-        _draggingStickyNote.Y = Math.Clamp(_stickyStartY + dy, 42, maxY);
+        _draggingStickyNote.Y = Math.Clamp(_stickyStartY + dy, 0, maxY);
     }
 
     private void StickyNoteHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -181,6 +232,62 @@ public partial class OverlayWindow : Window
         {
             _viewModel.SetStickyNoteColor(note, color);
         }
+    }
+
+    private void StickyNoteMinimize_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is StickyNoteViewModel note)
+        {
+            note.IsMinimized = !note.IsMinimized;
+
+            double maxX = Math.Max(0, ActualWidth - note.Width - 12);
+            double maxY = Math.Max(0, ActualHeight - note.DisplayHeight - 12);
+            note.X = Math.Clamp(note.X, 0, maxX);
+            note.Y = Math.Clamp(note.Y, 0, maxY);
+        }
+    }
+
+    private void StartInlineTitleEdit(StickyNoteViewModel note)
+    {
+        note.IsEditingTitle = true;
+
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            var editor = FindDescendant(this,
+                static tb => tb.Tag is string tag && tag == "StickyNoteTitleEditor",
+                note);
+
+            if (editor == null)
+                return;
+
+            editor.Focus();
+            editor.SelectAll();
+        }), System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private static System.Windows.Controls.TextBox? FindDescendant(
+        DependencyObject root,
+        Func<System.Windows.Controls.TextBox, bool> predicate,
+        StickyNoteViewModel note)
+    {
+        int childrenCount = VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < childrenCount; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+
+            if (child is System.Windows.Controls.TextBox textBox
+                && ReferenceEquals(textBox.DataContext, note)
+                && predicate(textBox))
+            {
+                return textBox;
+            }
+
+            var nested = FindDescendant(child, predicate, note);
+            if (nested != null)
+                return nested;
+        }
+
+        return null;
     }
 
     protected override void OnDeactivated(EventArgs e)

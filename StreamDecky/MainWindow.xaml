@@ -553,7 +553,7 @@
                                                                         </VisualBrush.Visual>
                                                                     </VisualBrush>
                                                                 </Grid.OpacityMask>
-                                                                <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageSource}}"
+                                                                 <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageSource}, ConverterParameter=256}"
                                                                        Stretch="UniformToFill"
                                                                        Visibility="{Binding ImagePath, Converter={StaticResource HasTextVisibility}}"/>
                                                                  <StackPanel x:Name="ConfiguredContent" VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -846,7 +846,7 @@
                         <Border Height="60" Margin="0,0,0,16"
                                 Background="#1A1A2A" CornerRadius="4"
                                 Visibility="{Binding SelectedButton.ImagePath, Converter={StaticResource HasTextVisibility}}">
-                            <Image Source="{Binding SelectedButton.ImagePath, Converter={StaticResource PathToImageSource}}"
+                            <Image Source="{Binding SelectedButton.ImagePath, Converter={StaticResource PathToImageSource}, ConverterParameter=256}"
                                    Stretch="Uniform" Margin="4"/>
                         </Border>
 
