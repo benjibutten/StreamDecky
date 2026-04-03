@@ -382,13 +382,180 @@
                         </Style>
                     </Button.Style>
                 </Button>
+
+                <Button x:Name="NotesAreasButton"
+                        Content="🗂 Notes Areas"
+                        DockPanel.Dock="Right"
+                        HorizontalAlignment="Right"
+                        Click="ToggleNotesAreasPopup_Click"
+                        Background="#2D2D44"
+                        Foreground="#AAAAAA"
+                        FontSize="14"
+                        Padding="14,8"
+                        Cursor="Hand"
+                        BorderThickness="0"
+                        Margin="0,0,8,0">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}"
+                                                CornerRadius="6"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#3D3D54"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Popup x:Name="NotesAreasPopup"
+                       DockPanel.Dock="Right"
+                       PlacementTarget="{Binding ElementName=NotesAreasButton}"
+                       Placement="Bottom"
+                       VerticalOffset="8"
+                       StaysOpen="False"
+                       AllowsTransparency="True"
+                       PopupAnimation="Fade">
+                    <Border DataContext="{Binding DataContext, ElementName=MainRootWindow}"
+                            Background="#2A2A42"
+                            BorderBrush="#4C4C70"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12"
+                            Width="360">
+                        <StackPanel>
+                            <TextBlock Text="Notes Areas"
+                                       Foreground="White"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,10"/>
+
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="+ Add" Click="AddNotePage_Click"
+                                            Background="#2D5A27" Foreground="White"
+                                            FontSize="11" Padding="9,4" Margin="4,0,0,0"
+                                            BorderThickness="0" Cursor="Hand">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <Button Content="− Remove" Click="RemoveNotePage_Click"
+                                            IsEnabled="{Binding CanRemoveNotePage}"
+                                            Background="#5A2727" Foreground="White"
+                                            FontSize="11" Padding="9,4" Margin="4,0,0,0"
+                                            BorderThickness="0" Cursor="Hand">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
+                                                                    Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="◀"
+                                            Command="{Binding PreviousNotePageCommand}"
+                                            IsEnabled="{Binding CanGoToPreviousNotePage}"
+                                            Background="#2D2D44" Foreground="White"
+                                            FontSize="12" Padding="8,2"
+                                            BorderThickness="0" Cursor="Hand">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
+                                                                    Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <TextBlock Text="{Binding NotePageIndicator}"
+                                               Foreground="#B9C7D6"
+                                               FontSize="12"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0"/>
+
+                                    <Button Content="▶"
+                                            Command="{Binding NextNotePageCommand}"
+                                            IsEnabled="{Binding CanGoToNextNotePage}"
+                                            Background="#2D2D44" Foreground="White"
+                                            FontSize="12" Padding="8,2"
+                                            BorderThickness="0" Cursor="Hand">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
+                                                                    Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </StackPanel>
+                            </DockPanel>
+
+                            <TextBlock Text="Overlayn kan bläddra mellan areas direkt, men add/remove görs här för att undvika popup-problem i overlayläget."
+                                       Foreground="#8D9BAF"
+                                       FontSize="10"
+                                       TextWrapping="Wrap"
+                                       Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </Popup>
             </DockPanel>
 
             <!-- Page Navigation -->
             <Border Grid.Row="1" Background="#252536" CornerRadius="8" Padding="8,6" Margin="0,0,0,10">
-                <DockPanel>
-                    <!-- Right side: Add/Remove page -->
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0">
+                        <!-- Right side: Add/Remove page + virtual layout -->
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Content="+ Page" Click="AddPage_Click"
                                 Background="#2D5A27" Foreground="White"
                                 FontSize="12" Padding="10,4" Margin="4,0,0,0"
@@ -425,10 +592,65 @@
                                 </Style>
                             </Button.Style>
                         </Button>
-                    </StackPanel>
+                        <Button Content="+ Virtual" Click="AddVirtualLayout_Click"
+                                Background="#285A74" Foreground="White"
+                                FontSize="12" Padding="10,4" Margin="4,0,0,0"
+                                BorderThickness="0" Cursor="Hand">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="− Virtual" Click="RemoveVirtualLayout_Click"
+                                Background="#744628" Foreground="White"
+                                FontSize="12" Padding="10,4" Margin="4,0,0,0"
+                                BorderThickness="0" Cursor="Hand"
+                                Visibility="{Binding IsViewingVirtualLayout, Converter={StaticResource BoolToVisibility}}">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="Rename" Click="RenameLayout_Click"
+                                Background="#3F4F86" Foreground="White"
+                                FontSize="12" Padding="10,4" Margin="4,0,0,0"
+                                BorderThickness="0" Cursor="Hand">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        </StackPanel>
 
-                    <!-- Left side: Navigation -->
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Left side: Navigation -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Content="◀" Click="PreviousPage_Click"
                                 IsEnabled="{Binding CanGoToPreviousPage}"
                                 Background="#2D2D44" Foreground="White"
@@ -455,6 +677,13 @@
                         <TextBlock Text="{Binding PageIndicator}" 
                                    Foreground="#666" FontSize="12"
                                    VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <Border Background="#303048" CornerRadius="4" Padding="7,2" Margin="0,0,10,0">
+                            <TextBlock Text="{Binding CurrentLayoutKindLabel}"
+                                       Foreground="#D4D4E4"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Border>
                         <Button Content="▶" Click="NextPage_Click"
                                 IsEnabled="{Binding CanGoToNextPage}"
                                 Background="#2D2D44" Foreground="White"
@@ -475,8 +704,55 @@
                                 </Style>
                             </Button.Style>
                         </Button>
-                    </StackPanel>
-                </DockPanel>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Grid Grid.Row="1" Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Go To Layout"
+                                   Foreground="#8C93AA"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Margin="2,0,8,0"/>
+
+                        <ComboBox Grid.Column="1"
+                                  MinWidth="140"
+                                  Margin="0,0,8,0"
+                                  HorizontalAlignment="Stretch"
+                                  ItemsSource="{Binding LayoutTargets}"
+                                  DisplayMemberPath="Label"
+                                  SelectedValuePath="Id"
+                                  SelectedValue="{Binding SelectedLayoutId, Mode=TwoWay}"
+                                  Style="{StaticResource DarkComboBox}"/>
+
+                        <Button Content="↩ Main" Click="ExitVirtualLayout_Click"
+                                Grid.Column="2"
+                                Background="#3E3E5E" Foreground="White"
+                                FontSize="12" Padding="10,4"
+                                BorderThickness="0" Cursor="Hand"
+                                Visibility="{Binding IsViewingVirtualLayout, Converter={StaticResource BoolToVisibility}}">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
+                </Grid>
             </Border>
 
             <!-- Button Grid -->
@@ -511,6 +787,7 @@
                                         Converter={StaticResource SpacingToThickness}}"
                                     Command="{Binding DataContext.SelectButtonCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"
+                                    MouseDoubleClick="DeckEditorButton_MouseDoubleClick"
                                     PreviewMouseRightButtonDown="DeckEditorButton_PreviewMouseRightButtonDown"
                                     Cursor="Hand">
                                 <Button.ContextMenu>
@@ -942,6 +1219,36 @@
                                      Margin="0,0,0,6"/>
                             <TextBlock Text="Examples: t, {ENTER}, ^c (Ctrl+C), +{TAB} (Shift+Tab)" 
                                        Foreground="#555" FontSize="10" TextWrapping="Wrap"
+                                       Margin="0,0,0,10"/>
+                        </StackPanel>
+
+                        <!-- Layout Navigation Settings (visible when ActionType is LayoutNavigation) -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedButton.ActionType}" Value="LayoutNavigation">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Text="LAYOUT NAVIGATION" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                            <TextBlock Text="Target Layout" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding LayoutTargets}"
+                                      DisplayMemberPath="Label"
+                                      SelectedValuePath="Id"
+                                      SelectedValue="{Binding SelectedButton.TargetLayoutId, Mode=TwoWay}"
+                                      Style="{StaticResource DarkComboBox}"
+                                      Margin="0,0,0,6"/>
+
+                            <TextBlock Text="Tips: välj en Virtual-layout för dolda menyer, eller en vanlig Page för att hoppa direkt dit."
+                                       Foreground="#777"
+                                       FontSize="10"
+                                       TextWrapping="Wrap"
                                        Margin="0,0,0,10"/>
                         </StackPanel>
 

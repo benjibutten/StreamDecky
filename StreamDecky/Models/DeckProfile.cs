@@ -19,10 +19,17 @@ public class DeckProfile
     public int LayoutRows { get; set; }
     public int LayoutColumns { get; set; }
     public List<DeckPage> Pages { get; set; } = new() { new DeckPage() };
+    public List<DeckPage> VirtualLayouts { get; set; } = new();
+    public List<NotePage> NotePages { get; set; } = new() { new NotePage() };
+    public int CurrentNotePageIndex { get; set; }
 
     public void Initialize()
     {
         ButtonOverlayOpacity = Math.Clamp(ButtonOverlayOpacity, 0.2, 1.0);
+
+        Pages ??= new List<DeckPage>();
+        VirtualLayouts ??= new List<DeckPage>();
+        NotePages ??= new List<NotePage>();
 
         if (Pages.Count == 0)
             Pages.Add(new DeckPage());
@@ -39,5 +46,42 @@ public class DeckProfile
 
         foreach (var page in Pages)
             page.EnsureButtonCount(LayoutRows, LayoutColumns);
+
+        foreach (var layout in VirtualLayouts)
+            layout.EnsureButtonCount(LayoutRows, LayoutColumns);
+
+        MigrateLegacyStickyNotes();
+
+        if (NotePages.Count == 0)
+            NotePages.Add(new NotePage());
+
+        foreach (var notePage in NotePages)
+            notePage.EnsureInitialized();
+
+        CurrentNotePageIndex = Math.Clamp(CurrentNotePageIndex, 0, NotePages.Count - 1);
+    }
+
+    private void MigrateLegacyStickyNotes()
+    {
+        if (NotePages.Count > 0)
+            return;
+
+        bool hasLegacyNotes = Pages.Any(page => page.StickyNotes is { Count: > 0 });
+        if (!hasLegacyNotes)
+            return;
+
+        for (int i = 0; i < Pages.Count; i++)
+        {
+            var page = Pages[i];
+            var migratedNotes = page.StickyNotes ?? new List<StickyNote>();
+
+            NotePages.Add(new NotePage
+            {
+                Name = $"Notes {i + 1}",
+                StickyNotes = migratedNotes
+            });
+
+            page.StickyNotes = new List<StickyNote>();
+        }
     }
 }

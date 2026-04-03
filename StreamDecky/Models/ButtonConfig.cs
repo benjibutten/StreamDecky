@@ -23,6 +23,9 @@ public class ButtonConfig
     // Multi-Action properties
     public List<ActionStep> Steps { get; set; } = new();
 
+    // Layout navigation action properties
+    public string TargetLayoutId { get; set; } = string.Empty;
+
     // Shape
     public ButtonShape Shape { get; set; } = ButtonShape.None;
 }

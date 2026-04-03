@@ -12,14 +12,21 @@ public partial class MainViewModel : ObservableObject
     private readonly ProfileService _profileService = new();
     private readonly TextInputActionService _textInputService = new();
     private readonly MultiActionService _multiActionService = new();
-    private DeckProfile _profile;
     private readonly System.Timers.Timer _autoSaveTimer;
+
+    private DeckProfile _profile;
     private ButtonConfig? _buttonClipboard;
+    private int _currentVirtualLayoutIndex = -1;
+
+    public ObservableCollection<LayoutTargetOption> LayoutTargets { get; } = new();
 
     public MainViewModel()
     {
         _profile = _profileService.Load();
-        LoadCurrentPage();
+        _currentPageIndex = 0;
+        _currentNotePageIndex = Math.Clamp(_profile.CurrentNotePageIndex, 0, _profile.NotePages.Count - 1);
+
+        LoadCurrentLayout();
         StickyNotesVisible = _profile.StickyNotesVisible;
 
         // Auto-save: debounce 1 second after last change
@@ -34,6 +41,9 @@ public partial class MainViewModel : ObservableObject
 
         // Listen for any property change to trigger auto-save
         PropertyChanged += (_, _) => ScheduleAutoSave();
+
+        RebuildLayoutTargets();
+        SyncSelectedLayoutId();
 
         _ = RefreshOverlayBackgroundImageAsync();
     }
@@ -55,6 +65,9 @@ public partial class MainViewModel : ObservableObject
     private int _currentPageIndex;
 
     [ObservableProperty]
+    private int _currentNotePageIndex;
+
+    [ObservableProperty]
     private bool _isOverlayOpen;
 
     [ObservableProperty]
@@ -69,12 +82,42 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _stickyNotesVisible;
 
+    [ObservableProperty]
+    private string? _selectedLayoutId;
+
     partial void OnStickyNotesVisibleChanged(bool value)
     {
         _profile.StickyNotesVisible = value;
     }
 
+    partial void OnCurrentNotePageIndexChanged(int value)
+    {
+        if (_profile.NotePages.Count == 0)
+            return;
+
+        int clamped = Math.Clamp(value, 0, _profile.NotePages.Count - 1);
+        if (clamped != value)
+        {
+            CurrentNotePageIndex = clamped;
+            return;
+        }
+
+        _profile.CurrentNotePageIndex = clamped;
+        LoadStickyNotes();
+        NotifyNotePageChanged();
+    }
+
+    partial void OnSelectedLayoutIdChanged(string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            SwitchToLayoutById(value);
+    }
+
     public bool IsButtonSelected => SelectedButton != null;
+    public bool IsViewingVirtualLayout => _currentVirtualLayoutIndex >= 0;
+    public bool HasVirtualLayouts => _profile.VirtualLayouts.Count > 0;
+    public string CurrentLayoutKindLabel => IsViewingVirtualLayout ? "Virtual Layout" : "Page";
+    public bool CanRemoveCurrentVirtualLayout => IsViewingVirtualLayout && _profile.VirtualLayouts.Count > 0;
 
     public DeckProfile Profile => _profile;
 
@@ -228,25 +271,55 @@ public partial class MainViewModel : ObservableObject
     public int ButtonSlots => Rows * Columns;
     public string LayoutSummary => $"{Rows} x {Columns} ({ButtonSlots} slots)";
 
-    public string CurrentPageName => CurrentPage.Name;
+    public string CurrentPageName => CurrentLayout.Name;
+
     public int PageCount => _profile.Pages.Count;
-    public bool CanGoToPreviousPage => CurrentPageIndex > 0;
-    public bool CanGoToNextPage => CurrentPageIndex < _profile.Pages.Count - 1;
-    public string PageIndicator => $"{CurrentPageIndex + 1} / {PageCount}";
-    public bool HasMultiplePages => _profile.Pages.Count > 1;
+    public bool CanGoToPreviousPage => !IsViewingVirtualLayout && CurrentPageIndex > 0;
+    public bool CanGoToNextPage => !IsViewingVirtualLayout && CurrentPageIndex < _profile.Pages.Count - 1;
+    public string PageIndicator => IsViewingVirtualLayout
+        ? $"V {_currentVirtualLayoutIndex + 1} / {_profile.VirtualLayouts.Count}"
+        : $"{CurrentPageIndex + 1} / {PageCount}";
+
+    public bool HasMultiplePages => !IsViewingVirtualLayout && _profile.Pages.Count > 1;
+
+    public string CurrentNotePageName => CurrentNotePage.Name;
+    public int NotePageCount => _profile.NotePages.Count;
+    public bool CanGoToPreviousNotePage => CurrentNotePageIndex > 0;
+    public bool CanGoToNextNotePage => CurrentNotePageIndex < _profile.NotePages.Count - 1;
+    public bool CanRemoveNotePage => NotePageCount > 1;
+    public string NotePageIndicator => $"{CurrentNotePageIndex + 1} / {NotePageCount}";
+    public bool HasMultipleNotePages => NotePageCount > 1;
+    public int CurrentNotePageNoteCount => CurrentNotePage.StickyNotes.Count;
+
     public bool HasStickyNotes => StickyNotes.Count > 0;
 
-    private DeckPage CurrentPage => _profile.Pages[CurrentPageIndex];
+    private DeckPage CurrentRegularPage => _profile.Pages[Math.Clamp(CurrentPageIndex, 0, _profile.Pages.Count - 1)];
+    private DeckPage CurrentVirtualLayout
+    {
+        get
+        {
+            if (_profile.VirtualLayouts.Count == 0)
+                return CurrentRegularPage;
 
-    private void LoadCurrentPage(int? preferredSelectedIndex = null)
+            int index = Math.Clamp(_currentVirtualLayoutIndex, 0, _profile.VirtualLayouts.Count - 1);
+            return _profile.VirtualLayouts[index];
+        }
+    }
+
+    private DeckPage CurrentLayout => IsViewingVirtualLayout && _profile.VirtualLayouts.Count > 0
+        ? CurrentVirtualLayout
+        : CurrentRegularPage;
+    private NotePage CurrentNotePage => _profile.NotePages[Math.Clamp(CurrentNotePageIndex, 0, _profile.NotePages.Count - 1)];
+
+    private void LoadCurrentLayout(int? preferredSelectedIndex = null)
     {
         int? selectedIndex = preferredSelectedIndex ?? SelectedButton?.Index;
 
-        CurrentPage.EnsureButtonCount(Rows, Columns);
-        Buttons.Clear();
-        for (int i = 0; i < CurrentPage.Buttons.Count; i++)
+        CurrentLayout.EnsureButtonCount(Rows, Columns);
+        var buttonViewModels = new List<ButtonViewModel>(CurrentLayout.Buttons.Count);
+        for (int i = 0; i < CurrentLayout.Buttons.Count; i++)
         {
-            var bvm = new ButtonViewModel(CurrentPage.Buttons[i], i);
+            var bvm = new ButtonViewModel(CurrentLayout.Buttons[i], i);
             bvm.PropertyChanged += (_, e) =>
             {
                 ScheduleAutoSave();
@@ -261,8 +334,10 @@ public partial class MainViewModel : ObservableObject
                     ButtonVisualVersion++;
                 }
             };
-            Buttons.Add(bvm);
+            buttonViewModels.Add(bvm);
         }
+
+        Buttons = new ObservableCollection<ButtonViewModel>(buttonViewModels);
 
         ButtonVisualVersion++;
 
@@ -279,17 +354,21 @@ public partial class MainViewModel : ObservableObject
 
         LoadStickyNotes();
         NotifyLayoutChanged();
+        SyncSelectedLayoutId();
     }
 
     private void LoadStickyNotes()
     {
-        StickyNotes.Clear();
-        foreach (var note in CurrentPage.StickyNotes)
+        var noteViewModels = new List<StickyNoteViewModel>(CurrentNotePage.StickyNotes.Count);
+        foreach (var note in CurrentNotePage.StickyNotes)
         {
-            StickyNotes.Add(new StickyNoteViewModel(note, ScheduleAutoSave));
+            noteViewModels.Add(new StickyNoteViewModel(note, ScheduleAutoSave));
         }
 
+        StickyNotes = new ObservableCollection<StickyNoteViewModel>(noteViewModels);
+
         OnPropertyChanged(nameof(HasStickyNotes));
+        OnPropertyChanged(nameof(CurrentNotePageNoteCount));
     }
 
     private void NotifyLayoutChanged()
@@ -315,7 +394,10 @@ public partial class MainViewModel : ObservableObject
         foreach (var page in _profile.Pages)
             page.EnsureButtonCount(rows, columns);
 
-        LoadCurrentPage(selectedIndex);
+        foreach (var layout in _profile.VirtualLayouts)
+            layout.EnsureButtonCount(rows, columns);
+
+        LoadCurrentLayout(selectedIndex);
         ScheduleAutoSave();
     }
 
@@ -352,8 +434,9 @@ public partial class MainViewModel : ObservableObject
         if (button.ActionType == ActionType.None)
             return;
 
-        // Close overlay first so the target window gets focus
-        IsOverlayOpen = false;
+        bool closesOverlay = button.ActionType is ActionType.TextInput or ActionType.KeyPress or ActionType.MultiAction;
+        if (closesOverlay)
+            IsOverlayOpen = false;
 
         switch (button.ActionType)
         {
@@ -365,6 +448,9 @@ public partial class MainViewModel : ObservableObject
                 break;
             case ActionType.MultiAction:
                 await _multiActionService.ExecuteAsync(button.Config, NaturalTypingEnabled);
+                break;
+            case ActionType.LayoutNavigation:
+                SwitchToLayoutById(button.Config.TargetLayoutId);
                 break;
         }
     }
@@ -378,10 +464,13 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void PreviousPage()
     {
+        if (IsViewingVirtualLayout)
+            return;
+
         if (CurrentPageIndex > 0)
         {
             CurrentPageIndex--;
-            LoadCurrentPage();
+            LoadCurrentLayout();
             NotifyPageChanged();
         }
     }
@@ -389,10 +478,13 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void NextPage()
     {
+        if (IsViewingVirtualLayout)
+            return;
+
         if (CurrentPageIndex < _profile.Pages.Count - 1)
         {
             CurrentPageIndex++;
-            LoadCurrentPage();
+            LoadCurrentLayout();
             NotifyPageChanged();
         }
     }
@@ -431,19 +523,30 @@ public partial class MainViewModel : ObservableObject
             Columns = Columns
         };
         _profile.Pages.Add(newPage);
+        SetVirtualLayoutIndex(-1);
         CurrentPageIndex = _profile.Pages.Count - 1;
-        LoadCurrentPage();
+        LoadCurrentLayout();
+        RebuildLayoutTargets();
         NotifyPageChanged();
     }
 
     [RelayCommand]
     private void RemovePage()
     {
+        if (IsViewingVirtualLayout)
+            return;
+
         if (_profile.Pages.Count <= 1) return;
+
+        string removedId = CurrentRegularPage.Id;
         _profile.Pages.RemoveAt(CurrentPageIndex);
+        ClearLayoutTargetReferences(removedId);
+
         if (CurrentPageIndex >= _profile.Pages.Count)
             CurrentPageIndex = _profile.Pages.Count - 1;
-        LoadCurrentPage();
+
+        LoadCurrentLayout();
+        RebuildLayoutTargets();
         NotifyPageChanged();
     }
 
@@ -452,20 +555,144 @@ public partial class MainViewModel : ObservableObject
     {
         if (!string.IsNullOrWhiteSpace(newName))
         {
-            CurrentPage.Name = newName;
+            CurrentLayout.Name = newName.Trim();
             OnPropertyChanged(nameof(CurrentPageName));
+            RebuildLayoutTargets();
         }
+    }
+
+    [RelayCommand]
+    private void AddVirtualLayout()
+    {
+        var virtualLayout = new DeckPage
+        {
+            Name = $"Virtual {_profile.VirtualLayouts.Count + 1}",
+            Rows = Rows,
+            Columns = Columns
+        };
+
+        virtualLayout.EnsureButtonCount(Rows, Columns);
+        _profile.VirtualLayouts.Add(virtualLayout);
+        RebuildLayoutTargets();
+        SwitchToLayoutById(virtualLayout.Id);
+        NotifyPageChanged();
+    }
+
+    [RelayCommand]
+    private void RemoveVirtualLayout()
+    {
+        if (!IsViewingVirtualLayout || _profile.VirtualLayouts.Count == 0)
+            return;
+
+        int removeIndex = _currentVirtualLayoutIndex;
+        string removedId = _profile.VirtualLayouts[removeIndex].Id;
+
+        _profile.VirtualLayouts.RemoveAt(removeIndex);
+        ClearLayoutTargetReferences(removedId);
+
+        if (_profile.VirtualLayouts.Count == 0)
+        {
+            SetVirtualLayoutIndex(-1);
+            LoadCurrentLayout();
+        }
+        else
+        {
+            int nextIndex = Math.Min(removeIndex, _profile.VirtualLayouts.Count - 1);
+            SetVirtualLayoutIndex(nextIndex);
+            LoadCurrentLayout();
+        }
+
+        RebuildLayoutTargets();
+        NotifyPageChanged();
+    }
+
+    [RelayCommand]
+    private void ExitVirtualLayout()
+    {
+        if (!IsViewingVirtualLayout)
+            return;
+
+        SetVirtualLayoutIndex(-1);
+        LoadCurrentLayout();
+        NotifyPageChanged();
     }
 
     private void NotifyPageChanged()
     {
+        OnPropertyChanged(nameof(IsViewingVirtualLayout));
+        OnPropertyChanged(nameof(CurrentLayoutKindLabel));
+        OnPropertyChanged(nameof(HasVirtualLayouts));
+        OnPropertyChanged(nameof(CanRemoveCurrentVirtualLayout));
         OnPropertyChanged(nameof(CurrentPageName));
         OnPropertyChanged(nameof(PageCount));
         OnPropertyChanged(nameof(CanGoToPreviousPage));
         OnPropertyChanged(nameof(CanGoToNextPage));
         OnPropertyChanged(nameof(PageIndicator));
         OnPropertyChanged(nameof(HasMultiplePages));
+
+        SyncSelectedLayoutId();
         NotifyLayoutChanged();
+    }
+
+    [RelayCommand]
+    private void PreviousNotePage()
+    {
+        if (CanGoToPreviousNotePage)
+            CurrentNotePageIndex--;
+    }
+
+    [RelayCommand]
+    private void NextNotePage()
+    {
+        if (CanGoToNextNotePage)
+            CurrentNotePageIndex++;
+    }
+
+    [RelayCommand]
+    private void AddNotePage()
+    {
+        var notePage = new NotePage
+        {
+            Name = $"Notes {_profile.NotePages.Count + 1}"
+        };
+        notePage.EnsureInitialized();
+
+        _profile.NotePages.Add(notePage);
+        CurrentNotePageIndex = _profile.NotePages.Count - 1;
+    }
+
+    [RelayCommand]
+    private void RemoveNotePage()
+    {
+        if (_profile.NotePages.Count <= 1)
+            return;
+
+        int removedIndex = CurrentNotePageIndex;
+        _profile.NotePages.RemoveAt(removedIndex);
+
+        if (CurrentNotePageIndex >= _profile.NotePages.Count)
+        {
+            CurrentNotePageIndex = _profile.NotePages.Count - 1;
+        }
+        else
+        {
+            _profile.CurrentNotePageIndex = CurrentNotePageIndex;
+            LoadStickyNotes();
+            NotifyNotePageChanged();
+        }
+    }
+
+    private void NotifyNotePageChanged()
+    {
+        OnPropertyChanged(nameof(CurrentNotePageName));
+        OnPropertyChanged(nameof(NotePageCount));
+        OnPropertyChanged(nameof(CanGoToPreviousNotePage));
+        OnPropertyChanged(nameof(CanGoToNextNotePage));
+        OnPropertyChanged(nameof(CanRemoveNotePage));
+        OnPropertyChanged(nameof(NotePageIndicator));
+        OnPropertyChanged(nameof(HasMultipleNotePages));
+        OnPropertyChanged(nameof(HasStickyNotes));
+        OnPropertyChanged(nameof(CurrentNotePageNoteCount));
     }
 
     [RelayCommand]
@@ -489,11 +716,12 @@ public partial class MainViewModel : ObservableObject
             Color = "#F8E784"
         };
 
-        CurrentPage.StickyNotes.Add(note);
+        CurrentNotePage.StickyNotes.Add(note);
         StickyNotes.Add(new StickyNoteViewModel(note, ScheduleAutoSave));
 
         StickyNotesVisible = true;
         OnPropertyChanged(nameof(HasStickyNotes));
+        OnPropertyChanged(nameof(CurrentNotePageNoteCount));
         ScheduleAutoSave();
     }
 
@@ -503,14 +731,28 @@ public partial class MainViewModel : ObservableObject
         if (note == null)
             return;
 
-        CurrentPage.StickyNotes.Remove(note.Model);
+        CurrentNotePage.StickyNotes.Remove(note.Model);
         StickyNotes.Remove(note);
 
         if (StickyNotes.Count == 0)
             StickyNotesVisible = false;
 
         OnPropertyChanged(nameof(HasStickyNotes));
+        OnPropertyChanged(nameof(CurrentNotePageNoteCount));
         ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void FollowNavigationTarget(ButtonViewModel? sourceButton)
+    {
+        if (sourceButton == null
+            || sourceButton.ActionType != ActionType.LayoutNavigation
+            || string.IsNullOrWhiteSpace(sourceButton.TargetLayoutId))
+        {
+            return;
+        }
+
+        _ = SwitchToLayoutById(sourceButton.TargetLayoutId, sourceButton.Index);
     }
 
     public void SetStickyNoteColor(StickyNoteViewModel? note, string color)
@@ -551,11 +793,11 @@ public partial class MainViewModel : ObservableObject
 
     private int FindNextEmptyButtonIndex(int sourceIndex)
     {
-        int total = CurrentPage.Buttons.Count;
+        int total = CurrentLayout.Buttons.Count;
         for (int offset = 1; offset < total; offset++)
         {
             int idx = (sourceIndex + offset) % total;
-            if (IsButtonSlotEmpty(CurrentPage.Buttons[idx]))
+            if (IsButtonSlotEmpty(CurrentLayout.Buttons[idx]))
                 return idx;
         }
 
@@ -570,6 +812,7 @@ public partial class MainViewModel : ObservableObject
             && string.IsNullOrWhiteSpace(config.ImagePath)
             && string.IsNullOrWhiteSpace(config.Text)
             && string.IsNullOrWhiteSpace(config.KeyText)
+            && string.IsNullOrWhiteSpace(config.TargetLayoutId)
             && config.Shape == ButtonShape.None
             && !config.PressEnterAfter
             && config.Steps.Count == 0;
@@ -590,6 +833,7 @@ public partial class MainViewModel : ObservableObject
             PressEnterAfter = source.PressEnterAfter,
             TextMode = source.TextMode,
             KeyText = source.KeyText,
+            TargetLayoutId = source.TargetLayoutId,
             Shape = source.Shape
         };
 
@@ -626,8 +870,8 @@ public partial class MainViewModel : ObservableObject
         int targetIndex = FindNextEmptyButtonIndex(sourceIndex);
         if (targetIndex < 0) return;
 
-        CurrentPage.Buttons[targetIndex] = CloneButtonConfig(SelectedButton.Config);
-        LoadCurrentPage(targetIndex);
+        CurrentLayout.Buttons[targetIndex] = CloneButtonConfig(SelectedButton.Config);
+        LoadCurrentLayout(targetIndex);
         ScheduleAutoSave();
     }
 
@@ -646,8 +890,8 @@ public partial class MainViewModel : ObservableObject
         if (_buttonClipboard == null || target == null)
             return;
 
-        CurrentPage.Buttons[target.Index] = CloneButtonConfig(_buttonClipboard);
-        LoadCurrentPage(target.Index);
+        CurrentLayout.Buttons[target.Index] = CloneButtonConfig(_buttonClipboard);
+        LoadCurrentLayout(target.Index);
         ScheduleAutoSave();
     }
 
@@ -663,6 +907,7 @@ public partial class MainViewModel : ObservableObject
         SelectedButton.IconText = string.Empty;
         SelectedButton.ImagePath = string.Empty;
         SelectedButton.KeyText = string.Empty;
+        SelectedButton.TargetLayoutId = string.Empty;
         SelectedButton.Shape = Models.ButtonShape.None;
         SelectedButton.Steps.Clear();
         OnPropertyChanged(nameof(SelectedButton));
@@ -704,6 +949,101 @@ public partial class MainViewModel : ObservableObject
         {
             SelectedButton.Steps.Move(index, index + 1);
             ScheduleAutoSave();
+        }
+    }
+
+    private bool SwitchToLayoutById(string layoutId, int? preferredSelectedIndex = null)
+    {
+        if (string.IsNullOrWhiteSpace(layoutId))
+            return false;
+
+        if (string.Equals(CurrentLayout.Id, layoutId, StringComparison.Ordinal) && preferredSelectedIndex == null)
+            return true;
+
+        int regularIndex = _profile.Pages.FindIndex(page => string.Equals(page.Id, layoutId, StringComparison.Ordinal));
+        if (regularIndex >= 0)
+        {
+            SetVirtualLayoutIndex(-1);
+            CurrentPageIndex = regularIndex;
+            LoadCurrentLayout(preferredSelectedIndex);
+            NotifyPageChanged();
+            return true;
+        }
+
+        int virtualIndex = _profile.VirtualLayouts.FindIndex(page => string.Equals(page.Id, layoutId, StringComparison.Ordinal));
+        if (virtualIndex >= 0)
+        {
+            SetVirtualLayoutIndex(virtualIndex);
+            LoadCurrentLayout(preferredSelectedIndex);
+            NotifyPageChanged();
+            return true;
+        }
+
+        return false;
+    }
+
+    private void SetVirtualLayoutIndex(int value)
+    {
+        if (_currentVirtualLayoutIndex == value)
+            return;
+
+        _currentVirtualLayoutIndex = value;
+        OnPropertyChanged(nameof(IsViewingVirtualLayout));
+    }
+
+    private void RebuildLayoutTargets()
+    {
+        LayoutTargets.Clear();
+
+        for (int i = 0; i < _profile.Pages.Count; i++)
+        {
+            var page = _profile.Pages[i];
+            LayoutTargets.Add(new LayoutTargetOption
+            {
+                Id = page.Id,
+                Label = $"Page {i + 1}: {page.Name}"
+            });
+        }
+
+        for (int i = 0; i < _profile.VirtualLayouts.Count; i++)
+        {
+            var layout = _profile.VirtualLayouts[i];
+            LayoutTargets.Add(new LayoutTargetOption
+            {
+                Id = layout.Id,
+                Label = $"Virtual {i + 1}: {layout.Name}"
+            });
+        }
+
+        OnPropertyChanged(nameof(HasVirtualLayouts));
+        SyncSelectedLayoutId();
+    }
+
+    private void SyncSelectedLayoutId()
+    {
+        string currentId = CurrentLayout.Id;
+        if (!string.Equals(SelectedLayoutId, currentId, StringComparison.Ordinal))
+            SelectedLayoutId = currentId;
+    }
+
+    private void ClearLayoutTargetReferences(string removedLayoutId)
+    {
+        if (string.IsNullOrWhiteSpace(removedLayoutId))
+            return;
+
+        foreach (var layout in _profile.Pages)
+            ClearLayoutTargetReferences(layout, removedLayoutId);
+
+        foreach (var layout in _profile.VirtualLayouts)
+            ClearLayoutTargetReferences(layout, removedLayoutId);
+    }
+
+    private static void ClearLayoutTargetReferences(DeckPage layout, string removedLayoutId)
+    {
+        foreach (var button in layout.Buttons)
+        {
+            if (string.Equals(button.TargetLayoutId, removedLayoutId, StringComparison.Ordinal))
+                button.TargetLayoutId = string.Empty;
         }
     }
 }

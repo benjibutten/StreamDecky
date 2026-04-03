@@ -102,27 +102,51 @@ public class HasTextToVisibilityConverter : IValueConverter
 
 public class PathToImageSourceConverter : IValueConverter
 {
+    private static readonly Dictionary<string, ImageSource> ImageCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object ImageCacheLock = new();
+
     public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         if (value is string path && !string.IsNullOrEmpty(path) && System.IO.File.Exists(path))
         {
             try
             {
+                int decodeWidth = 0;
+                if (parameter is string p
+                    && int.TryParse(p, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsedWidth)
+                    && parsedWidth > 0)
+                {
+                    decodeWidth = parsedWidth;
+                }
+
+                long lastWriteTicks = System.IO.File.GetLastWriteTimeUtc(path).Ticks;
+                string cacheKey = $"{path}|{decodeWidth}|{lastWriteTicks}";
+
+                lock (ImageCacheLock)
+                {
+                    if (ImageCache.TryGetValue(cacheKey, out var cached))
+                        return cached;
+                }
+
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.UriSource = new Uri(path, UriKind.Absolute);
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
 
                 // Background images should keep full resolution. Button/icon images can still opt into downscaling.
-                if (parameter is string p
-                    && int.TryParse(p, NumberStyles.Integer, CultureInfo.InvariantCulture, out int decodeWidth)
-                    && decodeWidth > 0)
+                if (decodeWidth > 0)
                 {
                     bitmap.DecodePixelWidth = decodeWidth;
                 }
 
                 bitmap.EndInit();
                 bitmap.Freeze();
+
+                lock (ImageCacheLock)
+                {
+                    ImageCache[cacheKey] = bitmap;
+                }
+
                 return bitmap;
             }
             catch

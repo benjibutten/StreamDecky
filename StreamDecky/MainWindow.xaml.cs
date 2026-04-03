@@ -9,6 +9,8 @@ using StreamDecky.Views;
 
 namespace StreamDecky;
 
+using Popup = System.Windows.Controls.Primitives.Popup;
+
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel = new();
@@ -154,6 +156,13 @@ public partial class MainWindow : Window
         OpenOverlay();
     }
 
+    private void ToggleNotesAreasPopup_Click(object sender, RoutedEventArgs e)
+    {
+        var popup = GetNotesAreasPopup();
+        if (popup != null)
+            popup.IsOpen = !popup.IsOpen;
+    }
+
     private void SetTextInput_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.NewButtonCommand.Execute(null);
@@ -249,12 +258,93 @@ public partial class MainWindow : Window
 
     private void RemovePage_Click(object sender, RoutedEventArgs e)
     {
+        if (_viewModel.IsViewingVirtualLayout)
+            return;
+
         if (_viewModel.PageCount <= 1) return;
         var result = System.Windows.MessageBox.Show(
             $"Remove page \"{_viewModel.CurrentPageName}\"?",
             "Remove Page", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (result == MessageBoxResult.Yes)
             _viewModel.RemovePageCommand.Execute(null);
+    }
+
+    private void AddVirtualLayout_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.AddVirtualLayoutCommand.Execute(null);
+    }
+
+    private void RemoveVirtualLayout_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.CanRemoveCurrentVirtualLayout)
+            return;
+
+        var result = System.Windows.MessageBox.Show(
+            $"Remove virtual layout \"{_viewModel.CurrentPageName}\"?",
+            "Remove Virtual Layout", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+            _viewModel.RemoveVirtualLayoutCommand.Execute(null);
+    }
+
+    private void ExitVirtualLayout_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.ExitVirtualLayoutCommand.Execute(null);
+    }
+
+    private void AddNotePage_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.AddNotePageCommand.Execute(null);
+
+        var popup = GetNotesAreasPopup();
+        if (popup != null)
+            popup.IsOpen = false;
+    }
+
+    private void RemoveNotePage_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.CanRemoveNotePage)
+            return;
+
+        int noteCount = _viewModel.CurrentNotePageNoteCount;
+        string message = noteCount > 0
+            ? $"Remove notes area \"{_viewModel.CurrentNotePageName}\"?\n\nThis will permanently delete {noteCount} sticky note(s) in this area."
+            : $"Remove notes area \"{_viewModel.CurrentNotePageName}\"?";
+
+        var result = System.Windows.MessageBox.Show(
+            this,
+            message,
+            "Remove Notes Area",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            _viewModel.RemoveNotePageCommand.Execute(null);
+
+            var popup = GetNotesAreasPopup();
+            if (popup != null)
+                popup.IsOpen = false;
+        }
+    }
+
+    private Popup? GetNotesAreasPopup()
+    {
+        return FindName("NotesAreasPopup") as Popup;
+    }
+
+    private void RenameLayout_Click(object sender, RoutedEventArgs e)
+    {
+        string? renamed = TextPromptDialog.Show(
+            this,
+            "Rename Layout",
+            "Enter a new name for the current layout:",
+            _viewModel.CurrentPageName,
+            maxLength: 48);
+
+        if (!string.IsNullOrWhiteSpace(renamed))
+            _viewModel.RenamePageCommand.Execute(renamed);
     }
 
     private static bool IsTextEditingControlFocused()
@@ -306,6 +396,15 @@ public partial class MainWindow : Window
     {
         if (sender is System.Windows.Controls.Button { DataContext: ButtonViewModel buttonVm })
             _viewModel.SelectButtonCommand.Execute(buttonVm);
+    }
+
+    private void DeckEditorButton_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is System.Windows.Controls.Button { DataContext: ButtonViewModel buttonVm })
+        {
+            _viewModel.FollowNavigationTargetCommand.Execute(buttonVm);
+            e.Handled = true;
+        }
     }
 
     private void CopyButtonFromContext_Click(object sender, RoutedEventArgs e)
