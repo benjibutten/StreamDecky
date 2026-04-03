@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StreamDecky.Helpers;
@@ -7,12 +9,14 @@ using StreamDecky.Services;
 
 namespace StreamDecky.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly ProfileService _profileService = new();
     private readonly TextInputActionService _textInputService = new();
     private readonly MultiActionService _multiActionService = new();
     private readonly System.Timers.Timer _autoSaveTimer;
+    private readonly SemaphoreSlim _autoSaveSemaphore = new(1, 1);
+    private readonly List<ButtonViewModel> _trackedButtons = new();
 
     private DeckProfile _profile;
     private ButtonConfig? _buttonClipboard;
@@ -22,25 +26,16 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
+        // Auto-save: debounce 1 second after last change
+        _autoSaveTimer = new System.Timers.Timer(1000) { AutoReset = false };
+        _autoSaveTimer.Elapsed += (_, _) => _ = AutoSaveAsync();
+
         _profile = _profileService.Load();
         _currentPageIndex = 0;
         _currentNotePageIndex = Math.Clamp(_profile.CurrentNotePageIndex, 0, _profile.NotePages.Count - 1);
 
         LoadCurrentLayout();
         StickyNotesVisible = _profile.StickyNotesVisible;
-
-        // Auto-save: debounce 1 second after last change
-        _autoSaveTimer = new System.Timers.Timer(1000) { AutoReset = false };
-        _autoSaveTimer.Elapsed += (_, _) =>
-        {
-            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-            {
-                _profileService.Save(_profile);
-            });
-        };
-
-        // Listen for any property change to trigger auto-save
-        PropertyChanged += (_, _) => ScheduleAutoSave();
 
         RebuildLayoutTargets();
         SyncSelectedLayoutId();
@@ -88,6 +83,7 @@ public partial class MainViewModel : ObservableObject
     partial void OnStickyNotesVisibleChanged(bool value)
     {
         _profile.StickyNotesVisible = value;
+        ScheduleAutoSave();
     }
 
     partial void OnCurrentNotePageIndexChanged(int value)
@@ -105,6 +101,7 @@ public partial class MainViewModel : ObservableObject
         _profile.CurrentNotePageIndex = clamped;
         LoadStickyNotes();
         NotifyNotePageChanged();
+        ScheduleAutoSave();
     }
 
     partial void OnSelectedLayoutIdChanged(string? value)
@@ -126,8 +123,12 @@ public partial class MainViewModel : ObservableObject
         get => _profile.OverlayBackgroundColor;
         set
         {
+            if (string.Equals(_profile.OverlayBackgroundColor, value, StringComparison.OrdinalIgnoreCase))
+                return;
+
             _profile.OverlayBackgroundColor = value;
             OnPropertyChanged();
+            ScheduleAutoSave();
         }
     }
 
@@ -142,6 +143,7 @@ public partial class MainViewModel : ObservableObject
             _profile.OverlayBackgroundImagePath = value;
             OnPropertyChanged();
             _ = RefreshOverlayBackgroundImageAsync();
+            ScheduleAutoSave();
         }
     }
 
@@ -156,6 +158,7 @@ public partial class MainViewModel : ObservableObject
 
             _profile.ButtonOverlayOpacity = clamped;
             OnPropertyChanged();
+            ScheduleAutoSave();
         }
     }
 
@@ -164,8 +167,12 @@ public partial class MainViewModel : ObservableObject
         get => _profile.ButtonSpacing;
         set
         {
+            if (Math.Abs(_profile.ButtonSpacing - value) < 0.001)
+                return;
+
             _profile.ButtonSpacing = value;
             OnPropertyChanged();
+            ScheduleAutoSave();
         }
     }
 
@@ -174,8 +181,12 @@ public partial class MainViewModel : ObservableObject
         get => _profile.ButtonSize;
         set
         {
+            if (Math.Abs(_profile.ButtonSize - value) < 0.001)
+                return;
+
             _profile.ButtonSize = value;
             OnPropertyChanged();
+            ScheduleAutoSave();
         }
     }
 
@@ -184,8 +195,12 @@ public partial class MainViewModel : ObservableObject
         get => _profile.GridOffsetX;
         set
         {
+            if (Math.Abs(_profile.GridOffsetX - value) < 0.001)
+                return;
+
             _profile.GridOffsetX = value;
             OnPropertyChanged();
+            ScheduleAutoSave();
         }
     }
 
@@ -194,8 +209,12 @@ public partial class MainViewModel : ObservableObject
         get => _profile.GridOffsetY;
         set
         {
+            if (Math.Abs(_profile.GridOffsetY - value) < 0.001)
+                return;
+
             _profile.GridOffsetY = value;
             OnPropertyChanged();
+            ScheduleAutoSave();
         }
     }
 
@@ -204,9 +223,13 @@ public partial class MainViewModel : ObservableObject
         get => _profile.HotkeyModifiers;
         set
         {
+            if (_profile.HotkeyModifiers == value)
+                return;
+
             _profile.HotkeyModifiers = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HotkeyDisplayText));
+            ScheduleAutoSave();
         }
     }
 
@@ -215,9 +238,13 @@ public partial class MainViewModel : ObservableObject
         get => _profile.HotkeyVk;
         set
         {
+            if (_profile.HotkeyVk == value)
+                return;
+
             _profile.HotkeyVk = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HotkeyDisplayText));
+            ScheduleAutoSave();
         }
     }
 
@@ -226,8 +253,12 @@ public partial class MainViewModel : ObservableObject
         get => _profile.HotkeyDisplayText;
         set
         {
+            if (string.Equals(_profile.HotkeyDisplayText, value, StringComparison.Ordinal))
+                return;
+
             _profile.HotkeyDisplayText = value;
             OnPropertyChanged();
+            ScheduleAutoSave();
         }
     }
 
@@ -236,8 +267,12 @@ public partial class MainViewModel : ObservableObject
         get => _profile.StartWithWindows;
         set
         {
+            if (_profile.StartWithWindows == value)
+                return;
+
             _profile.StartWithWindows = value;
             OnPropertyChanged();
+            ScheduleAutoSave();
         }
     }
 
@@ -246,8 +281,12 @@ public partial class MainViewModel : ObservableObject
         get => _profile.NaturalTypingEnabled;
         set
         {
+            if (_profile.NaturalTypingEnabled == value)
+                return;
+
             _profile.NaturalTypingEnabled = value;
             OnPropertyChanged();
+            ScheduleAutoSave();
         }
     }
 
@@ -313,6 +352,8 @@ public partial class MainViewModel : ObservableObject
 
     private void LoadCurrentLayout(int? preferredSelectedIndex = null)
     {
+        DetachButtonHandlers();
+
         int? selectedIndex = preferredSelectedIndex ?? SelectedButton?.Index;
 
         CurrentLayout.EnsureButtonCount(Rows, Columns);
@@ -320,20 +361,7 @@ public partial class MainViewModel : ObservableObject
         for (int i = 0; i < CurrentLayout.Buttons.Count; i++)
         {
             var bvm = new ButtonViewModel(CurrentLayout.Buttons[i], i);
-            bvm.PropertyChanged += (_, e) =>
-            {
-                ScheduleAutoSave();
-
-                if (e.PropertyName is nameof(ButtonViewModel.IsConfigured)
-                    or nameof(ButtonViewModel.ActionType)
-                    or nameof(ButtonViewModel.Title)
-                    or nameof(ButtonViewModel.IconText)
-                    or nameof(ButtonViewModel.ImagePath)
-                    or null)
-                {
-                    ButtonVisualVersion++;
-                }
-            };
+            AttachButtonHandlers(bvm);
             buttonViewModels.Add(bvm);
         }
 
@@ -377,6 +405,111 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(Columns));
         OnPropertyChanged(nameof(ButtonSlots));
         OnPropertyChanged(nameof(LayoutSummary));
+    }
+
+    private void AttachButtonHandlers(ButtonViewModel buttonViewModel)
+    {
+        buttonViewModel.PropertyChanged += OnButtonPropertyChanged;
+        buttonViewModel.Steps.CollectionChanged += OnButtonStepsCollectionChanged;
+
+        foreach (var step in buttonViewModel.Steps)
+            step.PropertyChanged += OnActionStepPropertyChanged;
+
+        _trackedButtons.Add(buttonViewModel);
+    }
+
+    private void DetachButtonHandlers()
+    {
+        foreach (var buttonViewModel in _trackedButtons)
+        {
+            buttonViewModel.PropertyChanged -= OnButtonPropertyChanged;
+            buttonViewModel.Steps.CollectionChanged -= OnButtonStepsCollectionChanged;
+
+            foreach (var step in buttonViewModel.Steps)
+                step.PropertyChanged -= OnActionStepPropertyChanged;
+        }
+
+        _trackedButtons.Clear();
+    }
+
+    private void OnButtonPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        ScheduleAutoSave();
+
+        if (e.PropertyName is nameof(ButtonViewModel.IsConfigured)
+            or nameof(ButtonViewModel.ActionType)
+            or nameof(ButtonViewModel.Title)
+            or nameof(ButtonViewModel.IconText)
+            or nameof(ButtonViewModel.ImagePath)
+            or nameof(ButtonViewModel.Shape)
+            or null)
+        {
+            ButtonVisualVersion++;
+        }
+    }
+
+    private void OnButtonStepsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+        {
+            foreach (var oldItem in e.OldItems.OfType<ActionStep>())
+                oldItem.PropertyChanged -= OnActionStepPropertyChanged;
+        }
+
+        if (e.NewItems != null)
+        {
+            foreach (var newItem in e.NewItems.OfType<ActionStep>())
+                newItem.PropertyChanged += OnActionStepPropertyChanged;
+        }
+
+        ScheduleAutoSave();
+    }
+
+    private void OnActionStepPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        ScheduleAutoSave();
+    }
+
+    private async Task AutoSaveAsync()
+    {
+        bool hasAutoSaveLock = false;
+
+        try
+        {
+            await _autoSaveSemaphore.WaitAsync().ConfigureAwait(false);
+            hasAutoSaveLock = true;
+
+            string json;
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null)
+            {
+                json = await dispatcher.InvokeAsync(() => _profileService.Serialize(_profile));
+            }
+            else
+            {
+                json = _profileService.Serialize(_profile);
+            }
+
+            await _profileService.SaveSerializedAsync(json).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Ignore autosave errors to avoid disrupting runtime interaction.
+        }
+        finally
+        {
+            if (hasAutoSaveLock)
+            {
+                try
+                {
+                    _autoSaveSemaphore.Release();
+                }
+                catch
+                {
+                    // Ignore release errors during application shutdown.
+                }
+            }
+        }
     }
 
     private void UpdateProfileLayout(int rows, int columns)
@@ -528,6 +661,7 @@ public partial class MainViewModel : ObservableObject
         LoadCurrentLayout();
         RebuildLayoutTargets();
         NotifyPageChanged();
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
@@ -548,6 +682,7 @@ public partial class MainViewModel : ObservableObject
         LoadCurrentLayout();
         RebuildLayoutTargets();
         NotifyPageChanged();
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
@@ -558,6 +693,7 @@ public partial class MainViewModel : ObservableObject
             CurrentLayout.Name = newName.Trim();
             OnPropertyChanged(nameof(CurrentPageName));
             RebuildLayoutTargets();
+            ScheduleAutoSave();
         }
     }
 
@@ -576,6 +712,7 @@ public partial class MainViewModel : ObservableObject
         RebuildLayoutTargets();
         SwitchToLayoutById(virtualLayout.Id);
         NotifyPageChanged();
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
@@ -604,6 +741,7 @@ public partial class MainViewModel : ObservableObject
 
         RebuildLayoutTargets();
         NotifyPageChanged();
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
@@ -659,6 +797,7 @@ public partial class MainViewModel : ObservableObject
 
         _profile.NotePages.Add(notePage);
         CurrentNotePageIndex = _profile.NotePages.Count - 1;
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
@@ -680,6 +819,8 @@ public partial class MainViewModel : ObservableObject
             LoadStickyNotes();
             NotifyNotePageChanged();
         }
+
+        ScheduleAutoSave();
     }
 
     private void NotifyNotePageChanged()
@@ -918,6 +1059,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (SelectedButton == null) return;
         SelectedButton.Steps.Add(new Models.ActionStep());
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
@@ -1045,5 +1187,12 @@ public partial class MainViewModel : ObservableObject
             if (string.Equals(button.TargetLayoutId, removedLayoutId, StringComparison.Ordinal))
                 button.TargetLayoutId = string.Empty;
         }
+    }
+
+    public void Dispose()
+    {
+        _autoSaveTimer.Stop();
+        _autoSaveTimer.Dispose();
+        DetachButtonHandlers();
     }
 }

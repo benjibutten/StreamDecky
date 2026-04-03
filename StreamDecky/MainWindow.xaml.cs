@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private HwndSource? _hwndSource;
     private OverlayWindow? _overlayWindow;
     private System.Windows.Forms.NotifyIcon? _trayIcon;
+    private System.Drawing.Icon? _trayIconImage;
 
     private const string StartupRegistryKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
     private const string AppRegistryName = "StreamDecky";
@@ -53,15 +54,8 @@ public partial class MainWindow : Window
             Visible = true
         };
 
-        // Try loading the app icon
-        var iconPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StreamDecky.ico");
-        if (System.IO.File.Exists(iconPath))
-        {
-            using var stream = new System.IO.FileStream(iconPath, System.IO.FileMode.Open, System.IO.FileAccess.Read);
-            _trayIcon.Icon = new System.Drawing.Icon(stream, new System.Drawing.Size(32, 32));
-        }
-        else
-            _trayIcon.Icon = System.Drawing.SystemIcons.Application;
+        _trayIconImage = TryLoadTrayIcon();
+        _trayIcon.Icon = _trayIconImage ?? System.Drawing.SystemIcons.Application;
 
         var contextMenu = new System.Windows.Forms.ContextMenuStrip();
         contextMenu.Items.Add("Show", null, (_, _) => ShowFromTray());
@@ -69,6 +63,35 @@ public partial class MainWindow : Window
         contextMenu.Items.Add("Exit", null, (_, _) => ExitApplication());
         _trayIcon.ContextMenuStrip = contextMenu;
         _trayIcon.DoubleClick += (_, _) => ShowFromTray();
+    }
+
+    private static System.Drawing.Icon? TryLoadTrayIcon()
+    {
+        try
+        {
+            // Prefer a standalone .ico when available so users can override icon without rebuilding.
+            var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "StreamDecky.ico");
+            if (System.IO.File.Exists(iconPath))
+                return new System.Drawing.Icon(iconPath, new System.Drawing.Size(32, 32));
+        }
+        catch
+        {
+            // Fall through to executable icon.
+        }
+
+        try
+        {
+            // Single-file publish may not include external content files; executable icon is always present.
+            var exePath = Environment.ProcessPath;
+            if (!string.IsNullOrWhiteSpace(exePath) && System.IO.File.Exists(exePath))
+                return System.Drawing.Icon.ExtractAssociatedIcon(exePath);
+        }
+        catch
+        {
+            // Use system icon fallback in caller.
+        }
+
+        return null;
     }
 
     private void ShowFromTray()
@@ -80,11 +103,19 @@ public partial class MainWindow : Window
 
     private void ExitApplication()
     {
-        _trayIcon?.Dispose();
-        _trayIcon = null;
+        DisposeTrayIcon();
         OverlayInterop.UnregisterGlobalHotkey(this, HOTKEY_ID);
         _hwndSource?.RemoveHook(WndProc);
         System.Windows.Application.Current.Shutdown();
+    }
+
+    private void DisposeTrayIcon()
+    {
+        _trayIcon?.Dispose();
+        _trayIcon = null;
+
+        _trayIconImage?.Dispose();
+        _trayIconImage = null;
     }
 
     private void SyncStartWithWindows()
@@ -443,7 +474,8 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        _trayIcon?.Dispose();
+        _viewModel.Dispose();
+        DisposeTrayIcon();
         OverlayInterop.UnregisterGlobalHotkey(this, HOTKEY_ID);
         _hwndSource?.RemoveHook(WndProc);
         base.OnClosed(e);
