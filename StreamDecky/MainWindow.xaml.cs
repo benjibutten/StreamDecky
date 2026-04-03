@@ -15,10 +15,17 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel = new();
     private const int HOTKEY_ID = 9000;
+    private static readonly TimeSpan GamepadToggleCooldown = TimeSpan.FromMilliseconds(350);
     private HwndSource? _hwndSource;
     private OverlayWindow? _overlayWindow;
     private System.Windows.Forms.NotifyIcon? _trayIcon;
     private System.Drawing.Icon? _trayIconImage;
+    private readonly System.Windows.Threading.DispatcherTimer _gamepadToggleTimer = new()
+    {
+        Interval = TimeSpan.FromMilliseconds(50)
+    };
+    private ushort _previousGamepadButtons;
+    private DateTime _nextGamepadToggleAllowedAtUtc = DateTime.MinValue;
 
     private const string StartupRegistryKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
     private const string AppRegistryName = "StreamDecky";
@@ -30,6 +37,10 @@ public partial class MainWindow : Window
         ApplyWindowIcon();
         InitializeTrayIcon();
         SyncStartWithWindows();
+
+        _gamepadToggleTimer.Tick += GamepadToggleTimer_Tick;
+        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        UpdateGamepadTogglePolling();
     }
 
     private void ApplyWindowIcon()
@@ -103,10 +114,70 @@ public partial class MainWindow : Window
 
     private void ExitApplication()
     {
+        DisposeGamepadTogglePolling();
         DisposeTrayIcon();
         OverlayInterop.UnregisterGlobalHotkey(this, HOTKEY_ID);
         _hwndSource?.RemoveHook(WndProc);
         System.Windows.Application.Current.Shutdown();
+    }
+
+    private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.GamepadSupportEnabled))
+            UpdateGamepadTogglePolling();
+    }
+
+    private void UpdateGamepadTogglePolling()
+    {
+        if (_viewModel.GamepadSupportEnabled)
+        {
+            if (!_gamepadToggleTimer.IsEnabled)
+                _gamepadToggleTimer.Start();
+            return;
+        }
+
+        _gamepadToggleTimer.Stop();
+        _previousGamepadButtons = 0;
+    }
+
+    private void GamepadToggleTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!_viewModel.GamepadSupportEnabled)
+            return;
+
+        if (!XInputInterop.TryGetFirstConnectedState(out var state))
+        {
+            _previousGamepadButtons = 0;
+            return;
+        }
+
+        ushort toggleButtons = _viewModel.GamepadToggleButtons;
+        if (toggleButtons == 0)
+            return;
+
+        ushort buttons = state.Gamepad.wButtons;
+        bool comboPressed = XInputInterop.AreButtonsPressed(buttons, toggleButtons);
+        bool previousComboPressed = XInputInterop.AreButtonsPressed(_previousGamepadButtons, toggleButtons);
+
+        if (comboPressed && !previousComboPressed)
+        {
+            DateTime now = DateTime.UtcNow;
+            if (now >= _nextGamepadToggleAllowedAtUtc)
+            {
+                _nextGamepadToggleAllowedAtUtc = now + GamepadToggleCooldown;
+                ToggleOverlay();
+            }
+        }
+
+        _previousGamepadButtons = buttons;
+    }
+
+    private void DisposeGamepadTogglePolling()
+    {
+        _gamepadToggleTimer.Stop();
+        _gamepadToggleTimer.Tick -= GamepadToggleTimer_Tick;
+        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        _previousGamepadButtons = 0;
     }
 
     private void DisposeTrayIcon()
@@ -474,6 +545,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        DisposeGamepadTogglePolling();
         _viewModel.Dispose();
         DisposeTrayIcon();
         OverlayInterop.UnregisterGlobalHotkey(this, HOTKEY_ID);

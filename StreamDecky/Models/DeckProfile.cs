@@ -15,6 +15,8 @@ public class DeckProfile
     public string HotkeyDisplayText { get; set; } = "Ctrl + F12";
     public bool StartWithWindows { get; set; } = false;
     public bool NaturalTypingEnabled { get; set; } = false;
+    public bool GamepadSupportEnabled { get; set; } = false;
+    public ushort GamepadToggleButtons { get; set; } = 0x0030; // Back + Start
     public bool StickyNotesVisible { get; set; }
     public int LayoutRows { get; set; }
     public int LayoutColumns { get; set; }

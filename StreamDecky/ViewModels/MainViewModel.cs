@@ -290,6 +290,68 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public bool GamepadSupportEnabled
+    {
+        get => _profile.GamepadSupportEnabled;
+        set
+        {
+            if (_profile.GamepadSupportEnabled == value)
+                return;
+
+            _profile.GamepadSupportEnabled = value;
+            OnPropertyChanged();
+            ScheduleAutoSave();
+        }
+    }
+
+    public ushort GamepadToggleButtons
+    {
+        get => _profile.GamepadToggleButtons;
+        set
+        {
+            if (value == 0 || _profile.GamepadToggleButtons == value)
+                return;
+
+            _profile.GamepadToggleButtons = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(GamepadToggleDisplayText));
+            ScheduleAutoSave();
+        }
+    }
+
+    public string GamepadToggleDisplayText => FormatGamepadButtons(GamepadToggleButtons);
+
+    private static string FormatGamepadButtons(ushort buttons)
+    {
+        if (buttons == 0)
+            return "None";
+
+        var parts = new List<string>();
+
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadBack, "Back");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadStart, "Start");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadLeftShoulder, "LB");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadRightShoulder, "RB");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadLeftThumb, "L3");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadRightThumb, "R3");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadDPadUp, "DPad Up");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadDPadDown, "DPad Down");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadDPadLeft, "DPad Left");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadDPadRight, "DPad Right");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadA, "A");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadB, "B");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadX, "X");
+        AddPartIfPressed(parts, buttons, XInputInterop.GamepadY, "Y");
+
+        return parts.Count > 0 ? string.Join(" + ", parts) : "Unknown";
+    }
+
+    private static void AddPartIfPressed(List<string> parts, ushort buttons, ushort flag, string label)
+    {
+        if (XInputInterop.IsButtonPressed(buttons, flag))
+            parts.Add(label);
+    }
+
     public int Rows
     {
         get => _profile.LayoutRows;

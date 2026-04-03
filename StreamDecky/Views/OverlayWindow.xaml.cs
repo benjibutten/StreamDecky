@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -12,7 +13,24 @@ namespace StreamDecky.Views;
 
 public partial class OverlayWindow : Window
 {
+    private enum OverlayNavigationDirection
+    {
+        None,
+        Up,
+        Down,
+        Left,
+        Right
+    }
+
+    private const short LeftStickNavigationDeadZone = 16000;
+    private static readonly TimeSpan InitialNavigationRepeatDelay = TimeSpan.FromMilliseconds(260);
+    private static readonly TimeSpan NavigationRepeatInterval = TimeSpan.FromMilliseconds(130);
+
     private readonly MainViewModel _viewModel;
+    private readonly System.Windows.Threading.DispatcherTimer _gamepadTimer = new()
+    {
+        Interval = TimeSpan.FromMilliseconds(33)
+    };
     private bool _isDragging;
     private System.Windows.Point _dragStart;
     private double _startOffsetX;
@@ -22,6 +40,9 @@ public partial class OverlayWindow : Window
     private System.Windows.Point _stickyDragStart;
     private double _stickyStartX;
     private double _stickyStartY;
+    private ushort _previousGamepadButtons;
+    private OverlayNavigationDirection _heldNavigationDirection;
+    private DateTime _nextNavigationRepeatAtUtc = DateTime.MinValue;
 
     public OverlayWindow(MainViewModel viewModel)
     {
@@ -30,6 +51,7 @@ public partial class OverlayWindow : Window
         // Save the foreground window (e.g. GTA V) BEFORE our overlay takes focus
         _previousForegroundWindow = OverlayInterop.GetCurrentForegroundWindow();
         InitializeComponent();
+        _gamepadTimer.Tick += GamepadTimer_Tick;
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -37,6 +59,8 @@ public partial class OverlayWindow : Window
         OverlayInterop.MakeTopmost(this);
         Focus();
         Activate();
+        EnsureOverlaySelection();
+        _gamepadTimer.Start();
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -56,33 +80,7 @@ public partial class OverlayWindow : Window
     private void DeckButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is System.Windows.Controls.Button btn && btn.Tag is ButtonViewModel buttonVm)
-        {
-            if (buttonVm.HasAction)
-            {
-                if (buttonVm.ActionType == ActionType.LayoutNavigation)
-                {
-                    _viewModel.FollowNavigationTargetCommand.Execute(buttonVm);
-                    return;
-                }
-
-                // Save target window handle and close overlay
-                var prevHwnd = _previousForegroundWindow;
-                _viewModel.CloseOverlayCommand.Execute(null);
-                Close();
-
-                // Minimize the main StreamDecky window so it doesn't steal focus
-                var mainWindow = System.Windows.Application.Current.MainWindow;
-                if (mainWindow != null)
-                    mainWindow.WindowState = WindowState.Minimized;
-
-                // Use aggressive focus restore with AttachThreadInput
-                OverlayInterop.ForceSetForegroundWindow(prevHwnd);
-
-                // Execute after a delay to let focus fully transfer
-                _viewModel.ExecuteButtonCommand.Execute(buttonVm);
-                return;
-            }
-        }
+            ExecuteOverlayButton(buttonVm);
     }
 
     private void DragHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -127,11 +125,254 @@ public partial class OverlayWindow : Window
     private void OverlayPrevPage_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.PreviousPageCommand.Execute(null);
+        EnsureOverlaySelection();
     }
 
     private void OverlayNextPage_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.NextPageCommand.Execute(null);
+        EnsureOverlaySelection();
+    }
+
+    private void ExecuteOverlayButton(ButtonViewModel buttonVm)
+    {
+        if (!buttonVm.HasAction)
+            return;
+
+        if (buttonVm.ActionType == ActionType.LayoutNavigation)
+        {
+            _viewModel.FollowNavigationTargetCommand.Execute(buttonVm);
+            EnsureOverlaySelection();
+            return;
+        }
+
+        var prevHwnd = _previousForegroundWindow;
+        _viewModel.CloseOverlayCommand.Execute(null);
+        Close();
+
+        var mainWindow = System.Windows.Application.Current.MainWindow;
+        if (mainWindow != null)
+            mainWindow.WindowState = WindowState.Minimized;
+
+        OverlayInterop.ForceSetForegroundWindow(prevHwnd);
+        _viewModel.ExecuteButtonCommand.Execute(buttonVm);
+    }
+
+    private void GamepadTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!_viewModel.GamepadSupportEnabled)
+        {
+            ResetGamepadNavigationState();
+            return;
+        }
+
+        if (!XInputInterop.TryGetFirstConnectedState(out var state))
+        {
+            ResetGamepadNavigationState();
+            return;
+        }
+
+        EnsureOverlaySelection();
+
+        ushort buttons = state.Gamepad.wButtons;
+
+        if (IsNewButtonPress(buttons, XInputInterop.GamepadLeftShoulder))
+        {
+            _viewModel.PreviousPageCommand.Execute(null);
+            EnsureOverlaySelection();
+        }
+
+        if (IsNewButtonPress(buttons, XInputInterop.GamepadRightShoulder))
+        {
+            _viewModel.NextPageCommand.Execute(null);
+            EnsureOverlaySelection();
+        }
+
+        HandleDirectionalNavigation(buttons, state.Gamepad.sThumbLX, state.Gamepad.sThumbLY);
+
+        if (IsNewButtonPress(buttons, XInputInterop.GamepadA) && _viewModel.SelectedButton != null)
+            ExecuteOverlayButton(_viewModel.SelectedButton);
+
+        _previousGamepadButtons = buttons;
+    }
+
+    private void HandleDirectionalNavigation(ushort buttons, short thumbLX, short thumbLY)
+    {
+        OverlayNavigationDirection direction = GetDirectionalInput(buttons, thumbLX, thumbLY);
+        if (direction == OverlayNavigationDirection.None)
+        {
+            _heldNavigationDirection = OverlayNavigationDirection.None;
+            return;
+        }
+
+        DateTime now = DateTime.UtcNow;
+        if (_heldNavigationDirection != direction)
+        {
+            MoveSelection(direction);
+            _heldNavigationDirection = direction;
+            _nextNavigationRepeatAtUtc = now + InitialNavigationRepeatDelay;
+            return;
+        }
+
+        if (now >= _nextNavigationRepeatAtUtc)
+        {
+            MoveSelection(direction);
+            _nextNavigationRepeatAtUtc = now + NavigationRepeatInterval;
+        }
+    }
+
+    private OverlayNavigationDirection GetDirectionalInput(ushort buttons, short thumbLX, short thumbLY)
+    {
+        if (XInputInterop.IsButtonPressed(buttons, XInputInterop.GamepadDPadUp))
+            return OverlayNavigationDirection.Up;
+        if (XInputInterop.IsButtonPressed(buttons, XInputInterop.GamepadDPadDown))
+            return OverlayNavigationDirection.Down;
+        if (XInputInterop.IsButtonPressed(buttons, XInputInterop.GamepadDPadLeft))
+            return OverlayNavigationDirection.Left;
+        if (XInputInterop.IsButtonPressed(buttons, XInputInterop.GamepadDPadRight))
+            return OverlayNavigationDirection.Right;
+
+        if (Math.Abs(thumbLX) < LeftStickNavigationDeadZone && Math.Abs(thumbLY) < LeftStickNavigationDeadZone)
+            return OverlayNavigationDirection.None;
+
+        if (Math.Abs(thumbLX) > Math.Abs(thumbLY))
+            return thumbLX > 0 ? OverlayNavigationDirection.Right : OverlayNavigationDirection.Left;
+
+        return thumbLY > 0 ? OverlayNavigationDirection.Up : OverlayNavigationDirection.Down;
+    }
+
+    private void MoveSelection(OverlayNavigationDirection direction)
+    {
+        var configuredButtons = _viewModel.Buttons.Where(static b => b.IsConfigured).ToList();
+        if (configuredButtons.Count == 0)
+            return;
+
+        var current = _viewModel.SelectedButton;
+        if (current == null || !current.IsConfigured)
+        {
+            _viewModel.SelectButtonCommand.Execute(configuredButtons[0]);
+            return;
+        }
+
+        int columns = Math.Max(1, _viewModel.Columns);
+        int rows = Math.Max(1, _viewModel.Rows);
+        int currentRow = current.Index / columns;
+        int currentCol = current.Index % columns;
+
+        ButtonViewModel? bestCandidate = null;
+        int bestScore = int.MaxValue;
+
+        foreach (var candidate in configuredButtons)
+        {
+            if (ReferenceEquals(candidate, current))
+                continue;
+
+            int candidateRow = candidate.Index / columns;
+            int candidateCol = candidate.Index % columns;
+
+            int rowDelta = candidateRow - currentRow;
+            int colDelta = candidateCol - currentCol;
+
+            if (!IsCandidateInDirection(direction, rowDelta, colDelta))
+                continue;
+
+            int primaryDistance = direction is OverlayNavigationDirection.Up or OverlayNavigationDirection.Down
+                ? Math.Abs(rowDelta)
+                : Math.Abs(colDelta);
+            int secondaryDistance = direction is OverlayNavigationDirection.Up or OverlayNavigationDirection.Down
+                ? Math.Abs(colDelta)
+                : Math.Abs(rowDelta);
+
+            int score = (primaryDistance * 100) + secondaryDistance;
+            if (score < bestScore)
+            {
+                bestScore = score;
+                bestCandidate = candidate;
+            }
+        }
+
+        bestCandidate ??= FindWrapCandidate(configuredButtons, current, direction, columns, rows);
+        if (bestCandidate != null)
+            _viewModel.SelectButtonCommand.Execute(bestCandidate);
+    }
+
+    private static bool IsCandidateInDirection(OverlayNavigationDirection direction, int rowDelta, int colDelta)
+    {
+        return direction switch
+        {
+            OverlayNavigationDirection.Up => rowDelta < 0,
+            OverlayNavigationDirection.Down => rowDelta > 0,
+            OverlayNavigationDirection.Left => colDelta < 0,
+            OverlayNavigationDirection.Right => colDelta > 0,
+            _ => false
+        };
+    }
+
+    private static ButtonViewModel? FindWrapCandidate(
+        IReadOnlyList<ButtonViewModel> candidates,
+        ButtonViewModel current,
+        OverlayNavigationDirection direction,
+        int columns,
+        int rows)
+    {
+        int currentRow = current.Index / columns;
+        int currentCol = current.Index % columns;
+
+        ButtonViewModel? bestCandidate = null;
+        int bestScore = int.MaxValue;
+
+        foreach (var candidate in candidates)
+        {
+            if (ReferenceEquals(candidate, current))
+                continue;
+
+            int candidateRow = candidate.Index / columns;
+            int candidateCol = candidate.Index % columns;
+
+            int score = direction switch
+            {
+                OverlayNavigationDirection.Right => (candidateCol * 100) + Math.Abs(candidateRow - currentRow),
+                OverlayNavigationDirection.Left => ((columns - 1 - candidateCol) * 100) + Math.Abs(candidateRow - currentRow),
+                OverlayNavigationDirection.Down => (candidateRow * 100) + Math.Abs(candidateCol - currentCol),
+                OverlayNavigationDirection.Up => ((rows - 1 - candidateRow) * 100) + Math.Abs(candidateCol - currentCol),
+                _ => int.MaxValue
+            };
+
+            if (score < bestScore)
+            {
+                bestScore = score;
+                bestCandidate = candidate;
+            }
+        }
+
+        return bestCandidate;
+    }
+
+    private void EnsureOverlaySelection()
+    {
+        var configuredButtons = _viewModel.Buttons.Where(static b => b.IsConfigured).ToList();
+        if (configuredButtons.Count == 0)
+        {
+            _viewModel.SelectButtonCommand.Execute(null);
+            return;
+        }
+
+        var selected = _viewModel.SelectedButton;
+        if (selected == null || !selected.IsConfigured || !_viewModel.Buttons.Contains(selected))
+            _viewModel.SelectButtonCommand.Execute(configuredButtons[0]);
+    }
+
+    private bool IsNewButtonPress(ushort currentButtons, ushort button)
+    {
+        return XInputInterop.IsButtonPressed(currentButtons, button)
+            && !XInputInterop.IsButtonPressed(_previousGamepadButtons, button);
+    }
+
+    private void ResetGamepadNavigationState()
+    {
+        _previousGamepadButtons = 0;
+        _heldNavigationDirection = OverlayNavigationDirection.None;
+        _nextNavigationRepeatAtUtc = DateTime.MinValue;
     }
 
     private void StickyNoteHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -295,6 +536,13 @@ public partial class OverlayWindow : Window
         }
 
         return null;
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _gamepadTimer.Stop();
+        _gamepadTimer.Tick -= GamepadTimer_Tick;
+        base.OnClosed(e);
     }
 
     protected override void OnDeactivated(EventArgs e)
