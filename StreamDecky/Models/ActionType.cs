@@ -5,5 +5,6 @@ public enum ActionType
     None,
     TextInput,
     KeyPress,
-    MultiAction
+    MultiAction,
+    LayoutNavigation
 }

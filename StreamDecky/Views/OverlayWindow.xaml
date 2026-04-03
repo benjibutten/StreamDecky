@@ -23,6 +23,38 @@
         <helpers:CellImageBrushConverter x:Key="CellImageBrush"/>
         <helpers:AdaptiveButtonSizeConverter x:Key="AdaptiveButtonSize"/>
         <helpers:CellClusterCornerRadiusConverter x:Key="CellClusterCornerRadius"/>
+
+        <Style x:Key="TopMiniButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#F2F2F2"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#34FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#46FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.35"/>
+                                <Setter Property="Foreground" Value="#88F2F2F2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <!-- Full screen overlay background with slight transparency -->
@@ -60,6 +92,36 @@
                     </Style>
                 </Button.Style>
             </Button>
+
+            <Border DockPanel.Dock="Right"
+                    Margin="0,0,8,0"
+                    Padding="6,4"
+                    Background="#22000000"
+                    CornerRadius="6">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Notes"
+                               Foreground="#DCDCDC"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Margin="4,0,8,0"/>
+                    <Button Content="◀"
+                            Command="{Binding PreviousNotePageCommand}"
+                            IsEnabled="{Binding CanGoToPreviousNotePage}"
+                            FontSize="12"
+                            Style="{StaticResource TopMiniButton}"/>
+                    <TextBlock Text="{Binding NotePageIndicator}"
+                               Foreground="#ECECEC"
+                               FontSize="11"
+                               VerticalAlignment="Center"
+                               Margin="6,0"/>
+                    <Button Content="▶"
+                            Command="{Binding NextNotePageCommand}"
+                            IsEnabled="{Binding CanGoToNextNotePage}"
+                            FontSize="12"
+                            Style="{StaticResource TopMiniButton}"/>
+                </StackPanel>
+            </Border>
 
             <Button Content="＋ Note"
                     DockPanel.Dock="Right"
@@ -193,8 +255,8 @@
                 </Border>
 
                 <!-- Deck button grid -->
-                <Border x:Name="GridClipBorder" 
-                        Background="Transparent" 
+                <Border x:Name="GridClipBorder"
+                        Background="Transparent"
                     CornerRadius="12" Padding="0"
                     Opacity="{Binding ButtonOverlayOpacity}">
                     <Grid>
@@ -293,7 +355,7 @@
                                                                     <Grid.OpacityMask>
                                                                         <VisualBrush>
                                                                             <VisualBrush.Visual>
-                                                                                <Border Background="Black" 
+                                                                                <Border Background="Black"
                                                                                         CornerRadius="{Binding CornerRadius, Converter={StaticResource DoubleToCornerRadius}}"
                                                                                         Width="{Binding ActualWidth, ElementName=RegularBg}"
                                                                                         Height="{Binding ActualHeight, ElementName=RegularBg}"/>
@@ -304,12 +366,12 @@
                                                                            Stretch="UniformToFill"
                                                                            Visibility="{Binding ImagePath, Converter={StaticResource HasTextVisibility}}"/>
                                                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                                        <TextBlock Text="{Binding IconText}" 
+                                                                        <TextBlock Text="{Binding IconText}"
                                                                                    FontSize="24"
                                                                                    HorizontalAlignment="Center"
                                                                                    Foreground="{Binding TextColor, Converter={StaticResource StringToBrush}}"
                                                                                    Visibility="{Binding IconText, Converter={StaticResource HasTextVisibility}}"/>
-                                                                        <TextBlock Text="{Binding DisplayTitle}" 
+                                                                        <TextBlock Text="{Binding DisplayTitle}"
                                                                                    FontSize="13"
                                                                                    TextWrapping="Wrap"
                                                                                    TextAlignment="Center"
@@ -328,12 +390,12 @@
                                                                       StrokeThickness="2"
                                                                       Stroke="Transparent"/>
                                                                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="15">
-                                                                    <TextBlock Text="{Binding IconText}" 
+                                                                    <TextBlock Text="{Binding IconText}"
                                                                                FontSize="24"
                                                                                HorizontalAlignment="Center"
                                                                                Foreground="{Binding TextColor, Converter={StaticResource StringToBrush}}"
                                                                                Visibility="{Binding IconText, Converter={StaticResource HasTextVisibility}}"/>
-                                                                    <TextBlock Text="{Binding DisplayTitle}" 
+                                                                    <TextBlock Text="{Binding DisplayTitle}"
                                                                                FontSize="13"
                                                                                TextWrapping="Wrap"
                                                                                TextAlignment="Center"
@@ -588,7 +650,7 @@
                    FontSize="12"
                    HorizontalAlignment="Center"
                    Margin="0,0,0,15">
-            <Run Text="Press Esc to close · Drag bar to reposition · Notes opens sticky notes · "/>
+            <Run Text="Press Esc to close · Drag bar to reposition · Notes toggles sticky notes · "/>
             <Run Text="{Binding HotkeyDisplayText, Mode=OneWay}" FontWeight="Bold"/>
             <Run Text=" to toggle"/>
         </TextBlock>

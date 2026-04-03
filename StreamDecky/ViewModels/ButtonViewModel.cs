@@ -43,6 +43,7 @@ public partial class ButtonViewModel : ObservableObject
                 ActionType.TextInput => "Text Input",
                 ActionType.KeyPress => "Key Press",
                 ActionType.MultiAction => "Multi Action",
+                ActionType.LayoutNavigation => "Switch Layout",
                 _ => "Unconfigured"
             };
         }
@@ -128,6 +129,12 @@ public partial class ButtonViewModel : ObservableObject
     {
         get => _config.KeyText;
         set { _config.KeyText = value; OnPropertyChanged(); }
+    }
+
+    public string TargetLayoutId
+    {
+        get => _config.TargetLayoutId;
+        set { _config.TargetLayoutId = value; OnPropertyChanged(); }
     }
 
     public ButtonShape Shape

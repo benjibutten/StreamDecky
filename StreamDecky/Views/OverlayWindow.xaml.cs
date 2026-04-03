@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using StreamDecky.Helpers;
+using StreamDecky.Models;
 using StreamDecky.ViewModels;
 
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -58,6 +59,12 @@ public partial class OverlayWindow : Window
         {
             if (buttonVm.HasAction)
             {
+                if (buttonVm.ActionType == ActionType.LayoutNavigation)
+                {
+                    _viewModel.FollowNavigationTargetCommand.Execute(buttonVm);
+                    return;
+                }
+
                 // Save target window handle and close overlay
                 var prevHwnd = _previousForegroundWindow;
                 _viewModel.CloseOverlayCommand.Execute(null);
