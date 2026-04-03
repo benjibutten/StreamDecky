@@ -9,7 +9,7 @@ namespace StreamDecky.Services;
 
 public class MultiActionService
 {
-    public async Task ExecuteAsync(ButtonConfig config)
+    public async Task ExecuteAsync(ButtonConfig config, bool useNaturalTyping = false)
     {
         // Longer delay for focus transfer to game window
         await Task.Delay(500);
@@ -26,7 +26,7 @@ public class MultiActionService
                         await InputSimulator.SendKeyPressAsync(step.KeyText);
                     break;
                 case ActionStepType.TextInput:
-                    await ExecuteTextStepAsync(step);
+                    await ExecuteTextStepAsync(step, useNaturalTyping);
                     break;
             }
         }
@@ -54,7 +54,7 @@ public class MultiActionService
         });
     }
 
-    private static async Task ExecuteTextStepAsync(ActionStep step)
+    private static async Task ExecuteTextStepAsync(ActionStep step, bool useNaturalTyping)
     {
         if (string.IsNullOrEmpty(step.Text)) return;
 
@@ -68,7 +68,7 @@ public class MultiActionService
         }
         else
         {
-            InputSimulator.SendText(step.Text);
+            await InputSimulator.SendTextAsync(step.Text, useNaturalCadence: useNaturalTyping);
         }
 
         if (step.PressEnterAfter)

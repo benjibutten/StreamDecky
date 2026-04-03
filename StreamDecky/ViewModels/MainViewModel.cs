@@ -14,6 +14,7 @@ public partial class MainViewModel : ObservableObject
     private readonly MultiActionService _multiActionService = new();
     private DeckProfile _profile;
     private readonly System.Timers.Timer _autoSaveTimer;
+    private ButtonConfig? _buttonClipboard;
 
     public MainViewModel()
     {
@@ -197,6 +198,16 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    public bool NaturalTypingEnabled
+    {
+        get => _profile.NaturalTypingEnabled;
+        set
+        {
+            _profile.NaturalTypingEnabled = value;
+            OnPropertyChanged();
+        }
+    }
+
     public int Rows
     {
         get => _profile.LayoutRows;
@@ -347,13 +358,13 @@ public partial class MainViewModel : ObservableObject
         switch (button.ActionType)
         {
             case ActionType.TextInput:
-                _textInputService.Execute(button.Config);
+                _textInputService.Execute(button.Config, NaturalTypingEnabled);
                 break;
             case ActionType.KeyPress:
                 _multiActionService.ExecuteKeyPress(button.Config.KeyText);
                 break;
             case ActionType.MultiAction:
-                await _multiActionService.ExecuteAsync(button.Config);
+                await _multiActionService.ExecuteAsync(button.Config, NaturalTypingEnabled);
                 break;
         }
     }
@@ -538,12 +549,106 @@ public partial class MainViewModel : ObservableObject
             OverlayBackgroundImageVersion++;
     }
 
+    private int FindNextEmptyButtonIndex(int sourceIndex)
+    {
+        int total = CurrentPage.Buttons.Count;
+        for (int offset = 1; offset < total; offset++)
+        {
+            int idx = (sourceIndex + offset) % total;
+            if (IsButtonSlotEmpty(CurrentPage.Buttons[idx]))
+                return idx;
+        }
+
+        return -1;
+    }
+
+    private static bool IsButtonSlotEmpty(ButtonConfig config)
+    {
+        return config.ActionType == ActionType.None
+            && string.IsNullOrWhiteSpace(config.Title)
+            && string.IsNullOrWhiteSpace(config.IconText)
+            && string.IsNullOrWhiteSpace(config.ImagePath)
+            && string.IsNullOrWhiteSpace(config.Text)
+            && string.IsNullOrWhiteSpace(config.KeyText)
+            && config.Shape == ButtonShape.None
+            && !config.PressEnterAfter
+            && config.Steps.Count == 0;
+    }
+
+    private static ButtonConfig CloneButtonConfig(ButtonConfig source)
+    {
+        var clone = new ButtonConfig
+        {
+            Title = source.Title,
+            ActionType = source.ActionType,
+            BackgroundColor = source.BackgroundColor,
+            TextColor = source.TextColor,
+            IconText = source.IconText,
+            CornerRadius = source.CornerRadius,
+            ImagePath = source.ImagePath,
+            Text = source.Text,
+            PressEnterAfter = source.PressEnterAfter,
+            TextMode = source.TextMode,
+            KeyText = source.KeyText,
+            Shape = source.Shape
+        };
+
+        foreach (var step in source.Steps)
+        {
+            clone.Steps.Add(new ActionStep
+            {
+                Type = step.Type,
+                KeyText = step.KeyText,
+                Text = step.Text,
+                TextMode = step.TextMode,
+                PressEnterAfter = step.PressEnterAfter,
+                DelayMs = step.DelayMs
+            });
+        }
+
+        return clone;
+    }
+
     [RelayCommand]
     private void NewButton()
     {
         if (SelectedButton == null) return;
         SelectedButton.ActionType = ActionType.TextInput;
         SelectedButton.Title = "New Action";
+    }
+
+    [RelayCommand]
+    private void DuplicateButton()
+    {
+        if (SelectedButton == null) return;
+
+        int sourceIndex = SelectedButton.Index;
+        int targetIndex = FindNextEmptyButtonIndex(sourceIndex);
+        if (targetIndex < 0) return;
+
+        CurrentPage.Buttons[targetIndex] = CloneButtonConfig(SelectedButton.Config);
+        LoadCurrentPage(targetIndex);
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void CopyButton(ButtonViewModel? source)
+    {
+        var sourceButton = source ?? SelectedButton;
+        if (sourceButton == null) return;
+
+        _buttonClipboard = CloneButtonConfig(sourceButton.Config);
+    }
+
+    [RelayCommand]
+    private void PasteButton(ButtonViewModel? target)
+    {
+        if (_buttonClipboard == null || target == null)
+            return;
+
+        CurrentPage.Buttons[target.Index] = CloneButtonConfig(_buttonClipboard);
+        LoadCurrentPage(target.Index);
+        ScheduleAutoSave();
     }
 
     [RelayCommand]

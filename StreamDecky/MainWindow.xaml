@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:helpers="clr-namespace:StreamDecky.Helpers"
         xmlns:models="clr-namespace:StreamDecky.Models"
+    x:Name="MainRootWindow"
         Title="StreamDecky" 
         Icon="{StaticResource AppIcon}"
         Height="700" Width="1050"
@@ -10,7 +11,8 @@
         WindowStartupLocation="CenterScreen"
         Background="#1E1E2E"
         WindowStyle="None"
-        AllowsTransparency="False">
+    AllowsTransparency="False"
+    PreviewKeyDown="MainWindow_PreviewKeyDown">
 
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="36" 
@@ -509,7 +511,14 @@
                                         Converter={StaticResource SpacingToThickness}}"
                                     Command="{Binding DataContext.SelectButtonCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"
+                                    PreviewMouseRightButtonDown="DeckEditorButton_PreviewMouseRightButtonDown"
                                     Cursor="Hand">
+                                <Button.ContextMenu>
+                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                        <MenuItem Header="Copy button (Ctrl+C)" Click="CopyButtonFromContext_Click"/>
+                                        <MenuItem Header="Paste button (Ctrl+V)" Click="PasteButtonFromContext_Click"/>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
                                 <Button.Width>
                                     <MultiBinding Converter="{StaticResource AdaptiveButtonSize}" ConverterParameter="0,0,24">
                                         <Binding Path="DataContext.ButtonSize" RelativeSource="{RelativeSource AncestorType=Window}"/>
@@ -688,6 +697,24 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                             <Button Content="Set Text Input" Click="SetTextInput_Click"
                                     Background="#2D5A27" Foreground="White"
+                                    FontSize="12" Padding="10,5" Margin="0,0,8,0"
+                                    BorderThickness="0" Cursor="Hand">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="Duplicate" Click="DuplicateButton_Click"
+                                    Background="#2A4D7A" Foreground="White"
                                     FontSize="12" Padding="10,5" Margin="0,0,8,0"
                                     BorderThickness="0" Cursor="Hand">
                                 <Button.Style>

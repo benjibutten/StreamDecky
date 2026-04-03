@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
@@ -158,6 +159,11 @@ public partial class MainWindow : Window
         _viewModel.NewButtonCommand.Execute(null);
     }
 
+    private void DuplicateButton_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.DuplicateButtonCommand.Execute(null);
+    }
+
     private void ClearButton_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.ClearButtonCommand.Execute(null);
@@ -249,6 +255,69 @@ public partial class MainWindow : Window
             "Remove Page", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (result == MessageBoxResult.Yes)
             _viewModel.RemovePageCommand.Execute(null);
+    }
+
+    private static bool IsTextEditingControlFocused()
+    {
+        return Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase
+            or System.Windows.Controls.PasswordBox
+            or System.Windows.Controls.ComboBox;
+    }
+
+    private void MainWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (IsTextEditingControlFocused())
+            return;
+
+        if (e.Key == Key.Delete && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            if (_viewModel.SelectedButton != null)
+            {
+                _viewModel.ClearButtonCommand.Execute(null);
+                e.Handled = true;
+            }
+            return;
+        }
+
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == 0)
+            return;
+
+        if (e.Key == Key.C)
+        {
+            if (_viewModel.SelectedButton != null)
+            {
+                _viewModel.CopyButtonCommand.Execute(_viewModel.SelectedButton);
+                e.Handled = true;
+            }
+            return;
+        }
+
+        if (e.Key == Key.V)
+        {
+            if (_viewModel.SelectedButton != null)
+            {
+                _viewModel.PasteButtonCommand.Execute(_viewModel.SelectedButton);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void DeckEditorButton_PreviewMouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is System.Windows.Controls.Button { DataContext: ButtonViewModel buttonVm })
+            _viewModel.SelectButtonCommand.Execute(buttonVm);
+    }
+
+    private void CopyButtonFromContext_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ButtonViewModel buttonVm })
+            _viewModel.CopyButtonCommand.Execute(buttonVm);
+    }
+
+    private void PasteButtonFromContext_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ButtonViewModel buttonVm })
+            _viewModel.PasteButtonCommand.Execute(buttonVm);
     }
 
     private static string? ShowColorDialog(string currentHex)

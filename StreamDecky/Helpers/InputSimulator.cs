@@ -190,49 +190,61 @@ public static class InputSimulator
     }
 
     /// <summary>
-    /// Type text using SendInput with unicode character events (works in games).
+    /// Type text character-by-character using scan-code key events for better game compatibility.
     /// </summary>
-    public static void SendText(string text)
+    public static async Task SendTextAsync(string text, int keyHoldMs = 12, int interKeyDelayMs = 6, bool useNaturalCadence = false)
     {
         if (string.IsNullOrEmpty(text)) return;
 
-        var inputs = new List<INPUT>(text.Length * 2);
+        int burstRemaining = useNaturalCadence ? Random.Shared.Next(3, 8) : int.MaxValue;
+
         foreach (char c in text)
         {
-            inputs.Add(new INPUT
-            {
-                type = INPUT_KEYBOARD,
-                u = new INPUTUNION
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wVk = 0,
-                        wScan = c,
-                        dwFlags = KEYEVENTF_UNICODE,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero
-                    }
-                }
-            });
-            inputs.Add(new INPUT
-            {
-                type = INPUT_KEYBOARD,
-                u = new INPUTUNION
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wVk = 0,
-                        wScan = c,
-                        dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero
-                    }
-                }
-            });
-        }
+            int holdMs = useNaturalCadence ? Random.Shared.Next(8, 20) : keyHoldMs;
+            await PressCharAsync(c, holdMs);
 
-        var inputArray = inputs.ToArray();
-        SendInput((uint)inputArray.Length, inputArray, Marshal.SizeOf<INPUT>());
+            int delayMs;
+            if (useNaturalCadence)
+            {
+                bool isPausePunctuation = c is ' ' or '.' or ',' or '!' or '?' or ':' or ';' or '\n' or '\r';
+
+                if (isPausePunctuation)
+                {
+                    delayMs = Random.Shared.Next(70, 180);
+                    burstRemaining = Random.Shared.Next(3, 8);
+                }
+                else
+                {
+                    delayMs = Random.Shared.Next(10, 30);
+                    burstRemaining--;
+
+                    if (burstRemaining <= 0)
+                    {
+                        delayMs += Random.Shared.Next(55, 170);
+                        burstRemaining = Random.Shared.Next(3, 9);
+                    }
+                    else if (Random.Shared.NextDouble() < 0.06)
+                    {
+                        delayMs += Random.Shared.Next(35, 110);
+                    }
+                }
+            }
+            else
+            {
+                delayMs = interKeyDelayMs;
+            }
+
+            if (delayMs > 0)
+                await Task.Delay(delayMs);
+        }
+    }
+
+    /// <summary>
+    /// Synchronous wrapper for backward compatibility.
+    /// </summary>
+    public static void SendText(string text)
+    {
+        SendTextAsync(text).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -276,10 +288,22 @@ public static class InputSimulator
     }
 
     /// <summary>
-    /// Press a character key (resolves VK from char, handles shift if needed).
+    /// Press a character key (resolves VK from char and applies needed modifiers).
     /// </summary>
-    private static async Task PressCharAsync(char c)
+    private static async Task PressCharAsync(char c, int holdMs = 50)
     {
+        if (c == '\r' || c == '\n')
+        {
+            await PressKeyAsync(0x0D, holdMs);
+            return;
+        }
+
+        if (c == '\t')
+        {
+            await PressKeyAsync(0x09, holdMs);
+            return;
+        }
+
         short vkResult = VkKeyScan(c);
         if (vkResult == -1)
         {
@@ -295,17 +319,26 @@ public static class InputSimulator
                 u = new INPUTUNION { ki = new KEYBDINPUT { wScan = c, dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP } }
             };
             SendInput(1, [down], Marshal.SizeOf<INPUT>());
-            await Task.Delay(50);
+            await Task.Delay(Math.Max(1, holdMs));
             SendInput(1, [up], Marshal.SizeOf<INPUT>());
             return;
         }
 
         ushort vk = (ushort)(vkResult & 0xFF);
-        bool needShift = (vkResult & 0x100) != 0;
+        byte shiftState = (byte)((vkResult >> 8) & 0xFF);
+        bool needShift = (shiftState & 0x01) != 0;
+        bool needCtrl = (shiftState & 0x02) != 0;
+        bool needAlt = (shiftState & 0x04) != 0;
 
+        if (needCtrl) SendScanCodeDown(VK_CONTROL);
+        if (needAlt) SendScanCodeDown(VK_MENU);
         if (needShift) SendScanCodeDown(VK_SHIFT);
-        await PressKeyAsync(vk);
+
+        await PressKeyAsync(vk, holdMs);
+
         if (needShift) SendScanCodeUp(VK_SHIFT);
+        if (needAlt) SendScanCodeUp(VK_MENU);
+        if (needCtrl) SendScanCodeUp(VK_CONTROL);
     }
 
     private static void SendModifiersDown(bool ctrl, bool shift, bool alt)
