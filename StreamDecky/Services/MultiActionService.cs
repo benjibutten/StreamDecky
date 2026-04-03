@@ -47,7 +47,7 @@ public class MultiActionService
     {
         if (string.IsNullOrEmpty(keyText)) return;
 
-        Task.Run(async () =>
+        RunDetached(async () =>
         {
             await Task.Delay(500);
             await InputSimulator.SendKeyPressAsync(keyText);
@@ -73,5 +73,20 @@ public class MultiActionService
 
         if (step.PressEnterAfter)
             await InputSimulator.SendEnterAsync();
+    }
+
+    private static void RunDetached(Func<Task> operation)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await operation().ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignore background execution errors to avoid breaking user interaction flow.
+            }
+        });
     }
 }

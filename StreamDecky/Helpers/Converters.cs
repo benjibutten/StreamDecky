@@ -102,7 +102,10 @@ public class HasTextToVisibilityConverter : IValueConverter
 
 public class PathToImageSourceConverter : IValueConverter
 {
+    private const int MaxImageCacheEntries = 192;
     private static readonly Dictionary<string, ImageSource> ImageCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, LinkedListNode<string>> ImageCacheNodes = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly LinkedList<string> ImageCacheOrder = new();
     private static readonly object ImageCacheLock = new();
 
     public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -125,7 +128,10 @@ public class PathToImageSourceConverter : IValueConverter
                 lock (ImageCacheLock)
                 {
                     if (ImageCache.TryGetValue(cacheKey, out var cached))
+                    {
+                        TouchImageCacheKey(cacheKey);
                         return cached;
+                    }
                 }
 
                 var bitmap = new BitmapImage();
@@ -144,7 +150,7 @@ public class PathToImageSourceConverter : IValueConverter
 
                 lock (ImageCacheLock)
                 {
-                    ImageCache[cacheKey] = bitmap;
+                    AddImageToCache(cacheKey, bitmap);
                 }
 
                 return bitmap;
@@ -160,6 +166,44 @@ public class PathToImageSourceConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
         return string.Empty;
+    }
+
+    private static void AddImageToCache(string cacheKey, ImageSource image)
+    {
+        if (ImageCache.ContainsKey(cacheKey))
+        {
+            ImageCache[cacheKey] = image;
+            TouchImageCacheKey(cacheKey);
+            return;
+        }
+
+        ImageCache[cacheKey] = image;
+        var node = ImageCacheOrder.AddLast(cacheKey);
+        ImageCacheNodes[cacheKey] = node;
+
+        while (ImageCache.Count > MaxImageCacheEntries)
+            EvictOldestImageCacheEntry();
+    }
+
+    private static void TouchImageCacheKey(string cacheKey)
+    {
+        if (!ImageCacheNodes.TryGetValue(cacheKey, out var node))
+            return;
+
+        ImageCacheOrder.Remove(node);
+        ImageCacheOrder.AddLast(node);
+    }
+
+    private static void EvictOldestImageCacheEntry()
+    {
+        var oldest = ImageCacheOrder.First;
+        if (oldest == null)
+            return;
+
+        string key = oldest.Value;
+        ImageCacheOrder.RemoveFirst();
+        ImageCacheNodes.Remove(key);
+        ImageCache.Remove(key);
     }
 }
 
@@ -188,20 +232,15 @@ public class ButtonShapeToGeometryConverter : IValueConverter
         [StreamDecky.Models.ButtonShape.Hexagon] = "M50,0 L93,25 L93,75 L50,100 L7,75 L7,25 Z",
     };
 
+    private static readonly Dictionary<StreamDecky.Models.ButtonShape, Geometry> CachedGeometries = BuildCachedGeometries();
+
     public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         if (value is StreamDecky.Models.ButtonShape shape 
-            && shape != StreamDecky.Models.ButtonShape.None 
-            && ShapePaths.TryGetValue(shape, out var path))
+            && shape != StreamDecky.Models.ButtonShape.None
+            && CachedGeometries.TryGetValue(shape, out var geometry))
         {
-            try
-            {
-                return Geometry.Parse(path);
-            }
-            catch
-            {
-                return null;
-            }
+            return geometry;
         }
         return null;
     }
@@ -209,6 +248,26 @@ public class ButtonShapeToGeometryConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
         return StreamDecky.Models.ButtonShape.None;
+    }
+
+    private static Dictionary<StreamDecky.Models.ButtonShape, Geometry> BuildCachedGeometries()
+    {
+        var cache = new Dictionary<StreamDecky.Models.ButtonShape, Geometry>();
+        foreach (var pair in ShapePaths)
+        {
+            try
+            {
+                var geometry = Geometry.Parse(pair.Value);
+                geometry.Freeze();
+                cache[pair.Key] = geometry;
+            }
+            catch
+            {
+                // Ignore invalid geometry definitions and continue with remaining shapes.
+            }
+        }
+
+        return cache;
     }
 }
 

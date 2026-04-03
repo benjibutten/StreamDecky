@@ -32,7 +32,7 @@ public class TextInputActionService
             Clipboard.SetText(text);
         });
 
-        Task.Run(async () =>
+        RunDetached(async () =>
         {
             await Task.Delay(500);
             await InputSimulator.SendPasteAsync();
@@ -46,7 +46,7 @@ public class TextInputActionService
 
     private void ExecuteSimulateTyping(string text, bool pressEnter, bool useNaturalTyping)
     {
-        Task.Run(async () =>
+        RunDetached(async () =>
         {
             await Task.Delay(500);
             await InputSimulator.SendTextAsync(text, useNaturalCadence: useNaturalTyping);
@@ -54,6 +54,21 @@ public class TextInputActionService
             {
                 await Task.Delay(50);
                 await InputSimulator.SendEnterAsync();
+            }
+        });
+    }
+
+    private static void RunDetached(Func<Task> operation)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await operation().ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignore background execution errors to avoid surfacing transient input failures to UI.
             }
         });
     }

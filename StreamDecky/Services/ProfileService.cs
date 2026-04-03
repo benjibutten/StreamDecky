@@ -45,7 +45,18 @@ public class ProfileService
     public void Save(DeckProfile profile)
     {
         Directory.CreateDirectory(AppDataFolder);
-        var json = JsonSerializer.Serialize(profile, JsonOptions);
+        var json = Serialize(profile);
         File.WriteAllText(ProfilePath, json);
+    }
+
+    public string Serialize(DeckProfile profile)
+    {
+        return JsonSerializer.Serialize(profile, JsonOptions);
+    }
+
+    public async Task SaveSerializedAsync(string json, CancellationToken cancellationToken = default)
+    {
+        Directory.CreateDirectory(AppDataFolder);
+        await File.WriteAllTextAsync(ProfilePath, json, cancellationToken);
     }
 }

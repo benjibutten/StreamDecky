@@ -1,101 +1,173 @@
 # StreamDecky
 
-En enkel Stream Deck-klon för Windows med fullskärms-overlay.
+StreamDecky är en Stream Deck-liknande desktopapp för Windows med fullskärms-overlay, redigerbar knappgrid, sticky notes och global hotkey.
 
-## Teknikval
+Appen är byggd för snabba in-game/in-app actions där overlayen visas ovanpå andra fönster och kan skicka tangenttryckningar/text till tidigare aktivt fönster.
 
-**WPF (.NET 9)** valdes över WinUI 3 av följande skäl:
-- WPF har mogen och stabil Win32-interop för topmost-fönster och input-hantering
-- WinUI 3 har kända begränsningar med topmost-overlay-scenarier
-- WPF:s databinding och MVVM-stöd med CommunityToolkit.Mvvm ger ren arkitektur
-- Enklare kontroll över fönsterbeteende (WindowStyle, AllowsTransparency, etc.)
+## Teknik
 
-## Arkitektur
+- Plattform: WPF
+- Runtime: .NET 10 (`net10.0-windows`)
+- Mönster: MVVM med CommunityToolkit.Mvvm
+- Inputsimulering: Win32 `SendInput` (scan-code-baserat)
+- Persistens: JSON i `%LOCALAPPDATA%\StreamDecky\profile.json`
 
-```
+## Nuvarande funktionalitet
+
+### Overlay och fokus
+
+- Fullskärms-overlay (`OverlayWindow`) med topmost-beteende
+- Stäng med `Esc` eller stängknapp
+- Overlay försöker återta fokus om det tappas
+- Vid action klickas overlay ner och fokus återställs aggressivt till tidigare foreground-fönster innan action körs
+
+### System tray och huvudfönster
+
+- Appen skapar en tray-ikon med meny:
+  - `Show`
+  - `Exit`
+- Huvudfönstrets stängning minimerar till tray (hide) i stället för att avsluta appen
+- Tray-ikon laddas robust:
+  - Primärt från `StreamDecky.ico` i runtime-mappen
+  - Fallback till ikonen inbäddad i exe-filen
+  - Sista fallback: Windows standard-applikationsikon
+
+### Actions per knapp
+
+- `TextInput`
+  - Textläge: clipboard-paste eller simulerad typing
+  - Valfritt Enter efter text
+- `KeyPress`
+  - SendKeys-liknande strängformat med modifierare/specialtangenter
+- `MultiAction`
+  - Sekvens av steps:
+    - KeyPress
+    - TextInput
+    - Delay
+- `LayoutNavigation`
+  - Hoppar till target-layout (page eller virtual layout)
+
+### Layoutsystem
+
+- Vanliga pages med pager (föregående/nästa)
+- Virtual layouts som kan nås via navigation targets
+- Gemensam layoutstorlek (`Rows`/`Columns`) för alla pages/layouts i profil
+- Lägg till, ta bort, döp om pages/layouts
+- Layoutselector (`Go To Layout`) i editorn
+
+### Knappeditor
+
+- Titel, ikontext, bild, färger, corner radius, shape
+- Shapes: none, heart, star, diamond, hexagon
+- Högerklicksmeny + kortkommandon för copy/paste av knappkonfiguration
+- Dubbeklick på `LayoutNavigation`-knapp i editorn följer target direkt
+
+### Sticky notes
+
+- Notes är page-oberoende och ligger i separata note pages (`NotePages`)
+- Overlay kan:
+  - visa note pages
+  - dra notes
+  - ändra färg
+  - minimera/maximera
+  - ta bort note
+  - inline-redigera titel
+- Main window kan hantera note pages (lägg till/ta bort/navigera)
+
+### Inställningar
+
+- Overlay-bakgrundsfärg
+- Overlay-bakgrundsbild
+- Button size / spacing / overlay opacity
+- Grid layout (rows/columns, globalt för profilen)
+- Hotkey recording för overlay toggle
+- Start with Windows (HKCU Run)
+- Natural typing (experimentell)
+- Export layout till JSON
+
+## Kortkommandon
+
+I huvudfönstret (när textfält inte är fokuserat):
+
+- `Delete`: töm vald knapp
+- `Ctrl+C`: kopiera vald knapp
+- `Ctrl+V`: klistra in på vald knapp
+
+I overlay:
+
+- `Esc`: stäng overlay
+
+## Data och profiler
+
+- Profil sparas automatiskt (debounce) samt vid explicit save-flöden
+- Auto-save är riktad till faktiska datamutationer
+- Export i Settings skriver hela profilen till valfri JSON-fil
+
+## Arkitekturöversikt
+
+```text
 StreamDecky/
-├── Models/          # Data: ButtonConfig, DeckPage, DeckProfile, ActionType, TextMode
-├── ViewModels/      # MVVM: MainViewModel, ButtonViewModel
-├── Views/           # OverlayWindow (fullskärm)
-├── Services/        # ProfileService (JSON-persistens), TextInputActionService
-├── Helpers/         # Win32 interop (OverlayInterop), WPF-konverterare
-├── MainWindow.xaml  # Huvudfönster med deck-grid + editor
-└── App.xaml         # Applikationsstart
+├── Models/
+│   ├── DeckProfile, DeckPage, NotePage, StickyNote
+│   ├── ButtonConfig, ActionStep
+│   └── enums (ActionType, ActionStepType, TextMode, ButtonShape)
+├── ViewModels/
+│   ├── MainViewModel
+│   ├── ButtonViewModel
+│   └── StickyNoteViewModel
+├── Views/
+│   ├── OverlayWindow
+│   └── SettingsWindow
+├── Services/
+│   ├── ProfileService
+│   ├── TextInputActionService
+│   └── MultiActionService
+├── Helpers/
+│   ├── OverlayInterop
+│   ├── InputSimulator
+│   ├── OverlayImageCache
+│   └── Converters
+└── MainWindow.xaml (+ code-behind)
 ```
 
-**Mönster**: MVVM med CommunityToolkit.Mvvm (source generators för RelayCommand, ObservableProperty).
+## Köra lokalt
 
-## Hur overlayen fungerar
+Krav: .NET 10 SDK på Windows.
 
-1. **Öppning**: Användaren klickar "Open Overlay" → nytt `OverlayWindow` skapas
-2. **Fullskärm**: `WindowState="Maximized"`, `WindowStyle="None"`, `Topmost="True"`
-3. **Input-blockering**: Overlayen täcker hela skärmen med `AllowsTransparency` och blockerar musklick till underliggande fönster
-4. **Win32-förstärkning**: `OverlayInterop.MakeTopmost()` använder `SetWindowPos(HWND_TOPMOST)` + `SetForegroundWindow` för garanterat topmost
-5. **Fokusåterfångning**: `OnDeactivated` re-aktiverar overlayen om den förlorar fokus (t.ex. vid Alt+Tab)
-6. **Stängning**: Esc-tangent eller stängknapp → overlay stängs, fokus återgår till Windows
-
-### Kända begränsningar
-
-- **Ctrl+Alt+Del**: Systemkombinationen kan inte fångas utan kernel-nivå hooks. Windows visar alltid sin säkerhetsskärm.
-- **Win-tangenten**: Kan öppna startmenyn kortvarigt, men overlayen re-fångar fokus automatiskt.
-- **Secure Desktop**: Applikationen kan inte blockera UAC-prompter eller liknande systemdialoger.
-- **Multi-monitor**: Overlayen täcker primär skärm. Fullständigt multi-monitor-stöd kräver ytterligare arbete.
-
-## Implementerad funktionalitet (v1)
-
-### Text Input Action
-- **Title**: Visningsnamn på knappen i decken
-- **Text**: Innehåll som skrivs/klistras in
-- **Press Enter after message**: Valfritt Enter-tryck efter texten
-- **Text Mode**:
-  - *Paste from Clipboard*: Placerar texten i clipboard och klistrar in (Ctrl+V)
-  - *Simulate typing*: Simulerar tangenttryckningar tecken för tecken via SendKeys
-
-### Anpassning
-- Bakgrundsfärg på overlay
-- Knappfärg (per knapp)
-- Textfärg (per knapp)
-- Ikon/emoji (per knapp)
-- Hörnradie (per knapp)
-- Knappstorlek och spacing (globalt)
-
-### Editor
-- Klicka på en knapp i griden för att redigera den
-- Visuell markering (lila ram) visar vald knapp
-- Alla ändringar reflekteras direkt i förhandsvisningen
-- Spara-knapp persisterar profilen till `%LOCALAPPDATA%\StreamDecky\profile.json`
-
-## Hur man kör
-
-```bash
-# Kräver .NET 9 SDK
-dotnet run --project StreamDecky\StreamDecky.csproj
+```powershell
+dotnet restore StreamDecky/StreamDecky.csproj
+dotnet run --project StreamDecky/StreamDecky.csproj
 ```
 
-## Vad som är verifierat
+## Publicering
 
-- [x] Projektet kompilerar utan fel
-- [x] Appen startar och visar huvudfönster med deck-grid och editor
-- [x] Overlay öppnas i fullskärm vid klick på "Open Overlay"
-- [x] Overlay stängs med Esc eller stängknapp
-- [x] Text Input-action stöder båda lägena (Paste, Simulate typing)
-- [x] Knappanpassning (färg, text, ikon, rundning) reflekteras i UI
-- [x] Profil sparas/laddas med JSON
+Exempel (self-contained single-file, win-x64):
 
-## Ej implementerat (planerade actions)
+```powershell
+dotnet publish StreamDecky/StreamDecky.csproj \
+  -c Release \
+  -r win-x64 \
+  --self-contained true \
+  -p:PublishSingleFile=true \
+  -p:IncludeNativeLibrariesForSelfExtract=true \
+  -p:EnableCompressionInSingleFile=false \
+  -p:PublishReadyToRun=true
+```
 
-- Skicka tangentkombination/hotkey
-- Starta program
-- Öppna fil/mapp/URL
-- Växla sida i decken
-- Multi-monitor overlay
-- Globalt hotkey för att toggla overlay
+Projektet inkluderar `StreamDecky.ico` som publish-content och markerar den med `ExcludeFromSingleFile=true`, så ikonen kan ligga separat bredvid exe även vid single-file-publish.
 
-## Nästa steg
+## Kända begränsningar
 
-1. Implementera Hotkey-action (SendKeys med modifierare)
-2. Implementera Launch Program-action (Process.Start)
-3. Implementera Open File/Folder/URL-action
-4. Implementera sidbyte i decken
-5. Globalt tangentbordsgenväg för att aktivera overlay (RegisterHotKey)
-6. Multi-monitor-stöd
+- Systemnivåfunktioner som `Ctrl+Alt+Del`, Secure Desktop och vissa UAC-scenarier kan inte blockeras av en vanlig desktopapp
+- Vissa spel/appar med stark anti-cheat eller låg nivå-inputfilter kan fortfarande ignorera simulerad input
+- Overlayen är primärt designad kring huvudskärmsbeteende
+
+## Säkerhet och privilegier
+
+- `app.manifest` körs som `asInvoker` (ingen admin krävs)
+- Start with Windows skrivs till:
+  - `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`
+
+## Licens
+
+Se `LICENSE`.
