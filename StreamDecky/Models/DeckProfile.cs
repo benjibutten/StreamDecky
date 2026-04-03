@@ -14,6 +14,7 @@ public class DeckProfile
     public uint HotkeyVk { get; set; } = 0x7B;          // VK_F12
     public string HotkeyDisplayText { get; set; } = "Ctrl + F12";
     public bool StartWithWindows { get; set; } = false;
+    public bool NaturalTypingEnabled { get; set; } = false;
     public bool StickyNotesVisible { get; set; }
     public int LayoutRows { get; set; }
     public int LayoutColumns { get; set; }

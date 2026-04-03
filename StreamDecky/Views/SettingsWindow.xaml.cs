@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
+using System.IO;
+using System.Text.Json;
 using StreamDecky.ViewModels;
 
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -9,6 +11,11 @@ namespace StreamDecky.Views;
 public partial class SettingsWindow : Window
 {
     private readonly MainViewModel _viewModel;
+    private static readonly JsonSerializerOptions ExportJsonOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    };
 
     public SettingsWindow(MainViewModel viewModel)
     {
@@ -49,6 +56,42 @@ public partial class SettingsWindow : Window
     private void BgImageClear_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.OverlayBackgroundImagePath = string.Empty;
+    }
+
+    private void ExportLayout_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export Layout",
+            Filter = "JSON files|*.json|All files|*.*",
+            DefaultExt = ".json",
+            AddExtension = true,
+            OverwritePrompt = true,
+            FileName = $"streamdecky-layout-{DateTime.Now:yyyyMMdd-HHmm}.json"
+        };
+
+        if (dlg.ShowDialog() != true)
+            return;
+
+        try
+        {
+            var json = JsonSerializer.Serialize(_viewModel.Profile, ExportJsonOptions);
+            File.WriteAllText(dlg.FileName, json);
+
+            System.Windows.MessageBox.Show(
+                $"Layout exported to:\n{dlg.FileName}",
+                "Export Complete",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Could not export layout.\n\n{ex.Message}",
+                "Export Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private void RecordHotkey_Click(object sender, RoutedEventArgs e)

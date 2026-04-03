@@ -9,7 +9,7 @@ namespace StreamDecky.Services;
 
 public class TextInputActionService
 {
-    public void Execute(ButtonConfig config)
+    public void Execute(ButtonConfig config, bool useNaturalTyping = false)
     {
         if (string.IsNullOrEmpty(config.Text))
             return;
@@ -20,7 +20,7 @@ public class TextInputActionService
                 ExecutePaste(config.Text, config.PressEnterAfter);
                 break;
             case TextMode.SimulateTyping:
-                ExecuteSimulateTyping(config.Text, config.PressEnterAfter);
+                ExecuteSimulateTyping(config.Text, config.PressEnterAfter, useNaturalTyping);
                 break;
         }
     }
@@ -44,12 +44,12 @@ public class TextInputActionService
         });
     }
 
-    private void ExecuteSimulateTyping(string text, bool pressEnter)
+    private void ExecuteSimulateTyping(string text, bool pressEnter, bool useNaturalTyping)
     {
         Task.Run(async () =>
         {
             await Task.Delay(500);
-            InputSimulator.SendText(text);
+            await InputSimulator.SendTextAsync(text, useNaturalCadence: useNaturalTyping);
             if (pressEnter)
             {
                 await Task.Delay(50);
