@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.IO;
 using System.Text.Json;
+using StreamDecky.Helpers;
 using StreamDecky.ViewModels;
 
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -11,6 +12,31 @@ namespace StreamDecky.Views;
 public partial class SettingsWindow : Window
 {
     private readonly MainViewModel _viewModel;
+    private const ushort RecordableGamepadButtons =
+        XInputInterop.GamepadDPadUp |
+        XInputInterop.GamepadDPadDown |
+        XInputInterop.GamepadDPadLeft |
+        XInputInterop.GamepadDPadRight |
+        XInputInterop.GamepadStart |
+        XInputInterop.GamepadBack |
+        XInputInterop.GamepadLeftThumb |
+        XInputInterop.GamepadRightThumb |
+        XInputInterop.GamepadLeftShoulder |
+        XInputInterop.GamepadRightShoulder |
+        XInputInterop.GamepadA |
+        XInputInterop.GamepadB |
+        XInputInterop.GamepadX |
+        XInputInterop.GamepadY;
+
+    private readonly System.Windows.Threading.DispatcherTimer _gamepadRecordTimer = new()
+    {
+        Interval = TimeSpan.FromMilliseconds(33)
+    };
+
+    private bool _isRecordingGamepadCombo;
+    private bool _hasRecordedGamepadPress;
+    private ushort _recordedGamepadButtons;
+
     private static readonly JsonSerializerOptions ExportJsonOptions = new()
     {
         WriteIndented = true,
@@ -22,6 +48,7 @@ public partial class SettingsWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
         InitializeComponent();
+        _gamepadRecordTimer.Tick += GamepadRecordTimer_Tick;
     }
 
     private void OverlayBgColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -144,6 +171,76 @@ public partial class SettingsWindow : Window
         RecordHotkeyButton.Content = "⌨ Record";
         RecordHotkeyButton.Background = new System.Windows.Media.SolidColorBrush(
             (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2D2D44"));
+    }
+
+    private void RecordGamepadCombo_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isRecordingGamepadCombo)
+        {
+            StopRecordingGamepadCombo();
+            return;
+        }
+
+        _recordedGamepadButtons = 0;
+        _hasRecordedGamepadPress = false;
+        _isRecordingGamepadCombo = true;
+
+        RecordGamepadComboButton.Content = "⏺ Press combo...";
+        RecordGamepadComboButton.Background = new System.Windows.Media.SolidColorBrush(
+            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#274A5A"));
+
+        _gamepadRecordTimer.Start();
+    }
+
+    private void GamepadRecordTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!_isRecordingGamepadCombo)
+            return;
+
+        if (!XInputInterop.TryGetFirstConnectedState(out var state))
+        {
+            if (!_hasRecordedGamepadPress)
+                RecordGamepadComboButton.Content = "⏺ Waiting for controller...";
+            return;
+        }
+
+        if (!_hasRecordedGamepadPress)
+            RecordGamepadComboButton.Content = "⏺ Press combo...";
+
+        ushort pressedButtons = (ushort)(state.Gamepad.wButtons & RecordableGamepadButtons);
+
+        if (pressedButtons != 0)
+        {
+            _recordedGamepadButtons |= pressedButtons;
+            _hasRecordedGamepadPress = true;
+            return;
+        }
+
+        if (_hasRecordedGamepadPress && _recordedGamepadButtons != 0)
+        {
+            _viewModel.GamepadToggleButtons = _recordedGamepadButtons;
+            StopRecordingGamepadCombo();
+        }
+    }
+
+    private void StopRecordingGamepadCombo()
+    {
+        _gamepadRecordTimer.Stop();
+        _isRecordingGamepadCombo = false;
+        _hasRecordedGamepadPress = false;
+        _recordedGamepadButtons = 0;
+
+        RecordGamepadComboButton.Content = "🎮 Record";
+        RecordGamepadComboButton.Background = new System.Windows.Media.SolidColorBrush(
+            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2D2D44"));
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        PreviewKeyDown -= OnHotkeyRecordKeyDown;
+        _gamepadRecordTimer.Stop();
+        _gamepadRecordTimer.Tick -= GamepadRecordTimer_Tick;
+        base.OnClosed(e);
     }
 
     private static string? ShowColorDialog(string currentHex)

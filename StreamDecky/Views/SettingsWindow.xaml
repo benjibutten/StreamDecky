@@ -334,6 +334,63 @@
         <!-- Separator -->
         <Border Height="1" Background="#333" Margin="0,0,0,16"/>
 
+        <!-- Gamepad Section -->
+        <TextBlock Text="GAMEPAD OVERLAY (OPTIONAL)" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+        <CheckBox IsChecked="{Binding GamepadSupportEnabled, Mode=TwoWay}"
+                  Content="Enable gamepad support (XInput)"
+                  Foreground="#CCC" FontSize="13" Margin="0,0,0,8" Cursor="Hand"/>
+        <TextBlock Text="Overlay activation combo"
+                   Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Background="#2D2D44" BorderBrush="#444" BorderThickness="1" CornerRadius="4" Padding="8,6">
+                <TextBlock Text="{Binding GamepadToggleDisplayText}"
+                           Foreground="#A7D3FF"
+                           FontSize="13"
+                           FontWeight="SemiBold"/>
+            </Border>
+            <Button x:Name="RecordGamepadComboButton"
+                    Grid.Column="1"
+                    Content="🎮 Record"
+                    Click="RecordGamepadCombo_Click"
+                    Background="#2D2D44"
+                    Foreground="White"
+                    FontSize="12"
+                    Padding="10,5"
+                    Margin="4,0,0,0"
+                    BorderThickness="0"
+                    Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
+        <TextBlock Text="Click Record, press your desired gamepad button combo, then release to save it."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4"/>
+        <TextBlock Text="Overlay controls: D-pad navigation, left stick fallback, A activates selected shortcut, LB/RB switches regular pages."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <!-- Separator -->
+        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+
         <!-- Startup Section -->
         <TextBlock Text="STARTUP" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
         <CheckBox IsChecked="{Binding StartWithWindows, Mode=TwoWay}" 
