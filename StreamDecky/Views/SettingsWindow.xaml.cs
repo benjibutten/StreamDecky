@@ -3,6 +3,7 @@ using System.Windows.Input;
 using System.IO;
 using System.Text.Json;
 using StreamDecky.Helpers;
+using StreamDecky.Models;
 using StreamDecky.ViewModels;
 
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -85,16 +86,54 @@ public partial class SettingsWindow : Window
         _viewModel.OverlayBackgroundImagePath = string.Empty;
     }
 
-    private void ExportLayout_Click(object sender, RoutedEventArgs e)
+    private void ImportProfile_Click(object sender, RoutedEventArgs e)
     {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Import Profile",
+            Filter = "JSON files|*.json|All files|*.*"
+        };
+
+        if (dlg.ShowDialog() != true)
+            return;
+
+        try
+        {
+            string json = File.ReadAllText(dlg.FileName);
+            var importedProfile = JsonSerializer.Deserialize<DeckProfile>(json, ExportJsonOptions);
+            if (importedProfile == null)
+            {
+                System.Windows.MessageBox.Show(
+                    "Could not import profile. File content is invalid.",
+                    "Import Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            _viewModel.ImportProfileCommand.Execute(importedProfile);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Could not import profile.\n\n{ex.Message}",
+                "Import Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void ExportProfile_Click(object sender, RoutedEventArgs e)
+    {
+        string safeName = MakeSafeFileName(_viewModel.ActiveProfileName);
         var dlg = new Microsoft.Win32.SaveFileDialog
         {
-            Title = "Export Layout",
+            Title = "Export Profile",
             Filter = "JSON files|*.json|All files|*.*",
             DefaultExt = ".json",
             AddExtension = true,
             OverwritePrompt = true,
-            FileName = $"streamdecky-layout-{DateTime.Now:yyyyMMdd-HHmm}.json"
+            FileName = $"streamdecky-profile-{safeName}-{DateTime.Now:yyyyMMdd-HHmm}.json"
         };
 
         if (dlg.ShowDialog() != true)
@@ -106,7 +145,7 @@ public partial class SettingsWindow : Window
             File.WriteAllText(dlg.FileName, json);
 
             System.Windows.MessageBox.Show(
-                $"Layout exported to:\n{dlg.FileName}",
+                $"Profile exported to:\n{dlg.FileName}",
                 "Export Complete",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -114,7 +153,7 @@ public partial class SettingsWindow : Window
         catch (Exception ex)
         {
             System.Windows.MessageBox.Show(
-                $"Could not export layout.\n\n{ex.Message}",
+                $"Could not export profile.\n\n{ex.Message}",
                 "Export Failed",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -263,5 +302,15 @@ public partial class SettingsWindow : Window
             return $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}";
         }
         return null;
+    }
+
+    private static string MakeSafeFileName(string value)
+    {
+        string fallback = string.IsNullOrWhiteSpace(value) ? "profile" : value.Trim();
+
+        foreach (char c in Path.GetInvalidFileNameChars())
+            fallback = fallback.Replace(c, '-');
+
+        return fallback;
     }
 }
