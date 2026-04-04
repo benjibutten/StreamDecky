@@ -6,6 +6,10 @@ namespace StreamDecky.ViewModels;
 public partial class StickyNoteViewModel : ObservableObject
 {
     public const double MinimizedHeight = 28;
+    public const double MinWidth = 160;
+    public const double MaxWidth = 420;
+    public const double MinHeight = 120;
+    public const double MaxHeight = 360;
 
     [ObservableProperty]
     private bool _isEditingTitle;
@@ -84,7 +88,7 @@ public partial class StickyNoteViewModel : ObservableObject
         get => _model.Width;
         set
         {
-            double clamped = Math.Clamp(value, 160, 420);
+            double clamped = Math.Clamp(value, MinWidth, MaxWidth);
             if (Math.Abs(_model.Width - clamped) < 0.1)
                 return;
 
@@ -99,7 +103,7 @@ public partial class StickyNoteViewModel : ObservableObject
         get => _model.Height;
         set
         {
-            double clamped = Math.Clamp(value, 120, 360);
+            double clamped = Math.Clamp(value, MinHeight, MaxHeight);
             if (Math.Abs(_model.Height - clamped) < 0.1)
                 return;
 

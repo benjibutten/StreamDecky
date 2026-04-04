@@ -2,6 +2,9 @@ namespace StreamDecky.Models;
 
 public class DeckProfile
 {
+    public const double MinStickyNoteFontSize = 10;
+    public const double MaxStickyNoteFontSize = 30;
+
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Name { get; set; } = "Standard";
     public string OverlayBackgroundColor { get; set; } = "#1E1E2E";
@@ -19,6 +22,12 @@ public class DeckProfile
     public bool GamepadSupportEnabled { get; set; } = false;
     public ushort GamepadToggleButtons { get; set; } = 0x0030; // Back + Start
     public bool StickyNotesVisible { get; set; }
+    public double StickyNoteFontSize { get; set; } = 13;
+    public List<QuickTextCategory> QuickTextCategories { get; set; } = new() { new QuickTextCategory() };
+    public string ActiveQuickTextCategoryId { get; set; } = string.Empty;
+    public List<QuickTextItem> QuickTextItems { get; set; } = new();
+    public double QuickTextPanelX { get; set; } = 30;
+    public double QuickTextPanelY { get; set; } = 96;
     public int LayoutRows { get; set; }
     public int LayoutColumns { get; set; }
     public List<DeckPage> Pages { get; set; } = new() { new DeckPage() };
@@ -35,10 +44,13 @@ public class DeckProfile
             Name = "Standard";
 
         ButtonOverlayOpacity = Math.Clamp(ButtonOverlayOpacity, 0.2, 1.0);
+        StickyNoteFontSize = Math.Clamp(StickyNoteFontSize, MinStickyNoteFontSize, MaxStickyNoteFontSize);
 
         Pages ??= new List<DeckPage>();
         VirtualLayouts ??= new List<DeckPage>();
         NotePages ??= new List<NotePage>();
+        QuickTextCategories ??= new List<QuickTextCategory>();
+        QuickTextItems ??= new List<QuickTextItem>();
 
         if (Pages.Count == 0)
             Pages.Add(new DeckPage());
@@ -67,7 +79,33 @@ public class DeckProfile
         foreach (var notePage in NotePages)
             notePage.EnsureInitialized();
 
+        if (QuickTextCategories.Count == 0)
+            QuickTextCategories.Add(new QuickTextCategory { Name = "General" });
+
+        foreach (var category in QuickTextCategories)
+            category.EnsureInitialized();
+
+        if (string.IsNullOrWhiteSpace(ActiveQuickTextCategoryId)
+            || !QuickTextCategories.Any(category => string.Equals(category.Id, ActiveQuickTextCategoryId, StringComparison.Ordinal)))
+        {
+            ActiveQuickTextCategoryId = QuickTextCategories[0].Id;
+        }
+
+        foreach (var item in QuickTextItems)
+        {
+            item.EnsureInitialized();
+
+            if (string.IsNullOrWhiteSpace(item.CategoryId)
+                || !QuickTextCategories.Any(category => string.Equals(category.Id, item.CategoryId, StringComparison.Ordinal)))
+            {
+                item.CategoryId = ActiveQuickTextCategoryId;
+            }
+        }
+
         CurrentNotePageIndex = Math.Clamp(CurrentNotePageIndex, 0, NotePages.Count - 1);
+
+        QuickTextPanelX = Math.Max(0, QuickTextPanelX);
+        QuickTextPanelY = Math.Max(0, QuickTextPanelY);
     }
 
     private void MigrateLegacyStickyNotes()

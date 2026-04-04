@@ -40,6 +40,15 @@ public partial class OverlayWindow : Window
     private System.Windows.Point _stickyDragStart;
     private double _stickyStartX;
     private double _stickyStartY;
+    private StickyNoteViewModel? _resizingStickyNote;
+    private System.Windows.Point _stickyResizeStart;
+    private double _stickyResizeStartX;
+    private double _stickyResizeStartWidth;
+    private double _stickyResizeStartHeight;
+    private bool _isDraggingQuickTextPanel;
+    private System.Windows.Point _quickTextPanelDragStart;
+    private double _quickTextPanelStartX;
+    private double _quickTextPanelStartY;
     private ushort _previousGamepadButtons;
     private OverlayNavigationDirection _heldNavigationDirection;
     private DateTime _nextNavigationRepeatAtUtc = DateTime.MinValue;
@@ -60,6 +69,7 @@ public partial class OverlayWindow : Window
         Focus();
         Activate();
         EnsureOverlaySelection();
+        Dispatcher.BeginInvoke(new Action(ClampQuickTextPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         _gamepadTimer.Start();
     }
 
@@ -466,6 +476,58 @@ public partial class OverlayWindow : Window
         _draggingStickyNote = null;
     }
 
+    private void StickyNoteResizeHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is StickyNoteViewModel note)
+        {
+            _resizingStickyNote = note;
+            _stickyResizeStart = e.GetPosition(this);
+            _stickyResizeStartX = note.X;
+            _stickyResizeStartWidth = note.Width;
+            _stickyResizeStartHeight = note.Height;
+            element.CaptureMouse();
+            e.Handled = true;
+        }
+    }
+
+    private void StickyNoteResizeHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_resizingStickyNote == null)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        var dx = pos.X - _stickyResizeStart.X;
+        var dy = pos.Y - _stickyResizeStart.Y;
+
+        double rightEdge = _stickyResizeStartX + _stickyResizeStartWidth;
+        double desiredWidth = _stickyResizeStartWidth - dx;
+        double maxWidthByRightEdge = Math.Max(StickyNoteViewModel.MinWidth, Math.Min(StickyNoteViewModel.MaxWidth, rightEdge));
+        double clampedWidth = Math.Clamp(desiredWidth, StickyNoteViewModel.MinWidth, maxWidthByRightEdge);
+
+        _resizingStickyNote.Width = clampedWidth;
+        _resizingStickyNote.Height = _stickyResizeStartHeight + dy;
+
+        double desiredX = rightEdge - _resizingStickyNote.Width;
+        double maxX = Math.Max(0, ActualWidth - _resizingStickyNote.Width - 12);
+        double maxY = Math.Max(0, ActualHeight - _resizingStickyNote.DisplayHeight - 12);
+
+        _resizingStickyNote.X = Math.Clamp(desiredX, 0, maxX);
+        _resizingStickyNote.Y = Math.Clamp(_resizingStickyNote.Y, 0, maxY);
+
+        e.Handled = true;
+    }
+
+    private void StickyNoteResizeHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _resizingStickyNote = null;
+    }
+
     private void StickyNoteRemove_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement element && element.DataContext is StickyNoteViewModel note)
@@ -493,6 +555,78 @@ public partial class OverlayWindow : Window
             note.X = Math.Clamp(note.X, 0, maxX);
             note.Y = Math.Clamp(note.Y, 0, maxY);
         }
+    }
+
+    private void QuickTextPanelHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isDraggingQuickTextPanel = true;
+        _quickTextPanelDragStart = e.GetPosition(this);
+        _quickTextPanelStartX = _viewModel.QuickTextPanelX;
+        _quickTextPanelStartY = _viewModel.QuickTextPanelY;
+
+        if (sender is UIElement element)
+            element.CaptureMouse();
+
+        e.Handled = true;
+    }
+
+    private void QuickTextPanelHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isDraggingQuickTextPanel)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _quickTextPanelDragStart.X;
+        double dy = pos.Y - _quickTextPanelDragStart.Y;
+
+        UpdateQuickTextPanelPosition(_quickTextPanelStartX + dx, _quickTextPanelStartY + dy);
+        e.Handled = true;
+    }
+
+    private void QuickTextPanelHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _isDraggingQuickTextPanel = false;
+    }
+
+    private void QuickTextCopy_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: QuickTextItemViewModel item })
+            return;
+
+        if (string.IsNullOrWhiteSpace(item.Text))
+            return;
+
+        try
+        {
+            System.Windows.Clipboard.SetText(item.Text);
+        }
+        catch
+        {
+            // Clipboard can fail if another process has it locked.
+        }
+    }
+
+    private void UpdateQuickTextPanelPosition(double desiredX, double desiredY)
+    {
+        double panelWidth = QuickTextPanel.ActualWidth > 1 ? QuickTextPanel.ActualWidth : QuickTextPanel.Width;
+        double panelHeight = QuickTextPanel.ActualHeight > 1 ? QuickTextPanel.ActualHeight : 280;
+
+        double maxX = Math.Max(0, ActualWidth - panelWidth - 12);
+        double maxY = Math.Max(0, ActualHeight - panelHeight - 12);
+
+        _viewModel.QuickTextPanelX = Math.Clamp(desiredX, 0, maxX);
+        _viewModel.QuickTextPanelY = Math.Clamp(desiredY, 42, maxY);
+    }
+
+    private void ClampQuickTextPanelToBounds()
+    {
+        UpdateQuickTextPanelPosition(_viewModel.QuickTextPanelX, _viewModel.QuickTextPanelY);
     }
 
     private void StartInlineTitleEdit(StickyNoteViewModel note)

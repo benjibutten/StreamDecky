@@ -222,6 +222,25 @@ public class OpacityConverter : IValueConverter
     }
 }
 
+public class StringEqualsConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 2)
+            return false;
+
+        string left = values[0]?.ToString() ?? string.Empty;
+        string right = values[1]?.ToString() ?? string.Empty;
+
+        return string.Equals(left, right, StringComparison.Ordinal);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 public class ButtonShapeToGeometryConverter : IValueConverter
 {
     private static readonly Dictionary<StreamDecky.Models.ButtonShape, string> ShapePaths = new()
