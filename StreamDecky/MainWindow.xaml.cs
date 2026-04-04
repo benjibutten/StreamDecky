@@ -488,6 +488,19 @@ public partial class MainWindow : Window
             _viewModel.RenamePageCommand.Execute(renamed);
     }
 
+    private void RenameQuickTextCategory_Click(object sender, RoutedEventArgs e)
+    {
+        string? renamed = TextPromptDialog.Show(
+            this,
+            "Rename Clipboard Category",
+            "Enter a category name:",
+            _viewModel.CurrentQuickTextCategoryName,
+            maxLength: 48);
+
+        if (!string.IsNullOrWhiteSpace(renamed))
+            _viewModel.RenameQuickTextCategoryCommand.Execute(renamed);
+    }
+
     private static bool IsTextEditingControlFocused()
     {
         return Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase

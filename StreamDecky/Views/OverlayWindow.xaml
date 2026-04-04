@@ -19,6 +19,7 @@
         <helpers:HasTextToVisibilityConverter x:Key="HasTextVisibility"/>
         <helpers:PathToImageSourceConverter x:Key="PathToImageSource"/>
         <helpers:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <helpers:StringEqualsConverter x:Key="StringEquals"/>
         <helpers:ButtonShapeToGeometryConverter x:Key="ShapeToGeometry"/>
         <helpers:CellImageBrushConverter x:Key="CellImageBrush"/>
         <helpers:AdaptiveButtonSizeConverter x:Key="AdaptiveButtonSize"/>
@@ -50,6 +51,42 @@
                                 <Setter TargetName="Bd" Property="Opacity" Value="0.35"/>
                                 <Setter Property="Foreground" Value="#88F2F2F2"/>
                             </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="QuickFilterChipButton" TargetType="Button">
+            <Setter Property="Background" Value="#2AFFFFFF"/>
+            <Setter Property="Foreground" Value="#E6EEF8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,6,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#3AFFFFFF"/>
+                            </Trigger>
+                            <DataTrigger Value="True">
+                                <DataTrigger.Binding>
+                                    <MultiBinding Converter="{StaticResource StringEquals}">
+                                        <Binding Path="Id"/>
+                                        <Binding Path="DataContext.SelectedQuickTextCategoryId" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding>
+                                </DataTrigger.Binding>
+                                <Setter TargetName="Bd" Property="Background" Value="#4A6EA0"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </DataTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -611,14 +648,260 @@
                                      Margin="10,8,10,10"
                                      TextWrapping="Wrap"
                                      AcceptsReturn="True"
-                                     VerticalScrollBarVisibility="Auto"
+                                     VerticalScrollBarVisibility="Hidden"
                                      HorizontalScrollBarVisibility="Disabled"
-                                     FontSize="13"/>
+                                     FontSize="{Binding DataContext.StickyNoteFontSize, RelativeSource={RelativeSource AncestorType=Window}}"/>
+
+                            <Border Grid.RowSpan="2"
+                                    Width="14"
+                                    Height="14"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Bottom"
+                                    Margin="-7,0,0,-7"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Cursor="SizeNESW"
+                                    Visibility="{Binding IsMinimized, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"
+                                    MouseLeftButtonDown="StickyNoteResizeHandle_MouseLeftButtonDown"
+                                    MouseMove="StickyNoteResizeHandle_MouseMove"
+                                    MouseLeftButtonUp="StickyNoteResizeHandle_MouseLeftButtonUp">
+                                <Grid>
+                                    <Line X1="4" Y1="10" X2="10" Y2="4"
+                                        Stroke="#264C4C4C"
+                                        StrokeThickness="1"
+                                          SnapsToDevicePixels="True"/>
+                                    <Line X1="6" Y1="10" X2="10" Y2="6"
+                                        Stroke="#264C4C4C"
+                                        StrokeThickness="1"
+                                          SnapsToDevicePixels="True"/>
+                                </Grid>
+                            </Border>
                         </Grid>
                     </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        <Border x:Name="QuickTextPanel"
+                Width="420"
+                MaxHeight="380"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="0"
+                Panel.ZIndex="9"
+                Visibility="{Binding HasAnyQuickTextItems, Converter={StaticResource BoolToVisibility}}"
+                Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
+            Opacity="{Binding ButtonOverlayOpacity}"
+                BorderBrush="#44FFFFFF"
+                BorderThickness="1"
+                CornerRadius="10">
+            <Border.RenderTransform>
+                <TranslateTransform X="{Binding QuickTextPanelX, Mode=TwoWay}"
+                                    Y="{Binding QuickTextPanelY, Mode=TwoWay}"/>
+            </Border.RenderTransform>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Rectangle Grid.RowSpan="2"
+                           Opacity="0.78"
+                           Visibility="{Binding OverlayBackgroundImagePath, Converter={StaticResource HasTextVisibility}}">
+                    <Rectangle.Fill>
+                        <ImageBrush ImageSource="{Binding OverlayBackgroundImagePath, Converter={StaticResource PathToImageSource}}"
+                                    Stretch="UniformToFill"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+
+                <Border Grid.RowSpan="2" Background="#A810141D" CornerRadius="10"/>
+
+                <Border Grid.Row="0"
+                        Background="#28000000"
+                        CornerRadius="10,10,0,0"
+                        Cursor="SizeAll"
+                        MouseLeftButtonDown="QuickTextPanelHandle_MouseLeftButtonDown"
+                        MouseMove="QuickTextPanelHandle_MouseMove"
+                        MouseLeftButtonUp="QuickTextPanelHandle_MouseLeftButtonUp">
+                    <Grid Margin="10,0,10,0" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="Clipboard List"
+                                   Foreground="#EAF2FA"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+
+                        <ItemsControl Grid.Column="1"
+                                      Margin="10,8,0,2"
+                                      VerticalAlignment="Center"
+                                      ItemsSource="{Binding QuickTextCategories}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Name}"
+                                            ToolTip="{Binding Name}"
+                                            Style="{StaticResource QuickFilterChipButton}"
+                                            Command="{Binding DataContext.SetQuickTextCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="1" Margin="10,10,10,10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="Snabbkopiera text direkt till clipboarden"
+                               Foreground="#C4D3E4"
+                               FontSize="11"
+                               Margin="0,0,0,8"/>
+
+                    <Grid Grid.Row="1" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding QuickTextSearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Foreground="#EFF4FA"
+                                 Background="#26000000"
+                                 BorderBrush="#3CFFFFFF"
+                                 BorderThickness="1"
+                                 Padding="8,5"
+                                 FontSize="12"
+                                 ToolTip="Sok i alla kategorier"/>
+
+                        <Button Grid.Column="1"
+                                Command="{Binding ClearQuickTextSearchCommand}"
+                                Content="✕"
+                                Margin="6,0,0,0"
+                                Padding="8,4"
+                                Foreground="#DCE7F2"
+                                Background="#2A000000"
+                                BorderThickness="0"
+                                FontSize="11"
+                                Cursor="Hand"
+                                Visibility="{Binding QuickTextSearchQuery, Converter={StaticResource HasTextVisibility}}">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="Bd"
+                                                        Background="{TemplateBinding Background}"
+                                                        CornerRadius="4"
+                                                        Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Bd" Property="Background" Value="#3C000000"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock Grid.Row="2"
+                               Text="Inga texter matchade filtret eller sokningen."
+                               Foreground="#8B9FB5"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               Visibility="{Binding HasQuickTextItems, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
+
+                    <ScrollViewer Grid.Row="2"
+                                  VerticalScrollBarVisibility="Hidden"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Visibility="{Binding HasQuickTextItems, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl ItemsSource="{Binding QuickTextItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#22000000"
+                                            BorderBrush="#38FFFFFF"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="8"
+                                            Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Text="{Binding PreviewText}"
+                                                       Foreground="#ECF3FA"
+                                                       FontSize="12"
+                                                       TextWrapping="Wrap"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       LineHeight="16"
+                                                       LineStackingStrategy="BlockLineHeight"
+                                                       MaxHeight="32"
+                                                       Margin="0,0,8,0"
+                                                       VerticalAlignment="Center"/>
+
+                                            <Button Grid.Column="1"
+                                                    Content="Copy"
+                                                    Click="QuickTextCopy_Click"
+                                                    Background="#2E5F93"
+                                                    Foreground="White"
+                                                    BorderThickness="0"
+                                                    Padding="10,5"
+                                                    Cursor="Hand"
+                                                    VerticalAlignment="Center">
+                                                <Button.Style>
+                                                    <Style TargetType="Button">
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="Button">
+                                                                    <Border x:Name="Bd"
+                                                                            Background="{TemplateBinding Background}"
+                                                                            CornerRadius="4"
+                                                                            Padding="{TemplateBinding Padding}">
+                                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                    </Border>
+                                                                    <ControlTemplate.Triggers>
+                                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                                            <Setter TargetName="Bd" Property="Background" Value="#3E76B0"/>
+                                                                        </Trigger>
+                                                                    </ControlTemplate.Triggers>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Border>
 
         <!-- Bottom status -->
         <TextBlock VerticalAlignment="Bottom"

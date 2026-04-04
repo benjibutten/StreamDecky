@@ -46,6 +46,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         LoadCurrentLayout();
         StickyNotesVisible = true;
+        LoadQuickTextCategories();
 
         RebuildProfileOptions();
         RebuildLayoutTargets();
@@ -87,13 +88,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private ObservableCollection<StickyNoteViewModel> _stickyNotes = new();
 
     [ObservableProperty]
+    private ObservableCollection<QuickTextItemViewModel> _quickTextItems = new();
+
+    [ObservableProperty]
+    private ObservableCollection<QuickTextCategory> _quickTextCategories = new();
+
+    [ObservableProperty]
     private bool _stickyNotesVisible;
+
+    [ObservableProperty]
+    private bool _isClipboardEditorMode;
+
+    [ObservableProperty]
+    private string _quickTextSearchQuery = string.Empty;
 
     [ObservableProperty]
     private string? _selectedProfileId;
 
     [ObservableProperty]
     private string? _selectedLayoutId;
+
+    [ObservableProperty]
+    private string? _selectedQuickTextCategoryId;
 
     partial void OnCurrentNotePageIndexChanged(int value)
     {
@@ -125,7 +141,40 @@ public partial class MainViewModel : ObservableObject, IDisposable
             SwitchToProfileById(value);
     }
 
+    partial void OnIsClipboardEditorModeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsButtonEditorMode));
+    }
+
+    partial void OnSelectedQuickTextCategoryIdChanged(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+
+        if (!_profile.QuickTextCategories.Any(category => string.Equals(category.Id, value, StringComparison.Ordinal)))
+        {
+            if (QuickTextCategories.Count > 0)
+                SelectedQuickTextCategoryId = QuickTextCategories[0].Id;
+            return;
+        }
+
+        if (!string.Equals(_profile.ActiveQuickTextCategoryId, value, StringComparison.Ordinal))
+        {
+            _profile.ActiveQuickTextCategoryId = value;
+            ScheduleAutoSave();
+        }
+
+        LoadQuickTextItemsForSelectedCategory();
+        NotifyQuickTextCategoryChanged();
+    }
+
+    partial void OnQuickTextSearchQueryChanged(string value)
+    {
+        LoadQuickTextItemsForSelectedCategory();
+    }
+
     public bool IsButtonSelected => SelectedButton != null;
+    public bool IsButtonEditorMode => !IsClipboardEditorMode;
     public bool IsViewingVirtualLayout => _currentVirtualLayoutIndex >= 0;
     public bool HasVirtualLayouts => _profile.VirtualLayouts.Count > 0;
     public string CurrentLayoutKindLabel => IsViewingVirtualLayout ? "Virtual Layout" : "Page";
@@ -218,6 +267,36 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 return;
 
             _profile.GridOffsetX = value;
+            OnPropertyChanged();
+            ScheduleAutoSave();
+        }
+    }
+
+    public double QuickTextPanelX
+    {
+        get => _profile.QuickTextPanelX;
+        set
+        {
+            double clamped = Math.Max(0, value);
+            if (Math.Abs(_profile.QuickTextPanelX - clamped) < 0.001)
+                return;
+
+            _profile.QuickTextPanelX = clamped;
+            OnPropertyChanged();
+            ScheduleAutoSave();
+        }
+    }
+
+    public double QuickTextPanelY
+    {
+        get => _profile.QuickTextPanelY;
+        set
+        {
+            double clamped = Math.Max(0, value);
+            if (Math.Abs(_profile.QuickTextPanelY - clamped) < 0.001)
+                return;
+
+            _profile.QuickTextPanelY = clamped;
             OnPropertyChanged();
             ScheduleAutoSave();
         }
@@ -318,6 +397,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 return;
 
             _profile.GamepadSupportEnabled = value;
+            OnPropertyChanged();
+            ScheduleAutoSave();
+        }
+    }
+
+    public double StickyNoteFontSize
+    {
+        get => _profile.StickyNoteFontSize;
+        set
+        {
+            double clamped = Math.Clamp(value, DeckProfile.MinStickyNoteFontSize, DeckProfile.MaxStickyNoteFontSize);
+            if (Math.Abs(_profile.StickyNoteFontSize - clamped) < 0.001)
+                return;
+
+            _profile.StickyNoteFontSize = clamped;
             OnPropertyChanged();
             ScheduleAutoSave();
         }
@@ -432,6 +526,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public int CurrentNotePageNoteCount => CurrentNotePage.StickyNotes.Count;
 
     public bool HasStickyNotes => StickyNotes.Count > 0;
+    public bool HasQuickTextItems => QuickTextItems.Count > 0;
+    public bool HasAnyQuickTextItems => _profile.QuickTextItems.Count > 0;
+    public int QuickTextCategoryCount => QuickTextCategories.Count;
+    public bool HasMultipleQuickTextCategories => QuickTextCategoryCount > 1;
+    public string CurrentQuickTextCategoryName => CurrentQuickTextCategory?.Name ?? "General";
+    public bool CanGoToPreviousQuickTextCategory => CurrentQuickTextCategoryIndex > 0;
+    public bool CanGoToNextQuickTextCategory => CurrentQuickTextCategoryIndex < QuickTextCategoryCount - 1;
+    public string QuickTextCategoryIndicator => QuickTextCategoryCount == 0
+        ? "0 / 0"
+        : $"{CurrentQuickTextCategoryIndex + 1} / {QuickTextCategoryCount}";
 
     private DeckPage CurrentRegularPage => _profile.Pages[Math.Clamp(CurrentPageIndex, 0, _profile.Pages.Count - 1)];
     private DeckPage CurrentVirtualLayout
@@ -450,6 +554,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ? CurrentVirtualLayout
         : CurrentRegularPage;
     private NotePage CurrentNotePage => _profile.NotePages[Math.Clamp(CurrentNotePageIndex, 0, _profile.NotePages.Count - 1)];
+    private int CurrentQuickTextCategoryIndex => QuickTextCategories
+        .Select((category, index) => new { category, index })
+        .FirstOrDefault(entry => string.Equals(entry.category.Id, SelectedQuickTextCategoryId, StringComparison.Ordinal))?.index ?? 0;
+    private QuickTextCategory? CurrentQuickTextCategory => QuickTextCategories.Count == 0
+        ? null
+        : QuickTextCategories[Math.Clamp(CurrentQuickTextCategoryIndex, 0, QuickTextCategories.Count - 1)];
 
     private void LoadCurrentLayout(int? preferredSelectedIndex = null)
     {
@@ -498,6 +608,94 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         OnPropertyChanged(nameof(HasStickyNotes));
         OnPropertyChanged(nameof(CurrentNotePageNoteCount));
+    }
+
+    private void LoadQuickTextCategories()
+    {
+        var categoryList = new List<QuickTextCategory>(_profile.QuickTextCategories.Count);
+        foreach (var category in _profile.QuickTextCategories)
+        {
+            category.EnsureInitialized();
+            categoryList.Add(category);
+        }
+
+        if (categoryList.Count == 0)
+        {
+            var fallback = new QuickTextCategory { Name = "General" };
+            fallback.EnsureInitialized();
+            _profile.QuickTextCategories.Add(fallback);
+            categoryList.Add(fallback);
+        }
+
+        QuickTextCategories = new ObservableCollection<QuickTextCategory>(categoryList);
+
+        string targetCategoryId = _profile.ActiveQuickTextCategoryId;
+        if (string.IsNullOrWhiteSpace(targetCategoryId)
+            || !QuickTextCategories.Any(category => string.Equals(category.Id, targetCategoryId, StringComparison.Ordinal)))
+        {
+            targetCategoryId = QuickTextCategories[0].Id;
+            _profile.ActiveQuickTextCategoryId = targetCategoryId;
+        }
+
+        if (!string.Equals(SelectedQuickTextCategoryId, targetCategoryId, StringComparison.Ordinal))
+        {
+            SelectedQuickTextCategoryId = targetCategoryId;
+        }
+        else
+        {
+            LoadQuickTextItemsForSelectedCategory();
+            NotifyQuickTextCategoryChanged();
+        }
+    }
+
+    private void LoadQuickTextItemsForSelectedCategory()
+    {
+        string categoryId = string.IsNullOrWhiteSpace(SelectedQuickTextCategoryId)
+            ? _profile.ActiveQuickTextCategoryId
+            : SelectedQuickTextCategoryId;
+
+        string query = QuickTextSearchQuery?.Trim() ?? string.Empty;
+        bool hasQuery = !string.IsNullOrWhiteSpace(query);
+
+        var quickTextViewModels = new List<QuickTextItemViewModel>();
+        foreach (var item in _profile.QuickTextItems)
+        {
+            if (!hasQuery && !string.Equals(item.CategoryId, categoryId, StringComparison.Ordinal))
+                continue;
+
+            if (hasQuery && (item.Text?.IndexOf(query, StringComparison.OrdinalIgnoreCase) ?? -1) < 0)
+                continue;
+
+            quickTextViewModels.Add(new QuickTextItemViewModel(item, ScheduleAutoSave));
+        }
+
+        QuickTextItems = new ObservableCollection<QuickTextItemViewModel>(quickTextViewModels);
+        OnPropertyChanged(nameof(HasQuickTextItems));
+        OnPropertyChanged(nameof(HasAnyQuickTextItems));
+    }
+
+    private void NotifyQuickTextCategoryChanged()
+    {
+        OnPropertyChanged(nameof(CurrentQuickTextCategoryName));
+        OnPropertyChanged(nameof(QuickTextCategoryCount));
+        OnPropertyChanged(nameof(HasMultipleQuickTextCategories));
+        OnPropertyChanged(nameof(CanGoToPreviousQuickTextCategory));
+        OnPropertyChanged(nameof(CanGoToNextQuickTextCategory));
+        OnPropertyChanged(nameof(QuickTextCategoryIndicator));
+    }
+
+    private string CreateUniqueQuickTextCategoryName(string baseName)
+    {
+        baseName = string.IsNullOrWhiteSpace(baseName) ? "Category" : baseName.Trim();
+
+        if (_profile.QuickTextCategories.All(category => !string.Equals(category.Name, baseName, StringComparison.OrdinalIgnoreCase)))
+            return baseName;
+
+        int suffix = 2;
+        while (_profile.QuickTextCategories.Any(category => string.Equals(category.Name, $"{baseName} {suffix}", StringComparison.OrdinalIgnoreCase)))
+            suffix++;
+
+        return $"{baseName} {suffix}";
     }
 
     private void NotifyLayoutChanged()
@@ -1080,6 +1278,184 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void AddQuickTextItem()
+    {
+        string categoryId = string.IsNullOrWhiteSpace(SelectedQuickTextCategoryId)
+            ? _profile.ActiveQuickTextCategoryId
+            : SelectedQuickTextCategoryId;
+
+        var item = new QuickTextItem
+        {
+            Text = string.Empty,
+            CategoryId = categoryId
+        };
+        item.EnsureInitialized();
+
+        _profile.QuickTextItems.Add(item);
+
+        LoadQuickTextItemsForSelectedCategory();
+
+        OnPropertyChanged(nameof(HasQuickTextItems));
+        OnPropertyChanged(nameof(HasAnyQuickTextItems));
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void RemoveQuickTextItem(QuickTextItemViewModel? item)
+    {
+        if (item == null)
+            return;
+
+        _profile.QuickTextItems.Remove(item.Model);
+        QuickTextItems.Remove(item);
+
+        OnPropertyChanged(nameof(HasQuickTextItems));
+        OnPropertyChanged(nameof(HasAnyQuickTextItems));
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void DuplicateQuickTextItem(QuickTextItemViewModel? source)
+    {
+        if (source == null)
+            return;
+
+        var duplicate = new QuickTextItem
+        {
+            Text = source.Text,
+            CategoryId = source.Model.CategoryId
+        };
+        duplicate.EnsureInitialized();
+
+        _profile.QuickTextItems.Add(duplicate);
+
+        LoadQuickTextItemsForSelectedCategory();
+
+        OnPropertyChanged(nameof(HasQuickTextItems));
+        OnPropertyChanged(nameof(HasAnyQuickTextItems));
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void ClearQuickTextSearch()
+    {
+        if (string.IsNullOrWhiteSpace(QuickTextSearchQuery))
+            return;
+
+        QuickTextSearchQuery = string.Empty;
+    }
+
+    [RelayCommand]
+    private void AddQuickTextCategory()
+    {
+        var category = new QuickTextCategory
+        {
+            Name = CreateUniqueQuickTextCategoryName($"Category {_profile.QuickTextCategories.Count + 1}")
+        };
+        category.EnsureInitialized();
+
+        _profile.QuickTextCategories.Add(category);
+        QuickTextCategories.Add(category);
+        SelectedQuickTextCategoryId = category.Id;
+
+        NotifyQuickTextCategoryChanged();
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void RemoveQuickTextCategory()
+    {
+        if (_profile.QuickTextCategories.Count <= 1)
+            return;
+
+        string removeId = string.IsNullOrWhiteSpace(SelectedQuickTextCategoryId)
+            ? _profile.ActiveQuickTextCategoryId
+            : SelectedQuickTextCategoryId;
+
+        int removeIndex = _profile.QuickTextCategories.FindIndex(category => string.Equals(category.Id, removeId, StringComparison.Ordinal));
+        if (removeIndex < 0)
+            return;
+
+        _profile.QuickTextCategories.RemoveAt(removeIndex);
+        QuickTextCategories.RemoveAt(removeIndex);
+
+        int targetIndex = Math.Clamp(removeIndex, 0, _profile.QuickTextCategories.Count - 1);
+        string targetCategoryId = _profile.QuickTextCategories[targetIndex].Id;
+
+        foreach (var item in _profile.QuickTextItems)
+        {
+            if (string.Equals(item.CategoryId, removeId, StringComparison.Ordinal))
+                item.CategoryId = targetCategoryId;
+        }
+
+        SelectedQuickTextCategoryId = targetCategoryId;
+
+        NotifyQuickTextCategoryChanged();
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void RenameQuickTextCategory(string? newName)
+    {
+        if (string.IsNullOrWhiteSpace(newName))
+            return;
+
+        string normalized = newName.Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+            return;
+
+        var current = CurrentQuickTextCategory;
+        if (current == null)
+            return;
+
+        current.Name = normalized;
+        LoadQuickTextCategories();
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void PreviousQuickTextCategory()
+    {
+        if (!CanGoToPreviousQuickTextCategory)
+            return;
+
+        SelectedQuickTextCategoryId = QuickTextCategories[CurrentQuickTextCategoryIndex - 1].Id;
+    }
+
+    [RelayCommand]
+    private void NextQuickTextCategory()
+    {
+        if (!CanGoToNextQuickTextCategory)
+            return;
+
+        SelectedQuickTextCategoryId = QuickTextCategories[CurrentQuickTextCategoryIndex + 1].Id;
+    }
+
+    [RelayCommand]
+    private void SetQuickTextCategory(QuickTextCategory? category)
+    {
+        if (category == null || string.IsNullOrWhiteSpace(category.Id))
+            return;
+
+        if (string.Equals(SelectedQuickTextCategoryId, category.Id, StringComparison.Ordinal))
+            return;
+
+        SelectedQuickTextCategoryId = category.Id;
+    }
+
+    [RelayCommand]
+    private void ShowButtonEditor()
+    {
+        IsClipboardEditorMode = false;
+    }
+
+    [RelayCommand]
+    private void ShowClipboardEditor()
+    {
+        IsClipboardEditorMode = true;
+    }
+
+    [RelayCommand]
     private void FollowNavigationTarget(ButtonViewModel? sourceButton)
     {
         if (sourceButton == null
@@ -1349,6 +1725,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         RebuildLayoutTargets();
         LoadCurrentLayout();
+        LoadQuickTextCategories();
         NotifyPageChanged();
         NotifyNotePageChanged();
 
@@ -1358,8 +1735,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ButtonOverlayOpacity));
         OnPropertyChanged(nameof(ButtonSpacing));
         OnPropertyChanged(nameof(ButtonSize));
+        OnPropertyChanged(nameof(StickyNoteFontSize));
+        OnPropertyChanged(nameof(QuickTextSearchQuery));
+        OnPropertyChanged(nameof(HasAnyQuickTextItems));
         OnPropertyChanged(nameof(GridOffsetX));
         OnPropertyChanged(nameof(GridOffsetY));
+        OnPropertyChanged(nameof(QuickTextPanelX));
+        OnPropertyChanged(nameof(QuickTextPanelY));
         OnPropertyChanged(nameof(HotkeyModifiers));
         OnPropertyChanged(nameof(HotkeyVk));
         OnPropertyChanged(nameof(HotkeyDisplayText));
