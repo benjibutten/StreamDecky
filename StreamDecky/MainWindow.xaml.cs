@@ -79,9 +79,19 @@ public partial class MainWindow : Window
 
     private void ShowFromTray()
     {
+        ShowAndActivate();
+    }
+
+    public void ShowAndActivate()
+    {
         Show();
         WindowState = WindowState.Normal;
         Activate();
+
+        // Toggle Topmost once to bring a hidden/minimized window to the foreground reliably.
+        Topmost = true;
+        Topmost = false;
+        Focus();
     }
 
     private void ExitApplication()
