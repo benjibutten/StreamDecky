@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StreamDecky.Helpers;
@@ -11,6 +13,11 @@ namespace StreamDecky.ViewModels;
 
 public partial class MainViewModel : ObservableObject, IDisposable
 {
+    private static readonly JsonSerializerOptions ProfileCloneJsonOptions = new()
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     private readonly ProfileService _profileService = new();
     private readonly TextInputActionService _textInputService = new();
     private readonly MultiActionService _multiActionService = new();
@@ -18,11 +25,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly SemaphoreSlim _autoSaveSemaphore = new(1, 1);
     private readonly List<ButtonViewModel> _trackedButtons = new();
 
+    private DeckProfileStore _profileStore;
     private DeckProfile _profile;
     private ButtonConfig? _buttonClipboard;
     private int _currentVirtualLayoutIndex = -1;
 
     public ObservableCollection<LayoutTargetOption> LayoutTargets { get; } = new();
+    public ObservableCollection<ProfileOption> ProfileOptions { get; } = new();
 
     public MainViewModel()
     {
@@ -30,14 +39,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _autoSaveTimer = new System.Timers.Timer(1000) { AutoReset = false };
         _autoSaveTimer.Elapsed += (_, _) => _ = AutoSaveAsync();
 
-        _profile = _profileService.Load();
+        _profileStore = _profileService.LoadStore();
+        _profile = _profileStore.GetActiveProfile();
         _currentPageIndex = 0;
         _currentNotePageIndex = Math.Clamp(_profile.CurrentNotePageIndex, 0, _profile.NotePages.Count - 1);
 
         LoadCurrentLayout();
-        StickyNotesVisible = _profile.StickyNotesVisible;
+        StickyNotesVisible = true;
 
+        RebuildProfileOptions();
         RebuildLayoutTargets();
+        SyncSelectedProfileId();
         SyncSelectedLayoutId();
 
         _ = RefreshOverlayBackgroundImageAsync();
@@ -78,13 +90,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _stickyNotesVisible;
 
     [ObservableProperty]
-    private string? _selectedLayoutId;
+    private string? _selectedProfileId;
 
-    partial void OnStickyNotesVisibleChanged(bool value)
-    {
-        _profile.StickyNotesVisible = value;
-        ScheduleAutoSave();
-    }
+    [ObservableProperty]
+    private string? _selectedLayoutId;
 
     partial void OnCurrentNotePageIndexChanged(int value)
     {
@@ -110,6 +119,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
             SwitchToLayoutById(value);
     }
 
+    partial void OnSelectedProfileIdChanged(string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            SwitchToProfileById(value);
+    }
+
     public bool IsButtonSelected => SelectedButton != null;
     public bool IsViewingVirtualLayout => _currentVirtualLayoutIndex >= 0;
     public bool HasVirtualLayouts => _profile.VirtualLayouts.Count > 0;
@@ -117,6 +132,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public bool CanRemoveCurrentVirtualLayout => IsViewingVirtualLayout && _profile.VirtualLayouts.Count > 0;
 
     public DeckProfile Profile => _profile;
+    public string ActiveProfileName => _profile.Name;
+    public int ProfileCount => _profileStore.Profiles.Count;
+    public bool CanRemoveProfile => ProfileCount > 1;
+    public string ProfileIndicator => $"{GetActiveProfileIndex() + 1} / {ProfileCount}";
 
     public string OverlayBackgroundColor
     {
@@ -352,6 +371,26 @@ public partial class MainViewModel : ObservableObject, IDisposable
             parts.Add(label);
     }
 
+    private int GetActiveProfileIndex()
+    {
+        int index = _profileStore.Profiles.FindIndex(profile => string.Equals(profile.Id, _profile.Id, StringComparison.Ordinal));
+        return index >= 0 ? index : 0;
+    }
+
+    private string CreateUniqueProfileName(string baseName)
+    {
+        baseName = string.IsNullOrWhiteSpace(baseName) ? "Ny profil" : baseName.Trim();
+
+        if (_profileStore.Profiles.All(profile => !string.Equals(profile.Name, baseName, StringComparison.OrdinalIgnoreCase)))
+            return baseName;
+
+        int suffix = 2;
+        while (_profileStore.Profiles.Any(profile => string.Equals(profile.Name, $"{baseName} {suffix}", StringComparison.OrdinalIgnoreCase)))
+            suffix++;
+
+        return $"{baseName} {suffix}";
+    }
+
     public int Rows
     {
         get => _profile.LayoutRows;
@@ -545,14 +584,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
             if (dispatcher != null)
             {
-                json = await dispatcher.InvokeAsync(() => _profileService.Serialize(_profile));
+                json = await dispatcher.InvokeAsync(() => _profileService.SerializeStore(_profileStore));
             }
             else
             {
-                json = _profileService.Serialize(_profile);
+                json = _profileService.SerializeStore(_profileStore);
             }
 
-            await _profileService.SaveSerializedAsync(json).ConfigureAwait(false);
+            await _profileService.SaveStoreSerializedAsync(json).ConfigureAwait(false);
         }
         catch
         {
@@ -653,7 +692,106 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Save()
     {
-        _profileService.Save(_profile);
+        _profileService.SaveStore(_profileStore);
+    }
+
+    [RelayCommand]
+    private void AddProfile()
+    {
+        var newProfile = new DeckProfile
+        {
+            Name = CreateUniqueProfileName("Ny profil")
+        };
+        newProfile.Initialize();
+
+        _profileStore.Profiles.Add(newProfile);
+        _profileStore.ActiveProfileId = newProfile.Id;
+
+        _ = SwitchToProfileById(newProfile.Id);
+    }
+
+    [RelayCommand]
+    private void DuplicateProfile()
+    {
+        DeckProfile duplicate;
+        try
+        {
+            duplicate = CloneProfile(_profile);
+        }
+        catch
+        {
+            return;
+        }
+
+        duplicate.Id = Guid.NewGuid().ToString("N");
+        duplicate.Name = CreateUniqueProfileName($"{_profile.Name} Copy");
+        duplicate.Initialize();
+
+        _profileStore.Profiles.Add(duplicate);
+        _profileStore.ActiveProfileId = duplicate.Id;
+
+        _ = SwitchToProfileById(duplicate.Id);
+    }
+
+    [RelayCommand]
+    private void ImportProfile(DeckProfile? importedProfile)
+    {
+        if (importedProfile == null)
+            return;
+
+        importedProfile.Initialize();
+        importedProfile.Id = Guid.NewGuid().ToString("N");
+
+        string preferredName = string.IsNullOrWhiteSpace(importedProfile.Name)
+            ? "Imported Profile"
+            : importedProfile.Name.Trim();
+
+        importedProfile.Name = CreateUniqueProfileName(preferredName);
+        importedProfile.Initialize();
+
+        _profileStore.Profiles.Add(importedProfile);
+        _profileStore.ActiveProfileId = importedProfile.Id;
+
+        _ = SwitchToProfileById(importedProfile.Id);
+    }
+
+    [RelayCommand]
+    private void RemoveProfile()
+    {
+        if (_profileStore.Profiles.Count <= 1)
+            return;
+
+        int removeIndex = GetActiveProfileIndex();
+        string removedId = _profile.Id;
+
+        _profileStore.Profiles.RemoveAll(profile => string.Equals(profile.Id, removedId, StringComparison.Ordinal));
+        if (_profileStore.Profiles.Count == 0)
+        {
+            var fallbackProfile = new DeckProfile { Name = "Standard" };
+            fallbackProfile.Initialize();
+            _profileStore.Profiles.Add(fallbackProfile);
+        }
+
+        int nextIndex = Math.Clamp(removeIndex, 0, _profileStore.Profiles.Count - 1);
+        _ = SwitchToProfileById(_profileStore.Profiles[nextIndex].Id);
+    }
+
+    [RelayCommand]
+    private void RenameProfile(string? newName)
+    {
+        if (string.IsNullOrWhiteSpace(newName))
+            return;
+
+        string trimmedName = newName.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedName)
+            || string.Equals(_profile.Name, trimmedName, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _profile.Name = trimmedName;
+        RebuildProfileOptions();
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
@@ -901,7 +1039,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ToggleStickyNotes()
     {
-        StickyNotesVisible = !StickyNotesVisible;
+        StickyNotesVisible = true;
     }
 
     [RelayCommand]
@@ -922,7 +1060,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         CurrentNotePage.StickyNotes.Add(note);
         StickyNotes.Add(new StickyNoteViewModel(note, ScheduleAutoSave));
 
-        StickyNotesVisible = true;
         OnPropertyChanged(nameof(HasStickyNotes));
         OnPropertyChanged(nameof(CurrentNotePageNoteCount));
         ScheduleAutoSave();
@@ -936,9 +1073,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         CurrentNotePage.StickyNotes.Remove(note.Model);
         StickyNotes.Remove(note);
-
-        if (StickyNotes.Count == 0)
-            StickyNotesVisible = false;
 
         OnPropertyChanged(nameof(HasStickyNotes));
         OnPropertyChanged(nameof(CurrentNotePageNoteCount));
@@ -1054,6 +1188,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         return clone;
+    }
+
+    private static DeckProfile CloneProfile(DeckProfile source)
+    {
+        string json = JsonSerializer.Serialize(source, ProfileCloneJsonOptions);
+        return JsonSerializer.Deserialize<DeckProfile>(json, ProfileCloneJsonOptions) ?? new DeckProfile();
     }
 
     [RelayCommand]
@@ -1186,6 +1326,55 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return false;
     }
 
+    private bool SwitchToProfileById(string profileId)
+    {
+        if (string.IsNullOrWhiteSpace(profileId))
+            return false;
+
+        if (string.Equals(_profile.Id, profileId, StringComparison.Ordinal))
+            return true;
+
+        var targetProfile = _profileStore.Profiles.FirstOrDefault(profile => string.Equals(profile.Id, profileId, StringComparison.Ordinal));
+        if (targetProfile == null)
+            return false;
+
+        _profile = targetProfile;
+        _profile.Initialize();
+        _profileStore.ActiveProfileId = _profile.Id;
+
+        SetVirtualLayoutIndex(-1);
+        CurrentPageIndex = 0;
+        CurrentNotePageIndex = Math.Clamp(_profile.CurrentNotePageIndex, 0, _profile.NotePages.Count - 1);
+        StickyNotesVisible = true;
+
+        RebuildLayoutTargets();
+        LoadCurrentLayout();
+        NotifyPageChanged();
+        NotifyNotePageChanged();
+
+        OnPropertyChanged(nameof(Profile));
+        OnPropertyChanged(nameof(OverlayBackgroundColor));
+        OnPropertyChanged(nameof(OverlayBackgroundImagePath));
+        OnPropertyChanged(nameof(ButtonOverlayOpacity));
+        OnPropertyChanged(nameof(ButtonSpacing));
+        OnPropertyChanged(nameof(ButtonSize));
+        OnPropertyChanged(nameof(GridOffsetX));
+        OnPropertyChanged(nameof(GridOffsetY));
+        OnPropertyChanged(nameof(HotkeyModifiers));
+        OnPropertyChanged(nameof(HotkeyVk));
+        OnPropertyChanged(nameof(HotkeyDisplayText));
+        OnPropertyChanged(nameof(StartWithWindows));
+        OnPropertyChanged(nameof(NaturalTypingEnabled));
+        OnPropertyChanged(nameof(GamepadSupportEnabled));
+        OnPropertyChanged(nameof(GamepadToggleButtons));
+        OnPropertyChanged(nameof(GamepadToggleDisplayText));
+
+        RebuildProfileOptions();
+        SyncSelectedProfileId();
+        ScheduleAutoSave();
+        return true;
+    }
+
     private void SetVirtualLayoutIndex(int value)
     {
         if (_currentVirtualLayoutIndex == value)
@@ -1221,6 +1410,35 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         OnPropertyChanged(nameof(HasVirtualLayouts));
         SyncSelectedLayoutId();
+    }
+
+    private void RebuildProfileOptions()
+    {
+        ProfileOptions.Clear();
+
+        for (int i = 0; i < _profileStore.Profiles.Count; i++)
+        {
+            var profile = _profileStore.Profiles[i];
+            ProfileOptions.Add(new ProfileOption
+            {
+                Id = profile.Id,
+                Label = profile.Name
+            });
+        }
+
+        OnPropertyChanged(nameof(ActiveProfileName));
+        OnPropertyChanged(nameof(ProfileCount));
+        OnPropertyChanged(nameof(CanRemoveProfile));
+        OnPropertyChanged(nameof(ProfileIndicator));
+
+        SyncSelectedProfileId();
+    }
+
+    private void SyncSelectedProfileId()
+    {
+        string currentId = _profile.Id;
+        if (!string.Equals(SelectedProfileId, currentId, StringComparison.Ordinal))
+            SelectedProfileId = currentId;
     }
 
     private void SyncSelectedLayoutId()
