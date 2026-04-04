@@ -411,33 +411,62 @@
         <!-- Separator -->
         <Border Height="1" Background="#333" Margin="0,0,0,16"/>
 
-        <!-- Profile Section -->
-        <TextBlock Text="PROFILE" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
-        <Button Content="Export Layout (.json)"
-                Click="ExportLayout_Click"
-                Background="#2D2D44" Foreground="White"
-                FontSize="12" Padding="12,7"
-                BorderThickness="0" Cursor="Hand"
-                HorizontalAlignment="Left">
-            <Button.Style>
-                <Style TargetType="Button">
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </Button.Style>
-        </Button>
+        <!-- Export Section -->
+        <TextBlock Text="EXPORT" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+        <StackPanel Orientation="Horizontal">
+            <Button Content="Import Profile (.json)"
+                    Click="ImportProfile_Click"
+                    Background="#3D5A3A" Foreground="White"
+                    FontSize="12" Padding="12,7"
+                    BorderThickness="0" Cursor="Hand"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,8,0">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#4A6D49"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+            <Button Content="Export Active Profile (.json)"
+                    Click="ExportProfile_Click"
+                    Background="#2D2D44" Foreground="White"
+                    FontSize="12" Padding="12,7"
+                    BorderThickness="0" Cursor="Hand"
+                    HorizontalAlignment="Left">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
     </StackPanel>
     </ScrollViewer>
     </DockPanel>

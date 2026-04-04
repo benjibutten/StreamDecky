@@ -2,7 +2,8 @@ namespace StreamDecky.Models;
 
 public class DeckProfile
 {
-    public string Name { get; set; } = "Default";
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string Name { get; set; } = "Standard";
     public string OverlayBackgroundColor { get; set; } = "#1E1E2E";
     public string OverlayBackgroundImagePath { get; set; } = string.Empty;
     public double ButtonOverlayOpacity { get; set; } = 1.0;
@@ -27,6 +28,12 @@ public class DeckProfile
 
     public void Initialize()
     {
+        if (string.IsNullOrWhiteSpace(Id))
+            Id = Guid.NewGuid().ToString("N");
+
+        if (string.IsNullOrWhiteSpace(Name))
+            Name = "Standard";
+
         ButtonOverlayOpacity = Math.Clamp(ButtonOverlayOpacity, 0.2, 1.0);
 
         Pages ??= new List<DeckPage>();

@@ -16,6 +16,8 @@ concurrency:
 env:
   PROJECT_PATH: StreamDecky/StreamDecky.csproj
   RUNTIME_ID: win-x64
+  WINDOWS_CODESIGN_CERT_PFX_BASE64: ${{ secrets.WINDOWS_CODESIGN_CERT_PFX_BASE64 }}
+  WINDOWS_CODESIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_CERT_PASSWORD }}
 
 jobs:
   release:
@@ -66,6 +68,7 @@ jobs:
             -c Release `
             -r $env:RUNTIME_ID `
             --self-contained true `
+            -p:ContinuousIntegrationBuild=true `
             -p:DebugType=None `
             -p:DebugSymbols=false `
             -p:PublishSingleFile=true `
@@ -77,6 +80,22 @@ jobs:
             -p:FileVersion=${{ steps.meta.outputs.assembly_version }} `
             -p:InformationalVersion="${{ steps.meta.outputs.version }}+${{ github.sha }}" `
             -o $publishDir
+
+      - name: Code sign executable (optional)
+        if: ${{ env.WINDOWS_CODESIGN_CERT_PFX_BASE64 != '' && env.WINDOWS_CODESIGN_CERT_PASSWORD != '' }}
+        shell: pwsh
+        run: |
+          $certPath = Join-Path $env:RUNNER_TEMP "streamdecky-codesign.pfx"
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String($env:WINDOWS_CODESIGN_CERT_PFX_BASE64))
+
+          $exePath = Join-Path $PWD "artifacts/publish/$env:RUNTIME_ID/StreamDecky.exe"
+          signtool sign `
+            /fd SHA256 `
+            /f $certPath `
+            /p $env:WINDOWS_CODESIGN_CERT_PASSWORD `
+            /tr "http://timestamp.digicert.com" `
+            /td SHA256 `
+            $exePath
 
       - name: Create release zip
         shell: pwsh

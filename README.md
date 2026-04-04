@@ -10,7 +10,7 @@ Appen är byggd för snabba in-game/in-app actions där overlayen visas ovanpå 
 - Runtime: .NET 10 (`net10.0-windows`)
 - Mönster: MVVM med CommunityToolkit.Mvvm
 - Inputsimulering: Win32 `SendInput` (scan-code-baserat)
-- Persistens: JSON i `%LOCALAPPDATA%\StreamDecky\profile.json`
+- Persistens: JSON i `%LOCALAPPDATA%\StreamDecky\profiles.json` (migrerar automatiskt från legacy `profile.json`)
 
 ## Nuvarande funktionalitet
 
@@ -74,6 +74,17 @@ Appen är byggd för snabba in-game/in-app actions där overlayen visas ovanpå 
   - inline-redigera titel
 - Main window kan hantera note pages (lägg till/ta bort/navigera)
 
+### Profiler
+
+- Flera profiler med helt separata:
+  - pages/virtual layouts/knappar
+  - notes areas/sticky notes
+  - overlay- och inputinställningar
+- Aktiv profil byts direkt i editorn via profillistan
+- Snabbhantering i editorn: add, duplicate, rename och remove
+- Import/export av profiler görs i Settings
+- Legacy data i `profile.json` läses in och blir automatiskt din första standardprofil
+
 ### Inställningar
 
 - Overlay-bakgrundsfärg
@@ -83,7 +94,7 @@ Appen är byggd för snabba in-game/in-app actions där overlayen visas ovanpå 
 - Hotkey recording för overlay toggle
 - Start with Windows (HKCU Run)
 - Natural typing (experimentell)
-- Export layout till JSON
+- Import/export av profiler till/från JSON
 
 ## Kortkommandon
 
@@ -101,7 +112,10 @@ I overlay:
 
 - Profil sparas automatiskt (debounce) samt vid explicit save-flöden
 - Auto-save är riktad till faktiska datamutationer
-- Export i Settings skriver hela profilen till valfri JSON-fil
+- Primär lagring: `%LOCALAPPDATA%\StreamDecky\profiles.json`
+- Legacy-läsning: `%LOCALAPPDATA%\StreamDecky\profile.json` (migreras in som standardprofil)
+- Backup (1 version bakåt): `%LOCALAPPDATA%\StreamDecky\profiles.backup.json`
+- Import/export i Settings gäller aktiv profil och lägger importerad profil som separat profil
 
 ## Arkitekturöversikt
 
@@ -154,7 +168,19 @@ dotnet publish StreamDecky/StreamDecky.csproj \
   -p:PublishReadyToRun=true
 ```
 
-Projektet inkluderar `StreamDecky.ico` som publish-content och markerar den med `ExcludeFromSingleFile=true`, så ikonen kan ligga separat bredvid exe även vid single-file-publish.
+Ikonhantering vid single-file:
+
+- Exe-filen har inbäddad appikon via `ApplicationIcon`.
+- Taskbar/fönster använder exe-ikonen direkt (ingen separat runtime-override av Window.Icon).
+- Tray-ikon hämtas från exe-ikonen vid runtime.
+- Ingen separat `.ico` behöver publiceras bredvid exe för att ikonerna ska visas i vanliga app-sammanhang.
+
+Versionsinfo och signering i release-pipeline:
+
+- `release.yml` sätter `Version`, `AssemblyVersion`, `FileVersion` och `InformationalVersion` vid publish.
+- Lokal build har fallback-version i `.csproj` som kan överskridas av pipeline.
+- Optional code-signing steg finns i pipeline om secrets för PFX-certifikat anges.
+- Utan kodsignering kan Windows SmartScreen fortfarande kräva manuellt godkännande vid uppdateringar.
 
 ## Kända begränsningar
 

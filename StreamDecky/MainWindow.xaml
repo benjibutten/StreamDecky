@@ -5,7 +5,6 @@
         xmlns:models="clr-namespace:StreamDecky.Models"
     x:Name="MainRootWindow"
         Title="StreamDecky" 
-        Icon="{StaticResource AppIcon}"
         Height="700" Width="1050"
         MinHeight="500" MinWidth="800"
         WindowStartupLocation="CenterScreen"
@@ -551,9 +550,112 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <DockPanel Grid.Row="0">
+                    <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="+ Profile" Click="AddProfile_Click"
+                                    Background="#2D5A27" Foreground="White"
+                                    FontSize="12" Padding="10,4" Margin="4,0,0,0"
+                                    BorderThickness="0" Cursor="Hand">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="Duplicate" Click="DuplicateProfile_Click"
+                                    Background="#2A4D7A" Foreground="White"
+                                    FontSize="12" Padding="10,4" Margin="4,0,0,0"
+                                    BorderThickness="0" Cursor="Hand">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="Rename" Click="RenameProfile_Click"
+                                    Background="#3F4F86" Foreground="White"
+                                    FontSize="12" Padding="10,4" Margin="4,0,0,0"
+                                    BorderThickness="0" Cursor="Hand">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="− Profile" Click="RemoveProfile_Click"
+                                    IsEnabled="{Binding CanRemoveProfile}"
+                                    Background="#5A2727" Foreground="White"
+                                    FontSize="12" Padding="10,4" Margin="4,0,0,0"
+                                    BorderThickness="0" Cursor="Hand">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
+                                                            Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Profile"
+                                       Foreground="#8C93AA"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       Margin="2,0,8,0"/>
+
+                            <ComboBox MinWidth="180"
+                                      Margin="0,0,8,0"
+                                      ItemsSource="{Binding ProfileOptions}"
+                                      DisplayMemberPath="Label"
+                                      SelectedValuePath="Id"
+                                      SelectedValue="{Binding SelectedProfileId, Mode=TwoWay}"
+                                      Style="{StaticResource DarkComboBox}"/>
+
+                            <TextBlock Text="{Binding ProfileIndicator}"
+                                       Foreground="#AFC0D4"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <DockPanel Grid.Row="1">
                         <!-- Right side: Add/Remove page + virtual layout -->
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Content="+ Page" Click="AddPage_Click"
@@ -707,7 +809,7 @@
                         </StackPanel>
                     </DockPanel>
 
-                    <Grid Grid.Row="1" Margin="0,6,0,0">
+                    <Grid Grid.Row="2" Margin="0,6,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>

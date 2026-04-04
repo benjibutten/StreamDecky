@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using StreamDecky.Helpers;
 using StreamDecky.ViewModels;
@@ -34,27 +33,12 @@ public partial class MainWindow : Window
     {
         DataContext = _viewModel;
         InitializeComponent();
-        ApplyWindowIcon();
         InitializeTrayIcon();
         SyncStartWithWindows();
 
         _gamepadToggleTimer.Tick += GamepadToggleTimer_Tick;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         UpdateGamepadTogglePolling();
-    }
-
-    private void ApplyWindowIcon()
-    {
-        try
-        {
-            var iconPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StreamDecky.ico");
-            if (System.IO.File.Exists(iconPath))
-                Icon = BitmapFrame.Create(new Uri(iconPath, UriKind.Absolute));
-        }
-        catch
-        {
-            // Fall back to XAML icon resource if runtime icon cannot be loaded.
-        }
     }
 
     private void InitializeTrayIcon()
@@ -80,19 +64,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            // Prefer a standalone .ico when available so users can override icon without rebuilding.
-            var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "StreamDecky.ico");
-            if (System.IO.File.Exists(iconPath))
-                return new System.Drawing.Icon(iconPath, new System.Drawing.Size(32, 32));
-        }
-        catch
-        {
-            // Fall through to executable icon.
-        }
-
-        try
-        {
-            // Single-file publish may not include external content files; executable icon is always present.
+            // Executable icon works in dev and single-file publish without extra content files.
             var exePath = Environment.ProcessPath;
             if (!string.IsNullOrWhiteSpace(exePath) && System.IO.File.Exists(exePath))
                 return System.Drawing.Icon.ExtractAssociatedIcon(exePath);
@@ -124,7 +96,24 @@ public partial class MainWindow : Window
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MainViewModel.GamepadSupportEnabled))
+        {
             UpdateGamepadTogglePolling();
+            return;
+        }
+
+        if (e.PropertyName is nameof(MainViewModel.HotkeyModifiers) or nameof(MainViewModel.HotkeyVk))
+        {
+            if (_hwndSource != null)
+            {
+                OverlayInterop.UnregisterGlobalHotkey(this, HOTKEY_ID);
+                OverlayInterop.RegisterGlobalHotkey(this, HOTKEY_ID,
+                    _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+            }
+            return;
+        }
+
+        if (e.PropertyName == nameof(MainViewModel.StartWithWindows))
+            SyncStartWithWindows();
     }
 
     private void UpdateGamepadTogglePolling()
@@ -358,6 +347,46 @@ public partial class MainWindow : Window
         _viewModel.AddPageCommand.Execute(null);
     }
 
+    private void AddProfile_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.AddProfileCommand.Execute(null);
+    }
+
+    private void DuplicateProfile_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.DuplicateProfileCommand.Execute(null);
+    }
+
+    private void RenameProfile_Click(object sender, RoutedEventArgs e)
+    {
+        string? renamed = TextPromptDialog.Show(
+            this,
+            "Rename Profile",
+            "Enter a new profile name:",
+            _viewModel.ActiveProfileName,
+            maxLength: 48);
+
+        if (!string.IsNullOrWhiteSpace(renamed))
+            _viewModel.RenameProfileCommand.Execute(renamed);
+    }
+
+    private void RemoveProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.CanRemoveProfile)
+            return;
+
+        var result = System.Windows.MessageBox.Show(
+            this,
+            $"Remove profile \"{_viewModel.ActiveProfileName}\"?\n\nThis removes the profile with its pages, buttons, and notes.",
+            "Remove Profile",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        if (result == MessageBoxResult.Yes)
+            _viewModel.RemoveProfileCommand.Execute(null);
+    }
+
     private void RemovePage_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.IsViewingVirtualLayout)
@@ -542,6 +571,7 @@ public partial class MainWindow : Window
         }
         return null;
     }
+
 
     protected override void OnClosed(EventArgs e)
     {

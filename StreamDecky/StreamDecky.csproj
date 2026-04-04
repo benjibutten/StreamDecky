@@ -10,18 +10,18 @@
     <ApplicationIcon>StreamDecky.ico</ApplicationIcon>
     <RootNamespace>StreamDecky</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Authors>benjibutten</Authors>
+    <Company>StreamDecky</Company>
+    <Product>StreamDecky</Product>
+    <Description>Stream Deck inspired desktop overlay for Windows.</Description>
+    <Version Condition="'$(Version)' == ''">1.0.0-local</Version>
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">1.0.0.0</AssemblyVersion>
+    <FileVersion Condition="'$(FileVersion)' == ''">1.0.0.0</FileVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == ''">1.0.0-local</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="StreamDecky.ico">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
   </ItemGroup>
 
 </Project>
