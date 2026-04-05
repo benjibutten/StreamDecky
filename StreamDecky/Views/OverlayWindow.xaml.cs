@@ -647,13 +647,15 @@ public partial class OverlayWindow : Window
     private void UpdateQuickTextPanelPosition(double desiredX, double desiredY)
     {
         double panelWidth = QuickTextPanel.ActualWidth > 1 ? QuickTextPanel.ActualWidth : QuickTextPanel.Width;
-        double panelHeight = QuickTextPanel.ActualHeight > 1 ? QuickTextPanel.ActualHeight : 280;
+        double fallbackPanelHeight = QuickTextPanel.MinHeight > 1 ? QuickTextPanel.MinHeight : 280;
+        double panelHeight = QuickTextPanel.ActualHeight > 1 ? QuickTextPanel.ActualHeight : fallbackPanelHeight;
 
         double maxX = Math.Max(0, ActualWidth - panelWidth - 12);
         double maxY = Math.Max(0, ActualHeight - panelHeight - 12);
+        double minY = Math.Min(42, maxY);
 
         _viewModel.QuickTextPanelX = Math.Clamp(desiredX, 0, maxX);
-        _viewModel.QuickTextPanelY = Math.Clamp(desiredY, 42, maxY);
+        _viewModel.QuickTextPanelY = Math.Clamp(desiredY, minY, maxY);
     }
 
     private void ClampQuickTextPanelToBounds()
