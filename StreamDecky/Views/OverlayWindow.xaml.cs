@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -49,6 +52,9 @@ public partial class OverlayWindow : Window
     private System.Windows.Point _quickTextPanelDragStart;
     private double _quickTextPanelStartX;
     private double _quickTextPanelStartY;
+    private readonly Dictionary<string, string> _quickTextSessionOverrides = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _quickTextEditingIds = new(StringComparer.Ordinal);
+    public ObservableCollection<OverlayQuickTextSessionItemViewModel> OverlayQuickTextItems { get; } = new();
     private ushort _previousGamepadButtons;
     private OverlayNavigationDirection _heldNavigationDirection;
     private DateTime _nextNavigationRepeatAtUtc = DateTime.MinValue;
@@ -60,6 +66,8 @@ public partial class OverlayWindow : Window
         // Save the foreground window (e.g. GTA V) BEFORE our overlay takes focus
         _previousForegroundWindow = OverlayInterop.GetCurrentForegroundWindow();
         InitializeComponent();
+        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        RebuildOverlayQuickTextItems();
         _gamepadTimer.Tick += GamepadTimer_Tick;
     }
 
@@ -596,19 +604,43 @@ public partial class OverlayWindow : Window
 
     private void QuickTextCopy_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: QuickTextItemViewModel item })
+        if (sender is not FrameworkElement { DataContext: OverlayQuickTextSessionItemViewModel item })
             return;
 
-        if (string.IsNullOrWhiteSpace(item.Text))
+        if (string.IsNullOrWhiteSpace(item.SessionText))
             return;
 
         try
         {
-            System.Windows.Clipboard.SetText(item.Text);
+            System.Windows.Clipboard.SetText(item.SessionText);
         }
         catch
         {
             // Clipboard can fail if another process has it locked.
+        }
+    }
+
+    private void QuickTextToggleEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: OverlayQuickTextSessionItemViewModel item })
+            return;
+
+        item.IsEditing = !item.IsEditing;
+        if (item.IsEditing)
+            FocusQuickTextInlineEditor(item);
+
+        e.Handled = true;
+    }
+
+    private void QuickTextInlineEditor_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape)
+            return;
+
+        if (sender is FrameworkElement { DataContext: OverlayQuickTextSessionItemViewModel item })
+        {
+            item.IsEditing = false;
+            e.Handled = true;
         }
     }
 
@@ -647,10 +679,73 @@ public partial class OverlayWindow : Window
         }), System.Windows.Threading.DispatcherPriority.Input);
     }
 
+    private void FocusQuickTextInlineEditor(OverlayQuickTextSessionItemViewModel item)
+    {
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            var editor = FindDescendant(this,
+                static tb => tb.Tag is string tag && tag == "QuickTextInlineEditor",
+                item);
+
+            if (editor == null)
+                return;
+
+            editor.Focus();
+            editor.CaretIndex = editor.Text.Length;
+        }), System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void RebuildOverlayQuickTextItems()
+    {
+        foreach (var existing in OverlayQuickTextItems)
+            existing.PropertyChanged -= OverlayQuickTextItem_PropertyChanged;
+
+        OverlayQuickTextItems.Clear();
+
+        foreach (var sourceItem in _viewModel.QuickTextItems)
+        {
+            string sessionText = _quickTextSessionOverrides.TryGetValue(sourceItem.Id, out var overrideText)
+                ? overrideText
+                : sourceItem.Text;
+
+            var sessionItem = new OverlayQuickTextSessionItemViewModel(sourceItem.Id, sessionText)
+            {
+                IsEditing = _quickTextEditingIds.Contains(sourceItem.Id)
+            };
+
+            sessionItem.PropertyChanged += OverlayQuickTextItem_PropertyChanged;
+            OverlayQuickTextItems.Add(sessionItem);
+        }
+    }
+
+    private void OverlayQuickTextItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not OverlayQuickTextSessionItemViewModel sessionItem)
+            return;
+
+        if (e.PropertyName == nameof(OverlayQuickTextSessionItemViewModel.SessionText))
+        {
+            _quickTextSessionOverrides[sessionItem.Id] = sessionItem.SessionText;
+        }
+        else if (e.PropertyName == nameof(OverlayQuickTextSessionItemViewModel.IsEditing))
+        {
+            if (sessionItem.IsEditing)
+                _quickTextEditingIds.Add(sessionItem.Id);
+            else
+                _quickTextEditingIds.Remove(sessionItem.Id);
+        }
+    }
+
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.QuickTextItems))
+            RebuildOverlayQuickTextItems();
+    }
+
     private static System.Windows.Controls.TextBox? FindDescendant(
         DependencyObject root,
         Func<System.Windows.Controls.TextBox, bool> predicate,
-        StickyNoteViewModel note)
+        object dataContext)
     {
         int childrenCount = VisualTreeHelper.GetChildrenCount(root);
         for (int i = 0; i < childrenCount; i++)
@@ -658,13 +753,13 @@ public partial class OverlayWindow : Window
             var child = VisualTreeHelper.GetChild(root, i);
 
             if (child is System.Windows.Controls.TextBox textBox
-                && ReferenceEquals(textBox.DataContext, note)
+                && ReferenceEquals(textBox.DataContext, dataContext)
                 && predicate(textBox))
             {
                 return textBox;
             }
 
-            var nested = FindDescendant(child, predicate, note);
+            var nested = FindDescendant(child, predicate, dataContext);
             if (nested != null)
                 return nested;
         }
@@ -676,6 +771,11 @@ public partial class OverlayWindow : Window
     {
         _gamepadTimer.Stop();
         _gamepadTimer.Tick -= GamepadTimer_Tick;
+        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+
+        foreach (var item in OverlayQuickTextItems)
+            item.PropertyChanged -= OverlayQuickTextItem_PropertyChanged;
+
         base.OnClosed(e);
     }
 
