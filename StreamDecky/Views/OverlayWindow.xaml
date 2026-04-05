@@ -876,8 +876,8 @@
         </ItemsControl>
 
         <Border x:Name="QuickTextPanel"
-                Width="420"
-                MaxHeight="380"
+            Width="420"
+            MaxHeight="640"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 Margin="0"
@@ -918,44 +918,61 @@
                         MouseLeftButtonDown="QuickTextPanelHandle_MouseLeftButtonDown"
                         MouseMove="QuickTextPanelHandle_MouseMove"
                         MouseLeftButtonUp="QuickTextPanelHandle_MouseLeftButtonUp">
-                    <Grid Margin="10,0,10,0"
+                    <Grid Margin="10,8,10,8"
                             VerticalAlignment="Center">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Column="0"
-                                   Text="Clipboard List"
-                                   Foreground="#EAF2FA"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"/>
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <ItemsControl Grid.Column="1"
-                                      Margin="10,8,0,2"
-                                      VerticalAlignment="Center"
-                                      ItemsSource="{Binding QuickTextCategories}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Content="{Binding Name}"
-                                            ToolTip="{Binding Name}"
-                                            Style="{StaticResource QuickFilterChipButton}"
-                                            Command="{Binding DataContext.SetQuickTextCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding}"/>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            <TextBlock Grid.Column="0"
+                                       Text="Clipboard List"
+                                       Foreground="#EAF2FA"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding QuickTextCategoryIndicator}"
+                                       Foreground="#9EB0C4"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <ScrollViewer Grid.Row="1"
+                                      Margin="0,8,0,0"
+                                      MaxHeight="72"
+                                      VerticalScrollBarVisibility="Hidden"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      CanContentScroll="False">
+                            <ItemsControl ItemsSource="{Binding QuickTextCategories}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding Name}"
+                                                ToolTip="{Binding Name}"
+                                                Style="{StaticResource QuickFilterChipButton}"
+                                                Command="{Binding DataContext.SetQuickTextCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
                     </Grid>
                 </Border>
 
                 <Grid Grid.Row="1"
-                        Margin="10,10,10,10">
+                        Margin="10,8,10,10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -1035,6 +1052,7 @@
                                Visibility="{Binding HasQuickTextItems, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
 
                     <ScrollViewer Grid.Row="2"
+                                  MaxHeight="322"
                                   VerticalScrollBarVisibility="Hidden"
                                   HorizontalScrollBarVisibility="Disabled"
                                   Visibility="{Binding HasQuickTextItems, Converter={StaticResource BoolToVisibility}}">
@@ -1045,8 +1063,8 @@
                                             BorderBrush="#38FFFFFF"
                                             BorderThickness="1"
                                             CornerRadius="6"
-                                            Padding="8"
-                                            Margin="0,0,0,8">
+                                            Padding="8,7"
+                                            Margin="0,0,0,6">
                                         <Grid>
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
@@ -1064,9 +1082,9 @@
                                                        FontSize="12"
                                                        TextWrapping="Wrap"
                                                        TextTrimming="CharacterEllipsis"
-                                                       LineHeight="16"
+                                                       LineHeight="15"
                                                        LineStackingStrategy="BlockLineHeight"
-                                                       Height="32"
+                                                       Height="24"
                                                        Margin="0,0,8,0"
                                                        VerticalAlignment="Top"
                                                        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
@@ -1110,11 +1128,11 @@
                                                         Orientation="Horizontal"
                                                         VerticalAlignment="Top">
                                                 <Button Click="QuickTextToggleEdit_Click"
-                                                        Background="#2A000000"
+                                                    Background="#2B3E50"
                                                         Foreground="#DCE7F2"
                                                         BorderThickness="0"
                                                         Padding="10,5"
-                                                        Margin="0,6,0,0"
+                                                        Margin="0"
                                                         MinWidth="28"
                                                         Cursor="Hand"
                                                         VerticalAlignment="Center"
@@ -1138,7 +1156,7 @@
                                                                                     Value="True">
                                                                                 <Setter TargetName="Bd"
                                                                                         Property="Background"
-                                                                                        Value="#3C000000"/>
+                                                                                        Value="#355069"/>
                                                                             </Trigger>
                                                                         </ControlTemplate.Triggers>
                                                                     </ControlTemplate>
@@ -1150,7 +1168,7 @@
                                                                     <Setter Property="Content"
                                                                             Value="✓"/>
                                                                     <Setter Property="Background"
-                                                                            Value="#356A39"/>
+                                                                        Value="#3E6E4D"/>
                                                                     <Setter Property="Foreground"
                                                                             Value="#F2FFF2"/>
                                                                 </DataTrigger>
@@ -1161,11 +1179,11 @@
 
                                                 <Button Content="Copy"
                                                         Click="QuickTextCopy_Click"
-                                                        Background="#2E5F93"
+                                                    Background="#3A5A78"
                                                         Foreground="White"
                                                         BorderThickness="0"
                                                         Padding="10,5"
-                                                        Margin="0,6,0,0"
+                                                        Margin="0"
                                                         Cursor="Hand"
                                                         VerticalAlignment="Center">
                                                     <Button.Style>
@@ -1185,7 +1203,7 @@
                                                                                     Value="True">
                                                                                 <Setter TargetName="Bd"
                                                                                         Property="Background"
-                                                                                        Value="#3E76B0"/>
+                                                                                        Value="#476D91"/>
                                                                             </Trigger>
                                                                         </ControlTemplate.Triggers>
                                                                     </ControlTemplate>
