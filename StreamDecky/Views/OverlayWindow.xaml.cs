@@ -32,7 +32,7 @@ public partial class OverlayWindow : Window
     private readonly MainViewModel _viewModel;
     private readonly System.Windows.Threading.DispatcherTimer _gamepadTimer = new()
     {
-        Interval = TimeSpan.FromMilliseconds(33)
+        Interval = TimeSpan.FromMilliseconds(50)
     };
     private bool _isDragging;
     private System.Windows.Point _dragStart;
@@ -74,11 +74,12 @@ public partial class OverlayWindow : Window
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         OverlayInterop.MakeTopmost(this);
-        Focus();
         Activate();
+        Focus();
+        OverlayInterop.ForceFocus(this);
         EnsureOverlaySelection();
         Dispatcher.BeginInvoke(new Action(ClampQuickTextPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
-        _gamepadTimer.Start();
+        UpdateGamepadPolling();
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -391,6 +392,20 @@ public partial class OverlayWindow : Window
         _previousGamepadButtons = 0;
         _heldNavigationDirection = OverlayNavigationDirection.None;
         _nextNavigationRepeatAtUtc = DateTime.MinValue;
+    }
+
+    private void UpdateGamepadPolling()
+    {
+        if (_viewModel.GamepadSupportEnabled)
+        {
+            if (!_gamepadTimer.IsEnabled)
+                _gamepadTimer.Start();
+
+            return;
+        }
+
+        _gamepadTimer.Stop();
+        ResetGamepadNavigationState();
     }
 
     private void StickyNoteHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -741,7 +756,13 @@ public partial class OverlayWindow : Window
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MainViewModel.QuickTextItems))
+        {
             RebuildOverlayQuickTextItems();
+            return;
+        }
+
+        if (e.PropertyName == nameof(MainViewModel.GamepadSupportEnabled))
+            UpdateGamepadPolling();
     }
 
     private static System.Windows.Controls.TextBox? FindDescendant(
@@ -791,10 +812,8 @@ public partial class OverlayWindow : Window
                 if (IsVisible)
                 {
                     OverlayInterop.MakeTopmost(this);
-                    Activate();
-                    Focus();
                 }
-            }), System.Windows.Threading.DispatcherPriority.Input);
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
     }
 }
