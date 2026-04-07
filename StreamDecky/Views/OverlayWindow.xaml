@@ -1053,8 +1053,7 @@
                                Visibility="{Binding HasQuickTextItems, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
 
                     <ScrollViewer Grid.Row="2"
-                                  MaxHeight="322"
-                                             VerticalAlignment="Top"
+                                  VerticalAlignment="Stretch"
                                   VerticalScrollBarVisibility="Hidden"
                                   HorizontalScrollBarVisibility="Disabled"
                                   Visibility="{Binding HasQuickTextItems, Converter={StaticResource BoolToVisibility}}">
