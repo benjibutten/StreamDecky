@@ -1629,11 +1629,272 @@
                     </StackPanel>
 
                     <StackPanel Visibility="{Binding IsClipboardEditorMode, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="Clipboard Library"
-                                   FontSize="18"
-                                   FontWeight="Bold"
-                                   Foreground="White"
-                                   Margin="0,0,0,10"/>
+                        <!-- Clipboard Library header row: title + gear settings button + popup -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       Text="Clipboard Library"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       VerticalAlignment="Center"/>
+
+                            <Button x:Name="ClipboardSettingsButton"
+                                    Grid.Column="1"
+                                    Content="⋯"
+                                    Click="ToggleClipboardSettingsPopup_Click"
+                                    Background="Transparent"
+                                    Foreground="#888888"
+                                    FontSize="20"
+                                    Padding="4,0"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    ToolTip="Clipboard options">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Foreground" Value="#CCCCCC"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+
+                            <Popup x:Name="ClipboardSettingsPopup"
+                                   Grid.Column="1"
+                                   PlacementTarget="{Binding ElementName=ClipboardSettingsButton}"
+                                   Placement="Bottom"
+                                   VerticalOffset="4"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True"
+                                   PopupAnimation="Fade">
+                                <Border DataContext="{Binding DataContext, ElementName=MainRootWindow}"
+                                        Background="#2A2A42"
+                                        BorderBrush="#4C4C70"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="14"
+                                        Width="400">
+                                    <StackPanel>
+                                        <TextBlock Text="Clipboard Settings"
+                                                   Foreground="White"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,12"/>
+
+                                        <!-- Text size -->
+                                        <TextBlock Text="Text size in overlay"
+                                                   Foreground="#AAB8CC"
+                                                   FontSize="11"
+                                                   Margin="0,0,0,2"/>
+                                        <DockPanel Margin="0,0,0,14">
+                                            <TextBlock DockPanel.Dock="Right"
+                                                       Text="{Binding QuickTextFontSize, StringFormat={}{0:0}}"
+                                                       Foreground="#B9C7D6"
+                                                       FontSize="11"
+                                                       Width="28"
+                                                       TextAlignment="Right"
+                                                       VerticalAlignment="Center"/>
+                                            <Slider Value="{Binding QuickTextFontSize, Mode=TwoWay}"
+                                                    Minimum="9"
+                                                    Maximum="24"
+                                                    TickFrequency="1"
+                                                    IsSnapToTickEnabled="True"/>
+                                        </DockPanel>
+
+                                        <!-- Action steps header -->
+                                        <TextBlock Text="ACTION STEPS (shared for all clipboard items)"
+                                                   Foreground="#666"
+                                                   FontSize="11"
+                                                   FontWeight="Bold"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="TextInput-steg kan använda {{clipboardText}} var som helst i texten. Lämnar du fältet tomt används hela clipboard-radens text automatiskt."
+                                                   Foreground="#7B8FA3"
+                                                   FontSize="10"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,10"/>
+
+                                        <ItemsControl ItemsSource="{Binding QuickTextActionSteps}" Margin="0,0,0,8">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="#2D2D44" CornerRadius="6" Padding="10" Margin="0,0,0,6">
+                                                        <StackPanel>
+                                                            <DockPanel Margin="0,0,0,6">
+                                                                <Button Content="✕" DockPanel.Dock="Right"
+                                                                        Command="{Binding DataContext.RemoveClipboardActionStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Background="#5A2727" Foreground="White"
+                                                                        FontSize="11" Padding="6,2" Margin="4,0,0,0"
+                                                                        BorderThickness="0" Cursor="Hand">
+                                                                    <Button.Style>
+                                                                        <Style TargetType="Button">
+                                                                            <Setter Property="Template">
+                                                                                <Setter.Value>
+                                                                                    <ControlTemplate TargetType="Button">
+                                                                                        <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                                        </Border>
+                                                                                    </ControlTemplate>
+                                                                                </Setter.Value>
+                                                                            </Setter>
+                                                                        </Style>
+                                                                    </Button.Style>
+                                                                </Button>
+                                                                <Button Content="▲" DockPanel.Dock="Right"
+                                                                        Command="{Binding DataContext.MoveClipboardActionStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Background="#2D2D44" Foreground="#AAA"
+                                                                        FontSize="10" Padding="6,2" Margin="2,0,0,0"
+                                                                        BorderThickness="0" Cursor="Hand">
+                                                                    <Button.Style>
+                                                                        <Style TargetType="Button">
+                                                                            <Setter Property="Template">
+                                                                                <Setter.Value>
+                                                                                    <ControlTemplate TargetType="Button">
+                                                                                        <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                                        </Border>
+                                                                                    </ControlTemplate>
+                                                                                </Setter.Value>
+                                                                            </Setter>
+                                                                            <Style.Triggers>
+                                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                                    <Setter Property="Background" Value="#3D3D54"/>
+                                                                                </Trigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Button.Style>
+                                                                </Button>
+                                                                <Button Content="▼" DockPanel.Dock="Right"
+                                                                        Command="{Binding DataContext.MoveClipboardActionStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Background="#2D2D44" Foreground="#AAA"
+                                                                        FontSize="10" Padding="6,2" Margin="2,0,0,0"
+                                                                        BorderThickness="0" Cursor="Hand">
+                                                                    <Button.Style>
+                                                                        <Style TargetType="Button">
+                                                                            <Setter Property="Template">
+                                                                                <Setter.Value>
+                                                                                    <ControlTemplate TargetType="Button">
+                                                                                        <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                                        </Border>
+                                                                                    </ControlTemplate>
+                                                                                </Setter.Value>
+                                                                            </Setter>
+                                                                            <Style.Triggers>
+                                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                                    <Setter Property="Background" Value="#3D3D54"/>
+                                                                                </Trigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Button.Style>
+                                                                </Button>
+                                                                <ComboBox SelectedItem="{Binding Type, Mode=TwoWay}"
+                                                                          ItemsSource="{Binding Source={StaticResource ActionStepTypeValues}}"
+                                                                          Style="{StaticResource DarkComboBox}"
+                                                                          Margin="0,0,8,0"/>
+                                                            </DockPanel>
+
+                                                            <!-- KeyPress fields -->
+                                                            <StackPanel x:Name="ClipStepKeyPress" Margin="0,0,0,4">
+                                                                <TextBlock Text="Key (SendKeys format)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                                                <TextBox Text="{Binding KeyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                                                         BorderBrush="#444" BorderThickness="1"/>
+                                                            </StackPanel>
+
+                                                            <!-- TextInput fields -->
+                                                            <StackPanel x:Name="ClipStepTextInput" Visibility="Collapsed" Margin="0,0,0,4">
+                                                                <TextBlock Text="Text (tomt = använd clipboard-texten)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                                                <TextBox Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                                                         BorderBrush="#444" BorderThickness="1"
+                                                                         AcceptsReturn="True" TextWrapping="Wrap"
+                                                                         MinHeight="40" MaxHeight="80"/>
+                                                                <ComboBox SelectedItem="{Binding TextMode, Mode=TwoWay}"
+                                                                          ItemsSource="{Binding Source={StaticResource TextModeValues}}"
+                                                                          Style="{StaticResource DarkComboBox}"
+                                                                          Margin="0,4,0,4"/>
+                                                                <CheckBox IsChecked="{Binding PressEnterAfter, Mode=TwoWay}"
+                                                                          Content="Press Enter after"
+                                                                          Foreground="#CCC" FontSize="12"/>
+                                                            </StackPanel>
+
+                                                            <!-- Delay fields -->
+                                                            <StackPanel x:Name="ClipStepDelay" Visibility="Collapsed" Margin="0,0,0,4">
+                                                                <TextBlock Text="Duration (ms)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                                                <TextBox Text="{Binding DelayMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                                                         BorderBrush="#444" BorderThickness="1" Width="80" HorizontalAlignment="Left"/>
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </Border>
+
+                                                    <DataTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding Type}" Value="KeyPress">
+                                                            <Setter TargetName="ClipStepKeyPress" Property="Visibility" Value="Visible"/>
+                                                            <Setter TargetName="ClipStepTextInput" Property="Visibility" Value="Collapsed"/>
+                                                            <Setter TargetName="ClipStepDelay" Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Type}" Value="TextInput">
+                                                            <Setter TargetName="ClipStepKeyPress" Property="Visibility" Value="Collapsed"/>
+                                                            <Setter TargetName="ClipStepTextInput" Property="Visibility" Value="Visible"/>
+                                                            <Setter TargetName="ClipStepDelay" Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Type}" Value="Delay">
+                                                            <Setter TargetName="ClipStepKeyPress" Property="Visibility" Value="Collapsed"/>
+                                                            <Setter TargetName="ClipStepTextInput" Property="Visibility" Value="Collapsed"/>
+                                                            <Setter TargetName="ClipStepDelay" Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </DataTemplate.Triggers>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <Button Content="+ Add Step"
+                                                Command="{Binding AddClipboardActionStepCommand}"
+                                                Background="#2D5A27" Foreground="White"
+                                                FontSize="12" Padding="10,5"
+                                                BorderThickness="0" Cursor="Hand"
+                                                HorizontalAlignment="Left">
+                                            <Button.Style>
+                                                <Style TargetType="Button">
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="Button">
+                                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                </Border>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                    <Style.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter Property="Background" Value="#3D7A37"/>
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
+                        </Grid>
 
                         <DockPanel Margin="0,0,0,8" LastChildFill="False">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">

@@ -52,6 +52,11 @@ public partial class OverlayWindow : Window
     private System.Windows.Point _quickTextPanelDragStart;
     private double _quickTextPanelStartX;
     private double _quickTextPanelStartY;
+    private bool _isResizingQuickTextPanel;
+    private System.Windows.Point _quickTextPanelResizeStart;
+    private double _quickTextPanelResizeStartX;
+    private double _quickTextPanelResizeStartWidth;
+    private double _quickTextPanelResizeStartHeight;
     private readonly Dictionary<string, string> _quickTextSessionOverrides = new(StringComparer.Ordinal);
     private readonly HashSet<string> _quickTextEditingIds = new(StringComparer.Ordinal);
     public ObservableCollection<OverlayQuickTextSessionItemViewModel> OverlayQuickTextItems { get; } = new();
@@ -646,8 +651,8 @@ public partial class OverlayWindow : Window
 
     private void UpdateQuickTextPanelPosition(double desiredX, double desiredY)
     {
-        double panelWidth = QuickTextPanel.ActualWidth > 1 ? QuickTextPanel.ActualWidth : QuickTextPanel.Width;
-        double panelHeight = QuickTextPanel.ActualHeight > 1 ? QuickTextPanel.ActualHeight : 280;
+        double panelWidth = QuickTextPanel.ActualWidth > 1 ? QuickTextPanel.ActualWidth : _viewModel.QuickTextPanelWidth;
+        double panelHeight = QuickTextPanel.ActualHeight > 1 ? QuickTextPanel.ActualHeight : _viewModel.QuickTextPanelHeight;
 
         double maxX = Math.Max(0, ActualWidth - panelWidth - 12);
         double maxY = Math.Max(0, ActualHeight - panelHeight - 12);
@@ -659,6 +664,85 @@ public partial class OverlayWindow : Window
     private void ClampQuickTextPanelToBounds()
     {
         UpdateQuickTextPanelPosition(_viewModel.QuickTextPanelX, _viewModel.QuickTextPanelY);
+    }
+
+    private void QuickTextPanelResizeHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isResizingQuickTextPanel = true;
+        _quickTextPanelResizeStart = e.GetPosition(this);
+        _quickTextPanelResizeStartX = _viewModel.QuickTextPanelX;
+        _quickTextPanelResizeStartWidth = _viewModel.QuickTextPanelWidth;
+        _quickTextPanelResizeStartHeight = _viewModel.QuickTextPanelHeight;
+
+        if (sender is UIElement element)
+            element.CaptureMouse();
+
+        e.Handled = true;
+    }
+
+    private void QuickTextPanelResizeHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isResizingQuickTextPanel)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _quickTextPanelResizeStart.X;
+        double dy = pos.Y - _quickTextPanelResizeStart.Y;
+
+        // Match sticky-note resize behavior: bottom-left handle moves the left edge while keeping the right edge anchored.
+        double rightEdge = Math.Min(_quickTextPanelResizeStartX + _quickTextPanelResizeStartWidth, ActualWidth - 12);
+        double desiredWidth = _quickTextPanelResizeStartWidth - dx;
+        double maxWidthByRightEdge = Math.Max(
+            Models.DeckProfile.MinQuickTextPanelWidth,
+            Math.Min(Models.DeckProfile.MaxQuickTextPanelWidth, rightEdge));
+        double clampedWidth = Math.Clamp(desiredWidth, Models.DeckProfile.MinQuickTextPanelWidth, maxWidthByRightEdge);
+
+        double desiredHeight = _quickTextPanelResizeStartHeight + dy;
+        double maxHeightByBounds = Math.Min(
+            Models.DeckProfile.MaxQuickTextPanelHeight,
+            Math.Max(Models.DeckProfile.MinQuickTextPanelHeight, ActualHeight - _viewModel.QuickTextPanelY - 12));
+        double clampedHeight = Math.Clamp(desiredHeight, Models.DeckProfile.MinQuickTextPanelHeight, maxHeightByBounds);
+
+        double desiredX = rightEdge - clampedWidth;
+        double maxX = Math.Max(0, ActualWidth - clampedWidth - 12);
+        _viewModel.QuickTextPanelX = Math.Clamp(desiredX, 0, maxX);
+        _viewModel.QuickTextPanelWidth = clampedWidth;
+        _viewModel.QuickTextPanelHeight = clampedHeight;
+        ClampQuickTextPanelToBounds();
+
+        e.Handled = true;
+    }
+
+    private void QuickTextPanelResizeHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _isResizingQuickTextPanel = false;
+    }
+
+    private void QuickTextAction_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: OverlayQuickTextSessionItemViewModel item })
+            return;
+
+        string itemText = item.SessionText;
+        if (string.IsNullOrWhiteSpace(itemText))
+            return;
+
+        var prevHwnd = _previousForegroundWindow;
+        _viewModel.CloseOverlayCommand.Execute(null);
+        Close();
+
+        var mainWindow = System.Windows.Application.Current.MainWindow;
+        if (mainWindow != null)
+            mainWindow.WindowState = WindowState.Minimized;
+
+        OverlayInterop.ForceSetForegroundWindow(prevHwnd);
+        _viewModel.ExecuteQuickTextAction(itemText);
     }
 
     private void StartInlineTitleEdit(StickyNoteViewModel note)
@@ -740,6 +824,14 @@ public partial class OverlayWindow : Window
     {
         if (e.PropertyName == nameof(MainViewModel.QuickTextItems))
             RebuildOverlayQuickTextItems();
+
+        if (e.PropertyName is nameof(MainViewModel.QuickTextItems)
+            or nameof(MainViewModel.QuickTextPanelWidth)
+            or nameof(MainViewModel.QuickTextPanelHeight)
+            or nameof(MainViewModel.QuickTextFontSize))
+        {
+            Dispatcher.BeginInvoke(new Action(ClampQuickTextPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
     }
 
     private static System.Windows.Controls.TextBox? FindDescendant(
