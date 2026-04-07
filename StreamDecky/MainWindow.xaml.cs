@@ -21,9 +21,10 @@ public partial class MainWindow : Window
     private System.Drawing.Icon? _trayIconImage;
     private readonly System.Windows.Threading.DispatcherTimer _gamepadToggleTimer = new()
     {
-        Interval = TimeSpan.FromMilliseconds(50)
+        Interval = TimeSpan.FromMilliseconds(80)
     };
     private ushort _previousGamepadButtons;
+    private uint _previousGamepadPacketNumber;
     private DateTime _nextGamepadToggleAllowedAtUtc = DateTime.MinValue;
 
     private const string StartupRegistryKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
@@ -140,6 +141,7 @@ public partial class MainWindow : Window
 
         _gamepadToggleTimer.Stop();
         _previousGamepadButtons = 0;
+        _previousGamepadPacketNumber = 0;
     }
 
     private void GamepadToggleTimer_Tick(object? sender, EventArgs e)
@@ -150,8 +152,14 @@ public partial class MainWindow : Window
         if (!XInputInterop.TryGetFirstConnectedState(out var state))
         {
             _previousGamepadButtons = 0;
+            _previousGamepadPacketNumber = 0;
             return;
         }
+
+        if (state.dwPacketNumber == _previousGamepadPacketNumber)
+            return;
+
+        _previousGamepadPacketNumber = state.dwPacketNumber;
 
         ushort toggleButtons = _viewModel.GamepadToggleButtons;
         if (toggleButtons == 0)
@@ -180,6 +188,7 @@ public partial class MainWindow : Window
         _gamepadToggleTimer.Tick -= GamepadToggleTimer_Tick;
         _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
         _previousGamepadButtons = 0;
+        _previousGamepadPacketNumber = 0;
     }
 
     private void DisposeTrayIcon()

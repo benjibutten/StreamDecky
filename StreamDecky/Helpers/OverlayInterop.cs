@@ -50,7 +50,6 @@ public static class OverlayInterop
         if (hwnd == IntPtr.Zero) return;
 
         SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-        SetForegroundWindow(hwnd);
     }
 
     public static void ForceFocus(Window window)
