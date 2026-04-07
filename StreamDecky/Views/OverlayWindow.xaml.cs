@@ -839,7 +839,6 @@ public partial class OverlayWindow : Window
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MainViewModel.QuickTextItems))
-        {
             RebuildOverlayQuickTextItems();
 
         if (e.PropertyName is nameof(MainViewModel.QuickTextItems)
