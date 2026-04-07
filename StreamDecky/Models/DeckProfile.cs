@@ -4,6 +4,12 @@ public class DeckProfile
 {
     public const double MinStickyNoteFontSize = 10;
     public const double MaxStickyNoteFontSize = 30;
+    public const double MinQuickTextFontSize = 9;
+    public const double MaxQuickTextFontSize = 24;
+    public const double MinQuickTextPanelWidth = 280;
+    public const double MaxQuickTextPanelWidth = 700;
+    public const double MinQuickTextPanelHeight = 180;
+    public const double MaxQuickTextPanelHeight = 3000;
 
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Name { get; set; } = "Standard";
@@ -28,6 +34,10 @@ public class DeckProfile
     public List<QuickTextItem> QuickTextItems { get; set; } = new();
     public double QuickTextPanelX { get; set; } = 30;
     public double QuickTextPanelY { get; set; } = 96;
+    public double QuickTextPanelWidth { get; set; } = 420;
+    public double QuickTextPanelHeight { get; set; } = 380;
+    public double QuickTextFontSize { get; set; } = 12;
+    public List<ActionStep> QuickTextActionSteps { get; set; } = new();
     public int LayoutRows { get; set; }
     public int LayoutColumns { get; set; }
     public List<DeckPage> Pages { get; set; } = new() { new DeckPage() };
@@ -45,6 +55,11 @@ public class DeckProfile
 
         ButtonOverlayOpacity = Math.Clamp(ButtonOverlayOpacity, 0.2, 1.0);
         StickyNoteFontSize = Math.Clamp(StickyNoteFontSize, MinStickyNoteFontSize, MaxStickyNoteFontSize);
+        QuickTextFontSize = Math.Clamp(QuickTextFontSize == 0 ? 12 : QuickTextFontSize, MinQuickTextFontSize, MaxQuickTextFontSize);
+        QuickTextPanelWidth = Math.Clamp(QuickTextPanelWidth == 0 ? 420 : QuickTextPanelWidth, MinQuickTextPanelWidth, MaxQuickTextPanelWidth);
+        QuickTextPanelHeight = Math.Clamp(QuickTextPanelHeight == 0 ? 380 : QuickTextPanelHeight, MinQuickTextPanelHeight, MaxQuickTextPanelHeight);
+
+        QuickTextActionSteps ??= new List<ActionStep>();
 
         Pages ??= new List<DeckPage>();
         VirtualLayouts ??= new List<DeckPage>();

@@ -40,6 +40,9 @@ public partial class MainWindow : Window
         _gamepadToggleTimer.Tick += GamepadToggleTimer_Tick;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         UpdateGamepadTogglePolling();
+
+        if (Environment.GetCommandLineArgs().Contains("--minimized"))
+            Loaded += (_, _) => Hide();
     }
 
     private void InitializeTrayIcon()
@@ -206,7 +209,7 @@ public partial class MainWindow : Window
         if (key == null) return;
 
         if (_viewModel.StartWithWindows)
-            key.SetValue(AppRegistryName, $"\"{exePath}\"");
+            key.SetValue(AppRegistryName, $"\"{exePath}\" --minimized");
         else
             key.DeleteValue(AppRegistryName, false);
     }
@@ -269,6 +272,13 @@ public partial class MainWindow : Window
     private void ToggleNotesAreasPopup_Click(object sender, RoutedEventArgs e)
     {
         var popup = GetNotesAreasPopup();
+        if (popup != null)
+            popup.IsOpen = !popup.IsOpen;
+    }
+
+    private void ToggleClipboardSettingsPopup_Click(object sender, RoutedEventArgs e)
+    {
+        var popup = ClipboardSettingsPopup;
         if (popup != null)
             popup.IsOpen = !popup.IsOpen;
     }

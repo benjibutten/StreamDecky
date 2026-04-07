@@ -876,8 +876,8 @@
         </ItemsControl>
 
         <Border x:Name="QuickTextPanel"
-            Width="420"
-            MaxHeight="640"
+                Width="{Binding QuickTextPanelWidth, Mode=TwoWay}"
+            Height="{Binding QuickTextPanelHeight, Mode=TwoWay}"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 Margin="0"
@@ -1063,7 +1063,7 @@
                                             BorderBrush="#38FFFFFF"
                                             BorderThickness="1"
                                             CornerRadius="6"
-                                            Padding="8,7"
+                                            Padding="6"
                                             Margin="0,0,0,6">
                                         <Grid>
                                             <Grid.RowDefinitions>
@@ -1079,13 +1079,13 @@
                                                        Grid.Column="0"
                                                        Text="{Binding PreviewText}"
                                                        Foreground="#ECF3FA"
-                                                       FontSize="12"
+                                                       FontSize="{Binding DataContext.QuickTextFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                                        TextWrapping="Wrap"
                                                        TextTrimming="CharacterEllipsis"
-                                                       LineHeight="15"
+                                                       LineHeight="{Binding DataContext.QuickTextPreviewLineHeight, RelativeSource={RelativeSource AncestorType=Window}}"
                                                        LineStackingStrategy="BlockLineHeight"
-                                                       Height="24"
-                                                       Margin="0,0,8,0"
+                                                       MaxHeight="{Binding DataContext.QuickTextPreviewHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                       Margin="0,0,6,0"
                                                        VerticalAlignment="Top"
                                                        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
 
@@ -1099,15 +1099,14 @@
                                                      BorderBrush="#3CFFFFFF"
                                                      BorderThickness="1"
                                                      Padding="8,6"
-                                                     FontSize="12"
+                                                     FontSize="{Binding DataContext.QuickTextFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                                      TextWrapping="Wrap"
                                                      AcceptsReturn="True"
                                                      VerticalContentAlignment="Top"
                                                      VerticalScrollBarVisibility="Hidden"
                                                      HorizontalScrollBarVisibility="Disabled"
-                                                     Height="56"
-                                                     MaxHeight="56"
-                                                     Margin="0,0,8,0"
+                                                     Height="{Binding DataContext.QuickTextEditorHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                     Margin="0,0,6,0"
                                                      Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}"/>
                                             <TextBlock Grid.Row="1"
                                                        Grid.Column="0"
@@ -1115,24 +1114,29 @@
                                                        Foreground="#92A8BF"
                                                        TextWrapping="Wrap"
                                                        TextTrimming="CharacterEllipsis"
-                                                       LineHeight="16"
+                                                       LineHeight="{Binding DataContext.QuickTextHintLineHeight, RelativeSource={RelativeSource AncestorType=Window}}"
                                                        LineStackingStrategy="BlockLineHeight"
-                                                       MaxHeight="32"
+                                                       MaxHeight="{Binding DataContext.QuickTextHintMaxHeight, RelativeSource={RelativeSource AncestorType=Window}}"
                                                        FontSize="10"
-                                                       Margin="0,6,8,0"
+                                                       Margin="0,4,6,0"
                                                        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}"/>
 
-                                            <StackPanel Grid.Row="0"
-                                                        Grid.RowSpan="1"
-                                                        Grid.Column="2"
-                                                        Orientation="Horizontal"
-                                                        VerticalAlignment="Top">
+                                            <Grid Grid.Row="0"
+                                                  Grid.RowSpan="2"
+                                                  Grid.Column="1"
+                                                  Margin="0,2,0,0"
+                                                  VerticalAlignment="Top">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="70"/>
+                                                </Grid.ColumnDefinitions>
+
                                                 <Button Click="QuickTextToggleEdit_Click"
                                                     Background="#2B3E50"
                                                         Foreground="#DCE7F2"
                                                         BorderThickness="0"
                                                         Padding="10,5"
-                                                        Margin="0"
+                                                        Margin="0,0,4,0"
                                                         MinWidth="28"
                                                         Cursor="Hand"
                                                         VerticalAlignment="Center"
@@ -1177,15 +1181,16 @@
                                                     </Button.Style>
                                                 </Button>
 
-                                                <Button Content="Copy"
+                                                <Button Grid.Column="1"
+                                                        Content="Copy"
                                                         Click="QuickTextCopy_Click"
                                                     Background="#3A5A78"
                                                         Foreground="White"
                                                         BorderThickness="0"
-                                                        Padding="10,5"
-                                                        Margin="0"
+                                                        Padding="0,5"
                                                         Cursor="Hand"
-                                                        VerticalAlignment="Center">
+                                                        VerticalAlignment="Center"
+                                                        Visibility="{Binding DataContext.HasQuickTextAction, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
                                                     <Button.Style>
                                                         <Style TargetType="Button">
                                                             <Setter Property="Template">
@@ -1212,7 +1217,90 @@
                                                         </Style>
                                                     </Button.Style>
                                                 </Button>
-                                            </StackPanel>
+
+                                                <Grid Grid.Column="1"
+                                                      Visibility="{Binding DataContext.HasQuickTextAction, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Button Grid.Column="0"
+                                                            Content="Copy"
+                                                            Click="QuickTextCopy_Click"
+                                                            Background="#2E5F93"
+                                                            Foreground="White"
+                                                            BorderThickness="0"
+                                                            Padding="0,5"
+                                                            Margin="0,0,1,0"
+                                                            Cursor="Hand"
+                                                            VerticalAlignment="Center">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button">
+                                                                <Setter Property="Template">
+                                                                    <Setter.Value>
+                                                                        <ControlTemplate TargetType="Button">
+                                                                            <Border x:Name="Bd"
+                                                                                    Background="{TemplateBinding Background}"
+                                                                                    CornerRadius="4"
+                                                                                    Padding="{TemplateBinding Padding}">
+                                                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                                        VerticalAlignment="Center"/>
+                                                                            </Border>
+                                                                            <ControlTemplate.Triggers>
+                                                                                <Trigger Property="IsMouseOver"
+                                                                                        Value="True">
+                                                                                    <Setter TargetName="Bd"
+                                                                                            Property="Background"
+                                                                                            Value="#3E76B0"/>
+                                                                                </Trigger>
+                                                                            </ControlTemplate.Triggers>
+                                                                        </ControlTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+
+                                                    <Button Grid.Column="1"
+                                                            Content="➜"
+                                                            Click="QuickTextAction_Click"
+                                                            Background="#3D7A37"
+                                                            Foreground="White"
+                                                            BorderThickness="0"
+                                                            Padding="0,5"
+                                                            Margin="1,0,0,0"
+                                                            Cursor="Hand"
+                                                            VerticalAlignment="Center"
+                                                            ToolTip="Korer den delade clipboard-actionen med aktuell radtext">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button">
+                                                                <Setter Property="Template">
+                                                                    <Setter.Value>
+                                                                        <ControlTemplate TargetType="Button">
+                                                                            <Border x:Name="Bd"
+                                                                                    Background="{TemplateBinding Background}"
+                                                                                    CornerRadius="4"
+                                                                                    Padding="{TemplateBinding Padding}">
+                                                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                                        VerticalAlignment="Center"/>
+                                                                            </Border>
+                                                                            <ControlTemplate.Triggers>
+                                                                                <Trigger Property="IsMouseOver"
+                                                                                        Value="True">
+                                                                                    <Setter TargetName="Bd"
+                                                                                            Property="Background"
+                                                                                            Value="#50A046"/>
+                                                                                </Trigger>
+                                                                            </ControlTemplate.Triggers>
+                                                                        </ControlTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                </Grid>
+                                            </Grid>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -1220,6 +1308,28 @@
                         </ItemsControl>
                     </ScrollViewer>
                 </Grid>
+
+                <!-- Bottom-left resize handle -->
+                <Border Grid.RowSpan="2"
+                        Width="14"
+                        Height="14"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom"
+                        Margin="-7,0,0,-7"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Cursor="SizeNESW"
+                        Panel.ZIndex="20"
+                        MouseLeftButtonDown="QuickTextPanelResizeHandle_MouseLeftButtonDown"
+                        MouseMove="QuickTextPanelResizeHandle_MouseMove"
+                        MouseLeftButtonUp="QuickTextPanelResizeHandle_MouseLeftButtonUp">
+                    <Grid>
+                        <Line X1="4" Y1="10" X2="10" Y2="4"
+                              Stroke="#264C4C4C" StrokeThickness="1" SnapsToDevicePixels="True"/>
+                        <Line X1="6" Y1="10" X2="10" Y2="6"
+                              Stroke="#264C4C4C" StrokeThickness="1" SnapsToDevicePixels="True"/>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
 

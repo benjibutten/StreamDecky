@@ -47,6 +47,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         LoadCurrentLayout();
         StickyNotesVisible = true;
         LoadQuickTextCategories();
+        LoadQuickTextActionSteps();
 
         RebuildProfileOptions();
         RebuildLayoutTargets();
@@ -416,6 +417,70 @@ public partial class MainViewModel : ObservableObject, IDisposable
             ScheduleAutoSave();
         }
     }
+
+    public double QuickTextFontSize
+    {
+        get => _profile.QuickTextFontSize;
+        set
+        {
+            double clamped = Math.Clamp(value, DeckProfile.MinQuickTextFontSize, DeckProfile.MaxQuickTextFontSize);
+            if (Math.Abs(_profile.QuickTextFontSize - clamped) < 0.001)
+                return;
+
+            _profile.QuickTextFontSize = clamped;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(QuickTextPreviewLineHeight));
+            OnPropertyChanged(nameof(QuickTextPreviewHeight));
+            OnPropertyChanged(nameof(QuickTextEditorHeight));
+            OnPropertyChanged(nameof(QuickTextHintLineHeight));
+            OnPropertyChanged(nameof(QuickTextHintMaxHeight));
+            ScheduleAutoSave();
+        }
+    }
+
+    public double QuickTextPreviewLineHeight => Math.Max(16, QuickTextFontSize + 4);
+
+    public double QuickTextPreviewHeight => Math.Round(QuickTextPreviewLineHeight * 2);
+
+    public double QuickTextEditorHeight => Math.Round((QuickTextPreviewLineHeight * 2) + 8);
+
+    public double QuickTextHintLineHeight => Math.Max(14, QuickTextFontSize + 2);
+
+    public double QuickTextHintMaxHeight => Math.Round(QuickTextHintLineHeight * 2);
+
+    public double QuickTextPanelWidth
+    {
+        get => _profile.QuickTextPanelWidth;
+        set
+        {
+            double clamped = Math.Clamp(value, DeckProfile.MinQuickTextPanelWidth, DeckProfile.MaxQuickTextPanelWidth);
+            if (Math.Abs(_profile.QuickTextPanelWidth - clamped) < 0.001)
+                return;
+
+            _profile.QuickTextPanelWidth = clamped;
+            OnPropertyChanged();
+            ScheduleAutoSave();
+        }
+    }
+
+    public double QuickTextPanelHeight
+    {
+        get => _profile.QuickTextPanelHeight;
+        set
+        {
+            double clamped = Math.Clamp(value, DeckProfile.MinQuickTextPanelHeight, DeckProfile.MaxQuickTextPanelHeight);
+            if (Math.Abs(_profile.QuickTextPanelHeight - clamped) < 0.001)
+                return;
+
+            _profile.QuickTextPanelHeight = clamped;
+            OnPropertyChanged();
+            ScheduleAutoSave();
+        }
+    }
+
+    public bool HasQuickTextAction => _profile.QuickTextActionSteps.Count > 0;
+
+    public ObservableCollection<ActionStep> QuickTextActionSteps { get; private set; } = new();
 
     public ushort GamepadToggleButtons
     {
@@ -1672,6 +1737,95 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    // ---- Clipboard action step commands ----
+
+    private void LoadQuickTextActionSteps()
+    {
+        QuickTextActionSteps.CollectionChanged -= OnQuickTextActionStepsCollectionChanged;
+
+        foreach (var step in QuickTextActionSteps)
+            step.PropertyChanged -= OnClipboardActionStepPropertyChanged;
+
+        QuickTextActionSteps = new ObservableCollection<ActionStep>(_profile.QuickTextActionSteps);
+        QuickTextActionSteps.CollectionChanged += OnQuickTextActionStepsCollectionChanged;
+
+        foreach (var step in QuickTextActionSteps)
+            step.PropertyChanged += OnClipboardActionStepPropertyChanged;
+
+        OnPropertyChanged(nameof(QuickTextActionSteps));
+        OnPropertyChanged(nameof(HasQuickTextAction));
+    }
+
+    private void OnQuickTextActionStepsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        // Keep model list in sync
+        _profile.QuickTextActionSteps.Clear();
+        foreach (var step in QuickTextActionSteps)
+            _profile.QuickTextActionSteps.Add(step);
+
+        if (e.OldItems != null)
+            foreach (var item in e.OldItems.OfType<ActionStep>())
+                item.PropertyChanged -= OnClipboardActionStepPropertyChanged;
+
+        if (e.NewItems != null)
+            foreach (var item in e.NewItems.OfType<ActionStep>())
+                item.PropertyChanged += OnClipboardActionStepPropertyChanged;
+
+        OnPropertyChanged(nameof(HasQuickTextAction));
+        ScheduleAutoSave();
+    }
+
+    private void OnClipboardActionStepPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Keep model list in sync (steps are shared references, so property changes are automatic)
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void AddClipboardActionStep()
+    {
+        QuickTextActionSteps.Add(new Models.ActionStep());
+    }
+
+    [RelayCommand]
+    private void RemoveClipboardActionStep(Models.ActionStep? step)
+    {
+        if (step == null)
+            return;
+
+        QuickTextActionSteps.Remove(step);
+    }
+
+    [RelayCommand]
+    private void MoveClipboardActionStepUp(Models.ActionStep? step)
+    {
+        if (step == null)
+            return;
+
+        int index = QuickTextActionSteps.IndexOf(step);
+        if (index > 0)
+            QuickTextActionSteps.Move(index, index - 1);
+    }
+
+    [RelayCommand]
+    private void MoveClipboardActionStepDown(Models.ActionStep? step)
+    {
+        if (step == null)
+            return;
+
+        int index = QuickTextActionSteps.IndexOf(step);
+        if (index >= 0 && index < QuickTextActionSteps.Count - 1)
+            QuickTextActionSteps.Move(index, index + 1);
+    }
+
+    public void ExecuteQuickTextAction(string itemText)
+    {
+        if (string.IsNullOrWhiteSpace(itemText) || _profile.QuickTextActionSteps.Count == 0)
+            return;
+
+        _multiActionService.ExecuteWithItemText(_profile.QuickTextActionSteps, itemText, NaturalTypingEnabled);
+    }
+
     private bool SwitchToLayoutById(string layoutId, int? preferredSelectedIndex = null)
     {
         if (string.IsNullOrWhiteSpace(layoutId))
@@ -1726,6 +1880,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         RebuildLayoutTargets();
         LoadCurrentLayout();
         LoadQuickTextCategories();
+        LoadQuickTextActionSteps();
         NotifyPageChanged();
         NotifyNotePageChanged();
 
@@ -1742,6 +1897,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(GridOffsetY));
         OnPropertyChanged(nameof(QuickTextPanelX));
         OnPropertyChanged(nameof(QuickTextPanelY));
+        OnPropertyChanged(nameof(QuickTextPanelWidth));
+        OnPropertyChanged(nameof(QuickTextPanelHeight));
+        OnPropertyChanged(nameof(QuickTextFontSize));
+        OnPropertyChanged(nameof(QuickTextPreviewLineHeight));
+        OnPropertyChanged(nameof(QuickTextPreviewHeight));
+        OnPropertyChanged(nameof(QuickTextEditorHeight));
+        OnPropertyChanged(nameof(QuickTextHintLineHeight));
+        OnPropertyChanged(nameof(QuickTextHintMaxHeight));
+        OnPropertyChanged(nameof(HasQuickTextAction));
         OnPropertyChanged(nameof(HotkeyModifiers));
         OnPropertyChanged(nameof(HotkeyVk));
         OnPropertyChanged(nameof(HotkeyDisplayText));
