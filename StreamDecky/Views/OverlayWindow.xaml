@@ -947,7 +947,7 @@
 
                         <ScrollViewer Grid.Row="1"
                                       Margin="0,8,0,0"
-                                      MaxHeight="72"
+                                      MaxHeight="104"
                                       VerticalScrollBarVisibility="Hidden"
                                       HorizontalScrollBarVisibility="Disabled"
                                       CanContentScroll="False">
@@ -1046,13 +1046,15 @@
                                Foreground="#8B9FB5"
                                FontSize="12"
                                TextWrapping="Wrap"
-                               VerticalAlignment="Center"
+                                         VerticalAlignment="Top"
                                HorizontalAlignment="Center"
                                TextAlignment="Center"
+                                         Margin="0,8,0,0"
                                Visibility="{Binding HasQuickTextItems, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
 
                     <ScrollViewer Grid.Row="2"
                                   MaxHeight="322"
+                                             VerticalAlignment="Top"
                                   VerticalScrollBarVisibility="Hidden"
                                   HorizontalScrollBarVisibility="Disabled"
                                   Visibility="{Binding HasQuickTextItems, Converter={StaticResource BoolToVisibility}}">
