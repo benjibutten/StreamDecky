@@ -1925,12 +1925,6 @@
                                     </Button.Style>
                                 </Button>
 
-                                <TextBlock Text="{Binding QuickTextCategoryIndicator}"
-                                           Foreground="#AFC0D4"
-                                           FontSize="11"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,6,0"/>
-
                                 <Button Content="▶"
                                         Command="{Binding NextQuickTextCategoryCommand}"
                                         IsEnabled="{Binding CanGoToNextQuickTextCategory}"
@@ -2118,7 +2112,11 @@
                                                          MinHeight="34"
                                                          MaxHeight="56"
                                                          VerticalScrollBarVisibility="Auto"
-                                                         Margin="0,0,8,0"/>
+                                                         Margin="0,0,8,0">
+                                                    <TextBox.Resources>
+                                                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
+                                                    </TextBox.Resources>
+                                                </TextBox>
 
                                                 <Button Grid.Column="1"
                                                         Content="Duplicate"

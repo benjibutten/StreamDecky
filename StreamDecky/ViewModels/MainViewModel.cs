@@ -598,9 +598,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string CurrentQuickTextCategoryName => CurrentQuickTextCategory?.Name ?? "General";
     public bool CanGoToPreviousQuickTextCategory => CurrentQuickTextCategoryIndex > 0;
     public bool CanGoToNextQuickTextCategory => CurrentQuickTextCategoryIndex < QuickTextCategoryCount - 1;
-    public string QuickTextCategoryIndicator => QuickTextCategoryCount == 0
-        ? "0 / 0"
-        : $"{CurrentQuickTextCategoryIndex + 1} / {QuickTextCategoryCount}";
 
     private DeckPage CurrentRegularPage => _profile.Pages[Math.Clamp(CurrentPageIndex, 0, _profile.Pages.Count - 1)];
     private DeckPage CurrentVirtualLayout
@@ -746,7 +743,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HasMultipleQuickTextCategories));
         OnPropertyChanged(nameof(CanGoToPreviousQuickTextCategory));
         OnPropertyChanged(nameof(CanGoToNextQuickTextCategory));
-        OnPropertyChanged(nameof(QuickTextCategoryIndicator));
     }
 
     private string CreateUniqueQuickTextCategoryName(string baseName)
