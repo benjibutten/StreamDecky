@@ -36,6 +36,7 @@ public partial class MainWindow : Window
         _startHiddenInTray = Environment.GetCommandLineArgs().Contains("--minimized", StringComparer.OrdinalIgnoreCase);
         DataContext = _viewModel;
         InitializeComponent();
+        Loaded += MainWindow_Loaded;
         InitializeTrayIcon();
         SyncStartWithWindows();
 
@@ -45,6 +46,48 @@ public partial class MainWindow : Window
         _gamepadToggleTimer.Tick += GamepadToggleTimer_Tick;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         UpdateGamepadTogglePolling();
+    }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        UpdateEditorPanelLayoutConstraints();
+    }
+
+    private void MainContentGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateEditorPanelLayoutConstraints();
+    }
+
+    private void EditorPanelSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        UpdateEditorPanelLayoutConstraints();
+    }
+
+    private void UpdateEditorPanelLayoutConstraints()
+    {
+        if (!IsLoaded || MainContentGrid.ActualWidth <= 0)
+            return;
+
+        double splitterWidth = EditorSplitterColumn.ActualWidth;
+        double minimumDeckWidth = DeckColumn.MinWidth;
+        double minimumEditorWidth = EditorColumn.MinWidth;
+        double maximumEditorWidth = MainContentGrid.ActualWidth - splitterWidth - minimumDeckWidth;
+
+        if (maximumEditorWidth <= 0)
+            return;
+
+        if (maximumEditorWidth < minimumEditorWidth)
+            maximumEditorWidth = minimumEditorWidth;
+
+        EditorColumn.MaxWidth = maximumEditorWidth;
+
+        double currentEditorWidth = EditorColumn.ActualWidth;
+        if (currentEditorWidth <= 0)
+            currentEditorWidth = EditorColumn.Width.IsAbsolute ? EditorColumn.Width.Value : minimumEditorWidth;
+
+        double clampedEditorWidth = Math.Clamp(currentEditorWidth, minimumEditorWidth, maximumEditorWidth);
+        EditorColumn.Width = new GridLength(clampedEditorWidth, GridUnitType.Pixel);
+        DeckColumn.Width = new GridLength(1, GridUnitType.Star);
     }
 
     private void InitializeTrayIcon()
@@ -580,7 +623,7 @@ public partial class MainWindow : Window
     private void DeckEditorButton_PreviewMouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (sender is System.Windows.Controls.Button { DataContext: ButtonViewModel buttonVm })
-            _viewModel.SelectButtonCommand.Execute(buttonVm);
+            _viewModel.SelectButtonAndShowEditorCommand.Execute(buttonVm);
     }
 
     private void DeckEditorButton_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -602,6 +645,15 @@ public partial class MainWindow : Window
     {
         if (sender is FrameworkElement { DataContext: ButtonViewModel buttonVm })
             _viewModel.PasteButtonCommand.Execute(buttonVm);
+    }
+
+    private void RemoveButtonFromContext_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: ButtonViewModel buttonVm })
+            return;
+
+        _viewModel.SelectButtonAndShowEditorCommand.Execute(buttonVm);
+        _viewModel.ClearButtonCommand.Execute(null);
     }
 
     private static string? ShowColorDialog(string currentHex)
