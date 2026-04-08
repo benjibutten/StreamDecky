@@ -909,6 +909,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void SelectButtonAndShowEditor(ButtonViewModel? button)
+    {
+        SelectButton(button);
+        ShowButtonEditor();
+    }
+
+    [RelayCommand]
     private void OpenOverlay()
     {
         _ = RefreshOverlayBackgroundImageAsync();

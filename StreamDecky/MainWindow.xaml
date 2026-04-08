@@ -6,7 +6,7 @@
     x:Name="MainRootWindow"
         Title="StreamDecky" 
         Height="700" Width="1050"
-        MinHeight="500" MinWidth="800"
+        MinHeight="500" MinWidth="980"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E2E"
         WindowStyle="None"
@@ -120,6 +120,21 @@
                                        Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
                                        Margin="0,0,-14,0"/>
                         </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="EditorPanelGridSplitterStyle" TargetType="GridSplitter">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="Margin" Value="0,16,0,16"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GridSplitter">
+                        <Border Background="Transparent"/>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -296,10 +311,11 @@
         </Border>
 
         <!-- Main content area -->
-        <Grid Grid.Row="1">
+        <Grid x:Name="MainContentGrid" Grid.Row="1" ClipToBounds="True" SizeChanged="MainContentGrid_SizeChanged">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" MinWidth="400"/>
-            <ColumnDefinition Width="320"/>
+            <ColumnDefinition x:Name="DeckColumn" Width="*" MinWidth="660"/>
+            <ColumnDefinition x:Name="EditorSplitterColumn" Width="Auto"/>
+            <ColumnDefinition x:Name="EditorColumn" Width="320" MinWidth="300"/>
         </Grid.ColumnDefinitions>
 
         <!-- LEFT: Deck Grid Preview -->
@@ -906,7 +922,7 @@
                             <Button Margin="{Binding DataContext.ButtonSpacing, 
                                         RelativeSource={RelativeSource AncestorType=Window}, 
                                         Converter={StaticResource SpacingToThickness}}"
-                                    Command="{Binding DataContext.SelectButtonCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    Command="{Binding DataContext.SelectButtonAndShowEditorCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"
                                     MouseDoubleClick="DeckEditorButton_MouseDoubleClick"
                                     PreviewMouseRightButtonDown="DeckEditorButton_PreviewMouseRightButtonDown"
@@ -915,6 +931,8 @@
                                     <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                         <MenuItem Header="Copy button (Ctrl+C)" Click="CopyButtonFromContext_Click"/>
                                         <MenuItem Header="Paste button (Ctrl+V)" Click="PasteButtonFromContext_Click"/>
+                                        <Separator/>
+                                        <MenuItem Header="Remove button (Del)" Click="RemoveButtonFromContext_Click"/>
                                     </ContextMenu>
                                 </Button.ContextMenu>
                                 <Button.Width>
@@ -1065,8 +1083,17 @@
             </Border>
         </Grid>
 
+        <GridSplitter x:Name="EditorPanelSplitter"
+                  Grid.Column="1"
+                      Style="{StaticResource EditorPanelGridSplitterStyle}"
+                      ResizeDirection="Columns"
+                      ResizeBehavior="PreviousAndNext"
+                      ShowsPreview="False"
+                  DragCompleted="EditorPanelSplitter_DragCompleted"
+                      Cursor="SizeWE"/>
+
         <!-- RIGHT: Editor Panel -->
-        <Border Grid.Column="1" Background="#252536" CornerRadius="12,0,0,12" Padding="20">
+        <Border Grid.Column="2" Background="#252536" CornerRadius="12,0,0,12" Padding="20">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource DarkScrollViewer}">
                 <StackPanel>
                     <TextBlock Text="Editor" 
