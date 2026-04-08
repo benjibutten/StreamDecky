@@ -13,6 +13,7 @@ using Popup = System.Windows.Controls.Primitives.Popup;
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel = new();
+    private readonly bool _startHiddenInTray;
     private const int HOTKEY_ID = 9000;
     private static readonly TimeSpan GamepadToggleCooldown = TimeSpan.FromMilliseconds(350);
     private HwndSource? _hwndSource;
@@ -32,17 +33,18 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        _startHiddenInTray = Environment.GetCommandLineArgs().Contains("--minimized", StringComparer.OrdinalIgnoreCase);
         DataContext = _viewModel;
         InitializeComponent();
         InitializeTrayIcon();
         SyncStartWithWindows();
 
+        if (_startHiddenInTray)
+            ShowInTaskbar = false;
+
         _gamepadToggleTimer.Tick += GamepadToggleTimer_Tick;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         UpdateGamepadTogglePolling();
-
-        if (Environment.GetCommandLineArgs().Contains("--minimized"))
-            Loaded += (_, _) => Hide();
     }
 
     private void InitializeTrayIcon()
@@ -88,6 +90,7 @@ public partial class MainWindow : Window
 
     public void ShowAndActivate()
     {
+        ShowInTaskbar = true;
         Show();
         WindowState = WindowState.Normal;
         Activate();
@@ -96,6 +99,12 @@ public partial class MainWindow : Window
         Topmost = true;
         Topmost = false;
         Focus();
+    }
+
+    private void HideToTray()
+    {
+        ShowInTaskbar = false;
+        Hide();
     }
 
     private void ExitApplication()
@@ -222,6 +231,9 @@ public partial class MainWindow : Window
         _hwndSource?.AddHook(WndProc);
         OverlayInterop.RegisterGlobalHotkey(this, HOTKEY_ID,
             _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+
+        if (_startHiddenInTray)
+            HideToTray();
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -629,7 +641,7 @@ public partial class MainWindow : Window
     {
         // Minimize to tray instead of closing
         e.Cancel = true;
-        Hide();
+        HideToTray();
         base.OnClosing(e);
     }
 
@@ -659,6 +671,6 @@ public partial class MainWindow : Window
 
     private void TitleBarClose_Click(object sender, RoutedEventArgs e)
     {
-        Hide();
+        HideToTray();
     }
 }
