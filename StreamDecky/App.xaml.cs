@@ -14,15 +14,20 @@ public partial class App : Application
     private EventWaitHandle? _activateExistingInstanceEvent;
     private RegisteredWaitHandle? _activationWaitHandle;
     private bool _ownsSingleInstanceMutex;
+    private bool _activateMainWindowWhenReady;
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        bool startHiddenInTray = HasStartHiddenInTrayArgument(e.Args);
+
         _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out bool isFirstInstance);
         _ownsSingleInstanceMutex = isFirstInstance;
 
         if (!isFirstInstance)
         {
-            SignalRunningInstanceToActivate();
+            if (!startHiddenInTray)
+                SignalRunningInstanceToActivate();
+
             Shutdown();
             return;
         }
@@ -44,6 +49,7 @@ public partial class App : Application
             executeOnlyOnce: false);
 
         base.OnStartup(e);
+        CreateMainWindow(startHiddenInTray);
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -76,6 +82,32 @@ public partial class App : Application
         }
     }
 
+    private static bool HasStartHiddenInTrayArgument(string[] args)
+    {
+        return args.Contains("--minimized", StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void CreateMainWindow(bool startHiddenInTray)
+    {
+        var mainWindow = new MainWindow(startHiddenInTray);
+        MainWindow = mainWindow;
+
+        if (_activateMainWindowWhenReady)
+        {
+            _activateMainWindowWhenReady = false;
+            mainWindow.ShowAndActivate();
+            return;
+        }
+
+        if (startHiddenInTray)
+        {
+            mainWindow.StartHiddenInTray();
+            return;
+        }
+
+        mainWindow.Show();
+    }
+
     private void ActivateMainWindow()
     {
         if (MainWindow is MainWindow mainWindow)
@@ -85,7 +117,10 @@ public partial class App : Application
         }
 
         if (MainWindow == null)
+        {
+            _activateMainWindowWhenReady = true;
             return;
+        }
 
         MainWindow.Show();
         if (MainWindow.WindowState == WindowState.Minimized)
