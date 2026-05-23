@@ -32,11 +32,17 @@ public partial class MainWindow : Window
     private const string AppRegistryName = "StreamDecky";
 
     public MainWindow()
+        : this(HasStartHiddenInTrayArgument(Environment.GetCommandLineArgs()))
     {
-        _startHiddenInTray = Environment.GetCommandLineArgs().Contains("--minimized", StringComparer.OrdinalIgnoreCase);
+    }
+
+    public MainWindow(bool startHiddenInTray)
+    {
+        _startHiddenInTray = startHiddenInTray;
         DataContext = _viewModel;
         InitializeComponent();
         Loaded += MainWindow_Loaded;
+        StateChanged += MainWindow_StateChanged;
         InitializeTrayIcon();
         SyncStartWithWindows();
 
@@ -48,9 +54,27 @@ public partial class MainWindow : Window
         UpdateGamepadTogglePolling();
     }
 
+    private static bool HasStartHiddenInTrayArgument(string[] args)
+    {
+        return args.Contains("--minimized", StringComparer.OrdinalIgnoreCase);
+    }
+
+    public void StartHiddenInTray()
+    {
+        ShowInTaskbar = false;
+        new WindowInteropHelper(this).EnsureHandle();
+        HideToTray();
+    }
+
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         UpdateEditorPanelLayoutConstraints();
+    }
+
+    private void MainWindow_StateChanged(object? sender, EventArgs e)
+    {
+        if (WindowState == WindowState.Minimized)
+            HideToTray();
     }
 
     private void MainContentGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -712,7 +736,7 @@ public partial class MainWindow : Window
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
     {
-        WindowState = WindowState.Minimized;
+        HideToTray();
     }
 
     private void MaximizeButton_Click(object sender, RoutedEventArgs e)
