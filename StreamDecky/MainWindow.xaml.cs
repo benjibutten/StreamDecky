@@ -471,8 +471,12 @@ public partial class MainWindow : Window
 
         if (_viewModel.PageCount <= 1) return;
         var result = System.Windows.MessageBox.Show(
-            $"Remove page \"{_viewModel.CurrentPageName}\"?",
-            "Remove Page", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            this,
+            $"Remove page \"{_viewModel.CurrentPageName}\"?\n\nThis permanently removes the page and all of its button assignments.",
+            "Remove Page",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
         if (result == MessageBoxResult.Yes)
             _viewModel.RemovePageCommand.Execute(null);
     }
@@ -488,8 +492,12 @@ public partial class MainWindow : Window
             return;
 
         var result = System.Windows.MessageBox.Show(
-            $"Remove virtual layout \"{_viewModel.CurrentPageName}\"?",
-            "Remove Virtual Layout", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            this,
+            $"Remove virtual layout \"{_viewModel.CurrentPageName}\"?\n\nThis permanently removes the virtual layout and all of its button assignments.",
+            "Remove Virtual Layout",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
 
         if (result == MessageBoxResult.Yes)
             _viewModel.RemoveVirtualLayoutCommand.Execute(null);

@@ -14,7 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  SOLUTION_PATH: StreamDecky.slnx
   PROJECT_PATH: StreamDecky/StreamDecky.csproj
+  TEST_PROJECT_PATH: StreamDecky.Tests/StreamDecky.Tests.csproj
 
 jobs:
   build:
@@ -31,8 +33,12 @@ jobs:
 
       - name: Restore dependencies
         shell: pwsh
-        run: dotnet restore $env:PROJECT_PATH
+        run: dotnet restore $env:SOLUTION_PATH
 
       - name: Build app
         shell: pwsh
         run: dotnet build $env:PROJECT_PATH -c Release --no-restore
+
+      - name: Run tests
+        shell: pwsh
+        run: dotnet test $env:TEST_PROJECT_PATH -c Release --no-restore

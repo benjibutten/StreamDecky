@@ -85,6 +85,47 @@ public sealed class ProfileServiceTests
     }
 
         [Fact]
+        public void LoadStore_WhenProfilesFileUsesNewerSchema_LoadsWithoutDowngradingData()
+        {
+                using var tempDirectory = new TemporaryDirectory();
+                string profilesPath = System.IO.Path.Combine(tempDirectory.Path, "profiles.json");
+
+                int newerVersion = ProfileSchemaVersion.Current + 1;
+                System.IO.File.WriteAllText(
+                        profilesPath,
+                        $$"""
+                        {
+                            "SchemaVersion": {{newerVersion}},
+                            "ActiveProfileId": "future-profile",
+                            "Profiles": [
+                                {
+                                    "Id": "future-profile",
+                                    "Name": "Future",
+                                    "SchemaVersion": {{newerVersion}},
+                                    "Pages": [
+                                        {
+                                            "Id": "page-1",
+                                            "Name": "Page 1",
+                                            "Rows": 4,
+                                            "Columns": 6,
+                                            "Buttons": []
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """);
+
+                var service = new ProfileService(tempDirectory.Path);
+
+                DeckProfileStore store = service.LoadStore();
+
+                Assert.Equal(newerVersion, store.SchemaVersion);
+                Assert.Equal(newerVersion, store.GetActiveProfile().SchemaVersion);
+                Assert.Equal("Future", store.GetActiveProfile().Name);
+        }
+
+        [Fact]
         public void LoadStore_WhenProfilesFileIsUnversioned_MigratesLegacyLayoutAndStickyNotes()
         {
                 using var tempDirectory = new TemporaryDirectory();
@@ -145,6 +186,40 @@ public sealed class ProfileServiceTests
                 string json = ProfileService.SerializeProfileJson(profile);
 
                 Assert.Contains($"\"SchemaVersion\": {ProfileSchemaVersion.Current}", json, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void SerializeProfileJson_WhenProfileUsesNewerSchema_Throws()
+        {
+            var profile = new DeckProfile
+            {
+                Name = "Future",
+                SchemaVersion = ProfileSchemaVersion.Current + 1
+            };
+
+            var exception = Assert.Throws<InvalidOperationException>(() => ProfileService.SerializeProfileJson(profile));
+
+            Assert.Contains("newer than this app supports", exception.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void SerializeStoreJson_WhenAnyProfileUsesNewerSchema_Throws()
+        {
+            var store = new DeckProfileStore
+            {
+                Profiles = new List<DeckProfile>
+                {
+                    new()
+                    {
+                        Name = "Future",
+                        SchemaVersion = ProfileSchemaVersion.Current + 1
+                    }
+                }
+            };
+
+            var exception = Assert.Throws<InvalidOperationException>(() => ProfileService.SerializeStoreJson(store));
+
+            Assert.Contains("newer than this app supports", exception.Message, StringComparison.Ordinal);
         }
 
         [Fact]

@@ -1,118 +1,134 @@
-# Recovery, Användarflöden och Felsökning
+# Recovery, User Flows, and Troubleshooting
 
-Det här dokumentet samlar de vanligaste operativa scenarierna runt profiler, autosave, overlay, autostart och lokal utveckling.
+This document collects the most common operational scenarios around profiles, autosave, the overlay, startup registration, and local development.
 
-## Viktiga sökvägar
+## Important paths
 
-- Primär profilfil: `%LOCALAPPDATA%\StreamDecky\profiles.json`
+- Primary profile store: `%LOCALAPPDATA%\StreamDecky\profiles.json`
 - Backup: `%LOCALAPPDATA%\StreamDecky\profiles.backup.json`
-- Legacy-profil: `%LOCALAPPDATA%\StreamDecky\profile.json`
-- Loggfil: `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`
+- Legacy profile: `%LOCALAPPDATA%\StreamDecky\profile.json`
+- Log file: `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`
 
-## Användarflöde: skapa en ny profil
+## User flow: create a new profile
 
-1. Välj aktuell profil i huvudfönstrets profilväljare.
-2. Lägg till en ny profil och ge den ett tydligt namn.
-3. Justera grid-storlek, overlay-beteende, hotkey och gamepad-inställningar i Settings.
-4. Lägg till pages eller virtual layouts beroende på om du behöver pager-navigering eller direktnavigation.
-5. Fyll knappar, sticky notes och quick text för den aktiva profilen.
-6. Bekräfta att sparstatus går från osparade ändringar till sparad.
+1. Select the current profile from the profile picker in the main window.
+2. Add a new profile and give it a clear name.
+3. Adjust grid size, overlay behavior, hotkey, and gamepad settings in Settings.
+4. Add pages or virtual layouts depending on whether you need pager navigation or direct jumps.
+5. Fill in buttons, sticky notes, and quick text for the active profile.
+6. Confirm that the save indicator moves from unsaved changes to saved.
 
-## Användarflöde: exportera och importera en profil
+## User flow: export and import a profile
 
-1. Öppna Settings för den profil som ska exporteras.
-2. Exportera profilen till en JSON-fil.
-3. På målmaskinen eller i en annan installation: öppna Settings och välj Import.
-4. Den importerade profilen läggs in som en separat profil i store-filen.
-5. Byt till den importerade profilen och verifiera layout, sticky notes och quick text innan du tar bort originalet.
+1. Open Settings for the profile you want to export.
+2. Export the profile to a JSON file.
+3. On the target machine or in another installation, open Settings and choose Import.
+4. The imported profile is added as a separate profile in the store file.
+5. Switch to the imported profile and verify layouts, sticky notes, and quick text before deleting the original.
 
-## Recovery: sparfel eller fast osparat läge
+## Recovery: save failure or a stuck unsaved state
 
-Symptom:
+Symptoms:
 
-- Sparstatus visar att ändringar inte kunde sparas.
-- Sparstatus återgår inte till sparad efter att du slutat redigera.
+- The save indicator reports that changes could not be saved.
+- The save indicator does not return to saved after editing stops.
 
-Åtgärd:
+Actions:
 
-1. Läs feltexten i sparstatusens tooltip i huvudfönstret.
-2. Kontrollera loggfilen i `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`.
-3. Verifiera att `%LOCALAPPDATA%\StreamDecky` går att skriva till och att filen inte hålls låst av annan process eller backup-synk.
-4. Starta om appen och bekräfta om senaste lyckade save finns kvar.
-5. Om senaste ändringen saknas, återställ manuellt från `profiles.backup.json`.
+1. Read the error text shown in the save indicator tooltip in the main window.
+2. Check `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`.
+3. Confirm that `%LOCALAPPDATA%\StreamDecky` is writable and that the file is not locked by another process or backup sync tool.
+4. Restart the app and confirm whether the last successful save is still present.
+5. If the latest change is missing, restore manually from `profiles.backup.json`.
 
-## Recovery: återställ från backup efter korrupt profilfil
+## Recovery: data from a newer app version is loaded
 
-Symptom:
+Symptoms:
 
-- Appen startar med tom standardprofil eller faller tillbaka till legacy-data.
-- JSON-filen går inte att läsa eller är uppenbart korrupt.
+- The app opens profile data, but saving fails with a schema-version error.
+- You downgraded the app or copied a profile from a newer build.
 
-Åtgärd:
+Actions:
 
-1. Stäng appen helt från tray-menyn för att undvika nya writes.
-2. Ta en kopia av den nuvarande `profiles.json` för forensik innan du ändrar något.
-3. Byt namn på `profiles.backup.json` till `profiles.json`.
-4. Starta appen och kontrollera att profiler, pages och notes ser rimliga ut.
-5. Exportera kritiska profiler separat när appen väl öppnat korrekt igen.
+1. Do not keep editing and retrying saves in the older app.
+2. Reopen the data in a StreamDecky version that supports the newer schema version.
+3. Export critical profiles from the newer build if you need a manual checkpoint.
+4. If you must keep using the older build, restore an older compatible `profiles.json` or `profiles.backup.json` first.
 
-## Recovery: autostart eller tray-start fungerar inte
+This behavior is intentional. StreamDecky blocks saving newer-schema data in older builds to avoid overwriting fields it does not understand.
 
-Symptom:
+## Recovery: restore from backup after a corrupted profile file
 
-- `Start with Windows` är aktiverat men appen startar inte efter inloggning.
-- Appen verkar starta men inget huvudfönster syns.
+Symptoms:
 
-Åtgärd:
+- The app starts with an empty default profile or falls back to legacy data.
+- The JSON file cannot be read or is clearly corrupted.
 
-1. Kontrollera att registry-värdet finns i `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`.
-2. Verifiera att kommandot pekar på aktuell exe och innehåller `--minimized`.
-3. Om appen publicerats till ny plats, öppna appen en gång och toggla `Start with Windows` av/på så att registry-raden skrivs om.
-4. Kontrollera system tray om appen redan kör gömd.
-5. Läs loggfilen om registry-synken eller uppstarten verkar ha misslyckats.
+Actions:
 
-## Recovery: overlay eller hotkey svarar inte
+1. Exit the app fully from the tray menu to avoid additional writes.
+2. Make a copy of the current `profiles.json` for investigation before changing anything.
+3. Rename `profiles.backup.json` to `profiles.json`.
+4. Start the app and confirm that profiles, pages, and notes look correct.
+5. Export critical profiles separately once the app opens correctly again.
 
-Symptom:
+## Recovery: startup or tray launch does not work
 
-- Global hotkey öppnar inte overlay.
-- Overlay öppnas ibland men förlorar fokus eller beter sig inkonsekvent.
+Symptoms:
 
-Åtgärd:
+- `Start with Windows` is enabled but the app does not start after sign-in.
+- The app appears to start but no main window is visible.
 
-1. Öppna Settings och spela in hotkey igen för att tvinga omregistrering.
-2. Undvik kombinationer som redan används globalt av Windows, drivrutiner eller andra overlayappar.
-3. Bekräfta att appen fortfarande körs i tray.
-4. Testa att öppna overlay från huvudfönstret för att skilja hotkey-problem från overlay-problem.
-5. Om problemet bara uppstår i ett specifikt spel eller program kan låg nivå-inputfilter, exclusive fullscreen eller anti-cheat vara orsaken.
+Actions:
 
-## Recovery: import lyckas men profilen ser fel ut
+1. Check that the registry value exists under `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`.
+2. Confirm that the command points to the current executable and includes `--minimized`.
+3. If the app was moved to a new folder, open it once and toggle `Start with Windows` off and on so the registry value is rewritten.
+4. Check the system tray to see whether the app is already running in the background.
+5. Read the log file if startup registry sync or process startup appears to have failed.
 
-Symptom:
+## Recovery: overlay or hotkey does not respond
 
-- Sidor, sticky notes eller quick text ser tomma eller omordnade ut efter import.
+Symptoms:
 
-Åtgärd:
+- The global hotkey does not open the overlay.
+- The overlay opens inconsistently or loses focus unexpectedly.
 
-1. Kontrollera att du faktiskt bytt till den importerade profilen i profilväljaren.
-2. Exportera profilen igen direkt efter import och verifiera att schema-version finns i JSON.
-3. Jämför importerad fil med originalet för att se om problemet uppstod före eller efter import.
-4. Om originalfilen är legacy-formaterad, låt appen importera och migrera den och exportera sedan om i nytt format.
+Actions:
 
-## Utvecklarfelsökning: WPF build-lock eller MC1000
+1. Open Settings and record the hotkey again to force re-registration.
+2. Avoid combinations already claimed by Windows, drivers, or other overlay tools.
+3. Confirm that the app is still running in the tray.
+4. Try opening the overlay from the main window to separate hotkey problems from overlay problems.
+5. If the problem only happens in one game or application, low-level input filtering, exclusive fullscreen mode, or anti-cheat may be the cause.
 
-Symptom:
+## Recovery: import succeeds but the profile looks wrong
 
-- Build fallerar sporadiskt mot genererade filer som `App.g.cs`.
+Symptoms:
 
-Åtgärd:
+- Pages, sticky notes, or quick text appear empty or reordered after import.
 
-1. Kör `dotnet build StreamDecky/StreamDecky.csproj -c Debug --disable-build-servers /nr:false`.
-2. Kör därefter `dotnet run --project StreamDecky/StreamDecky.csproj --no-build`.
-3. Om problemet återkommer, stäng design-time hosts i editorn och kontrollera att antivirus inte aggressivt indexerar `bin` eller `obj`.
+Actions:
 
-## När loggen räcker och när backup ska användas
+1. Confirm that you actually switched to the imported profile in the profile picker.
+2. Export the profile again immediately after import and verify that a schema version is present in the JSON.
+3. Compare the imported file with the original to see whether the problem existed before or after import.
+4. If the original file is in a legacy format, let StreamDecky import and migrate it, then export it again in the current format.
 
-- Använd loggen först när UI visar save-fel, overlay-problem eller registry-problem men data fortfarande finns kvar.
-- Använd backup när profilfilen inte längre går att läsa eller när senaste fungerande save behöver återställas snabbt.
-- Exportera en fungerande profil efter återställning om du vill ha en extra manuell checkpoint.
+## Developer troubleshooting: WPF build lock or MC1000
+
+Symptoms:
+
+- The build fails intermittently against generated files such as `App.g.cs`.
+
+Actions:
+
+1. Run `dotnet build StreamDecky/StreamDecky.csproj -c Debug --disable-build-servers /nr:false`.
+2. Then run `dotnet run --project StreamDecky/StreamDecky.csproj --no-build`.
+3. If the problem keeps coming back, stop editor design-time hosts and confirm that antivirus is not aggressively indexing `bin` or `obj`.
+
+## When the log is enough and when to use the backup
+
+- Use the log first when the UI shows save failures, overlay issues, or startup registry problems but the data still exists.
+- Use the backup when the profile file can no longer be read or when you need to roll back quickly to the last known-good save.
+- Export a working profile after recovery if you want an additional manual checkpoint.

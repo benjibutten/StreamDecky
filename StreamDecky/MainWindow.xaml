@@ -569,7 +569,7 @@
                                         IsSnapToTickEnabled="True"/>
                             </DockPanel>
 
-                            <TextBlock Text="Overlayn kan bläddra mellan areas direkt, men add/remove görs här för att undvika popup-problem i overlayläget."
+                            <TextBlock Text="The overlay can browse note areas directly, but add/remove lives here to avoid popup issues while the overlay is active."
                                        Foreground="#8D9BAF"
                                        FontSize="10"
                                        TextWrapping="Wrap"
@@ -1489,7 +1489,7 @@
                                       Style="{StaticResource DarkComboBox}"
                                       Margin="0,0,0,6"/>
 
-                            <TextBlock Text="Tips: välj en Virtual-layout för dolda menyer, eller en vanlig Page för att hoppa direkt dit."
+                            <TextBlock Text="Tip: choose a Virtual Layout for hidden menus, or a regular Page to jump there directly."
                                        Foreground="#777"
                                        FontSize="10"
                                        TextWrapping="Wrap"
@@ -1770,7 +1770,7 @@
                                                    FontSize="11"
                                                    FontWeight="Bold"
                                                    Margin="0,0,0,4"/>
-                                        <TextBlock Text="TextInput-steg kan använda {{clipboardText}} var som helst i texten. Lämnar du fältet tomt används hela clipboard-radens text automatiskt."
+                                        <TextBlock Text="TextInput steps can use {{clipboardText}} anywhere in the text. Leave the field empty to use the full clipboard row text automatically."
                                                    Foreground="#7B8FA3"
                                                    FontSize="10"
                                                    TextWrapping="Wrap"
@@ -1868,7 +1868,7 @@
 
                                                             <!-- TextInput fields -->
                                                             <StackPanel x:Name="ClipStepTextInput" Visibility="Collapsed" Margin="0,0,0,4">
-                                                                <TextBlock Text="Text (tomt = använd clipboard-texten)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                                                <TextBlock Text="Text (leave empty to use the clipboard row text)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
                                                                 <TextBox Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                          Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
                                                                          BorderBrush="#444" BorderThickness="1"
@@ -2121,7 +2121,7 @@
                             </Button>
                         </DockPanel>
 
-                        <TextBlock Text="Inga texter i denna kategori ännu."
+                        <TextBlock Text="No texts in this category yet."
                                    Foreground="#777"
                                    FontSize="12"
                                    Margin="0,2,0,8"

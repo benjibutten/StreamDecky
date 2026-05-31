@@ -1,40 +1,40 @@
 # Runtime Target Assessment
 
-Det här dokumentet sammanfattar beslutet om projektet ska ligga kvar på `net10.0-windows` eller flyttas till en annan target.
+This document summarizes why the project currently stays on `net10.0-windows` instead of moving to another target.
 
-## Nuvarande läge
+## Current state
 
-- Appen är en Windows-specifik WPF-klient och bygger idag på `net10.0-windows`.
-- Enligt Microsofts supportdokumentation är .NET 10 en LTS-release med support till november 2028.
-- .NET 8 är också LTS, men bara till november 2026.
+- The app is a Windows-specific WPF client and currently targets `net10.0-windows`.
+- According to Microsoft's support guidance, .NET 10 is an LTS release supported until November 2028.
+- .NET 8 is also an LTS release, but only until November 2026.
 
-## Bedömning
+## Recommendation
 
-Rekommendationen är att behålla `net10.0-windows` tills ett separat distributions- eller kompatibilitetskrav motiverar något annat.
+Keep `net10.0-windows` unless a separate distribution or compatibility requirement makes another target necessary.
 
-Skälen är enkla:
+The reasoning is straightforward:
 
-- Appen är en distribuerad desktopklient, och Microsoft rekommenderar LTS-spår när stabilitet och längre supportfönster är viktigare än täta hopp mellan releases.
-- Projektet ligger redan på ett LTS-target. En flytt bort från `net10.0-windows` skulle därför inte vara en övergång till LTS, utan en downgrade till en äldre LTS.
-- Det längre supportfönstret för .NET 10 minskar trycket att planera nästa framework-migrering i närtid.
-- Självpublicering som self-contained minskar dessutom slutanvändarens beroende av exakt installerad .NET-runtime.
+- StreamDecky is a distributed desktop client, and LTS is the right default track when stability and a longer support window matter more than frequent runtime jumps.
+- The project is already on an LTS target. Moving away from `net10.0-windows` would not be an upgrade to LTS; it would be a downgrade to an older LTS line.
+- The longer .NET 10 support window reduces pressure to plan another framework migration in the near term.
+- Self-contained publishing also reduces the end user's dependence on a separately installed runtime.
 
-## När en downgrade till `net8.0-windows` ändå kan vara rimlig
+## When a downgrade to `net8.0-windows` could still be reasonable
 
-Överväg bara en downgrade om minst ett av följande är sant:
+Consider it only if at least one of the following is true:
 
-- Byggmiljön eller release-pipelinen måste köras på en verktygskedja som är låst till .NET 8.
-- Distributionen behöver samsas med annan intern mjukvara som ännu inte är validerad för .NET 10.
-- Det finns ett konkret supportkrav från användarmiljöer där .NET 10 SDK eller relaterade verktyg inte kan införas.
+- The build environment or release pipeline must run on a toolchain locked to .NET 8.
+- Distribution has to align with other internal software that is not yet validated for .NET 10.
+- A concrete support requirement exists in target environments where .NET 10 SDK tooling cannot be adopted.
 
-Om inget av detta gäller finns det ingen tydlig teknisk vinst i att lämna .NET 10 just nu.
+If none of those conditions apply, there is no clear technical advantage in leaving .NET 10 right now.
 
-## Praktisk release-rekommendation
+## Practical release guidance
 
-- Behåll `net10.0-windows` i koden.
-- Fortsätt patcha till senaste .NET 10 servicing update.
-- Behandla ett eventuellt target-byte som ett separat releasebeslut med egen verifiering av publish, signing, tray, overlay, inputsimulering och startup-beteende.
+- Keep `net10.0-windows` in the codebase.
+- Stay current with the latest .NET 10 servicing update.
+- Treat any target-framework change as a separate release decision with its own validation for publish, signing, tray behavior, overlay behavior, input simulation, and startup behavior.
 
-## Källgrund
+## Source basis
 
-Bedömningen bygger på Microsofts aktuella dokumentation för .NET release tracks och supportfönster, där .NET 10 anges som LTS till november 2028 och där klientappar för distribution uttryckligen pekas mot LTS-spåret när lång stabilitet prioriteras.
+This assessment is based on Microsoft's current .NET release-track and support-window guidance, where .NET 10 is documented as LTS through November 2028 and desktop client distribution scenarios are aligned with the LTS track when long-term stability is the priority.
