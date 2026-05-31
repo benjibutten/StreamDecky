@@ -18,9 +18,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Converters = { new JsonStringEnumConverter() }
     };
 
-    private readonly ProfileService _profileService = new();
-    private readonly TextInputActionService _textInputService = new();
-    private readonly MultiActionService _multiActionService = new();
+    private readonly ProfileService _profileService;
+    private readonly TextInputActionService _textInputService;
+    private readonly MultiActionService _multiActionService;
     private readonly System.Timers.Timer _autoSaveTimer;
     private readonly SemaphoreSlim _autoSaveSemaphore = new(1, 1);
     private readonly List<ButtonViewModel> _trackedButtons = new();
@@ -33,8 +33,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public ObservableCollection<LayoutTargetOption> LayoutTargets { get; } = new();
     public ObservableCollection<ProfileOption> ProfileOptions { get; } = new();
 
-    public MainViewModel()
+    public MainViewModel(
+        ProfileService? profileService = null,
+        TextInputActionService? textInputService = null,
+        MultiActionService? multiActionService = null)
     {
+        _profileService = profileService ?? new ProfileService();
+        _textInputService = textInputService ?? new TextInputActionService();
+        _multiActionService = multiActionService ?? new MultiActionService();
+
         // Auto-save: debounce 1 second after last change
         _autoSaveTimer = new System.Timers.Timer(1000) { AutoReset = false };
         _autoSaveTimer.Elapsed += (_, _) => _ = AutoSaveAsync();
@@ -852,9 +859,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             await _profileService.SaveStoreSerializedAsync(json).ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore autosave errors to avoid disrupting runtime interaction.
+            AppDiagnostics.Warning("Autosave failed.", ex);
         }
         finally
         {

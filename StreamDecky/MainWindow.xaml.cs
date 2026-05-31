@@ -278,16 +278,25 @@ public partial class MainWindow : Window
 
     private void SyncStartWithWindows()
     {
-        var exePath = Environment.ProcessPath;
-        if (exePath == null) return;
+        try
+        {
+            var exePath = Environment.ProcessPath;
+            if (exePath == null)
+                return;
 
-        using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey, true);
-        if (key == null) return;
+            using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey, true);
+            if (key == null)
+                return;
 
-        if (_viewModel.StartWithWindows)
-            key.SetValue(AppRegistryName, $"\"{exePath}\" --minimized");
-        else
-            key.DeleteValue(AppRegistryName, false);
+            if (_viewModel.StartWithWindows)
+                key.SetValue(AppRegistryName, $"\"{exePath}\" --minimized");
+            else
+                key.DeleteValue(AppRegistryName, false);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Failed to synchronize the Start with Windows registry setting.", ex);
+        }
     }
 
     protected override void OnSourceInitialized(EventArgs e)

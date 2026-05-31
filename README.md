@@ -21,6 +21,13 @@ Appen är byggd för snabba in-game/in-app actions där overlayen visas ovanpå 
 - Overlay försöker återta fokus om det tappas
 - Vid action klickas overlay ner och fokus återställs aggressivt till tidigare foreground-fönster innan action körs
 
+### Single-instance och autostart
+
+- Appen kör som single-instance
+- En andra start aktiverar befintligt fönster i stället för att öppna ett nytt
+- Startargumentet `--minimized` används för att starta gömd i tray
+- `Start with Windows` skriver `"<path till exe>" --minimized` till `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`
+
 ### System tray och huvudfönster
 
 - Appen skapar en tray-ikon med meny:
@@ -28,9 +35,8 @@ Appen är byggd för snabba in-game/in-app actions där overlayen visas ovanpå 
   - `Exit`
 - Huvudfönstrets stängning minimerar till tray (hide) i stället för att avsluta appen
 - Tray-ikon laddas robust:
-  - Primärt från `StreamDecky.ico` i runtime-mappen
-  - Fallback till ikonen inbäddad i exe-filen
-  - Sista fallback: Windows standard-applikationsikon
+  - Primärt från ikonen inbäddad i exe-filen
+  - Fallback: Windows standard-applikationsikon
 
 ### Actions per knapp
 
@@ -92,9 +98,18 @@ Appen är byggd för snabba in-game/in-app actions där overlayen visas ovanpå 
 - Button size / spacing / overlay opacity
 - Grid layout (rows/columns, globalt för profilen)
 - Hotkey recording för overlay toggle
+- Gamepad-stöd med inspelning av toggle-kombination
 - Start with Windows (HKCU Run)
 - Natural typing (experimentell)
 - Import/export av profiler till/från JSON
+
+### Gamepad
+
+- Gamepad-stöd är valfritt per profil
+- Toggle-kombinationen kan spelas in i Settings
+- I overlay används D-pad och vänster stick för navigation
+- `A` aktiverar vald knapp
+- `LB` och `RB` byter vanlig sida
 
 ## Kortkommandon
 
@@ -116,6 +131,13 @@ I overlay:
 - Legacy-läsning: `%LOCALAPPDATA%\StreamDecky\profile.json` (migreras in som standardprofil)
 - Backup (1 version bakåt): `%LOCALAPPDATA%\StreamDecky\profiles.backup.json`
 - Import/export i Settings gäller aktiv profil och lägger importerad profil som separat profil
+- Diagnostiklogg skrivs best effort till `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`
+
+### Recovery och felsökning
+
+- Om `profiles.json` inte kan läsas försöker appen falla tillbaka till legacy-profil eller en ny standardprofil
+- Vid lyckad load/write roteras backupen så att föregående `profiles.json` kan återställas manuellt vid behov
+- Bakgrundsfel i autosave och action-exekvering loggas, men visas inte ännu i UI
 
 ## Arkitekturöversikt
 
@@ -151,6 +173,13 @@ Krav: .NET 10 SDK på Windows.
 ```powershell
 dotnet restore StreamDecky/StreamDecky.csproj
 dotnet run --project StreamDecky/StreamDecky.csproj
+```
+
+Om WPF-design-time build eller C# Dev Kit låser genererade filer (`App.g.cs`/MC1000-liknande fel), kör hellre:
+
+```powershell
+dotnet build StreamDecky/StreamDecky.csproj -c Debug --disable-build-servers /nr:false
+dotnet run --project StreamDecky/StreamDecky.csproj --no-build
 ```
 
 ## Publicering

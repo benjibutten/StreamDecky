@@ -138,9 +138,9 @@ public class MultiActionService
             {
                 await operation().ConfigureAwait(false);
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore background execution errors to avoid breaking user interaction flow.
+                AppDiagnostics.Warning("Background multi-action execution failed.", ex);
             }
         });
     }
