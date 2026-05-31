@@ -9,7 +9,7 @@ namespace StreamDecky.Services;
 
 public class TextInputActionService
 {
-    public void Execute(ButtonConfig config, bool useNaturalTyping = false)
+    public virtual void Execute(ButtonConfig config, bool useNaturalTyping = false)
     {
         if (string.IsNullOrEmpty(config.Text))
             return;

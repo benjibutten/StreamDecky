@@ -29,6 +29,34 @@ public class ProfileService
         _profilesBackupPath = Path.Combine(_appDataFolder, "profiles.backup.json");
     }
 
+    public static DeckProfile DeserializeProfileJson(string json)
+    {
+        var profile = JsonSerializer.Deserialize<DeckProfile>(json, JsonOptions) ?? new DeckProfile();
+        ProfileSchemaMigrator.MigrateProfile(profile);
+        return profile;
+    }
+
+    public static DeckProfileStore DeserializeStoreJson(string json)
+    {
+        var store = JsonSerializer.Deserialize<DeckProfileStore>(json, JsonOptions) ?? new DeckProfileStore();
+        ProfileSchemaMigrator.MigrateStore(store);
+        return store;
+    }
+
+    public static string SerializeProfileJson(DeckProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ProfileSchemaMigrator.PrepareProfileForPersistence(profile);
+        return JsonSerializer.Serialize(profile, JsonOptions);
+    }
+
+    public static string SerializeStoreJson(DeckProfileStore store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        ProfileSchemaMigrator.PrepareStoreForPersistence(store);
+        return JsonSerializer.Serialize(store, JsonOptions);
+    }
+
     public DeckProfile Load()
     {
         return LoadLegacyProfile();
@@ -41,8 +69,7 @@ public class ProfileService
             try
             {
                 var json = File.ReadAllText(_profilesPath);
-                var store = JsonSerializer.Deserialize<DeckProfileStore>(json, JsonOptions) ?? new DeckProfileStore();
-                store.Initialize();
+                var store = DeserializeStoreJson(json);
                 RefreshStartupBackupIfChanged(_profilesPath);
                 return store;
             }
@@ -50,7 +77,6 @@ public class ProfileService
             {
                 AppDiagnostics.Warning($"Failed to load '{_profilesPath}'. Falling back to legacy profile store.", ex);
                 var fallbackStore = CreateStoreFromLegacyProfile();
-                fallbackStore.Initialize();
                 if (File.Exists(_legacyProfilePath))
                     RefreshStartupBackupIfChanged(_legacyProfilePath);
                 return fallbackStore;
@@ -58,7 +84,6 @@ public class ProfileService
         }
 
         var migratedStore = CreateStoreFromLegacyProfile();
-        migratedStore.Initialize();
         if (File.Exists(_legacyProfilePath))
             RefreshStartupBackupIfChanged(_legacyProfilePath);
         return migratedStore;
@@ -134,11 +159,14 @@ public class ProfileService
         var profile = LoadLegacyProfile();
         profile.Name = string.IsNullOrWhiteSpace(profile.Name) ? "Standard" : profile.Name;
 
-        return new DeckProfileStore
+        var store = new DeckProfileStore
         {
             ActiveProfileId = profile.Id,
             Profiles = new List<DeckProfile> { profile }
         };
+
+        ProfileSchemaMigrator.MigrateStore(store);
+        return store;
     }
 
     private DeckProfile LoadLegacyProfile()
@@ -151,9 +179,7 @@ public class ProfileService
         try
         {
             var json = File.ReadAllText(_legacyProfilePath);
-            var profile = JsonSerializer.Deserialize<DeckProfile>(json, JsonOptions) ?? new DeckProfile();
-            profile.Initialize();
-            return profile;
+            return DeserializeProfileJson(json);
         }
         catch (Exception ex)
         {
@@ -168,7 +194,7 @@ public class ProfileService
         {
             Name = "Standard"
         };
-        profile.Initialize();
+        ProfileSchemaMigrator.PrepareProfileForPersistence(profile);
         return profile;
     }
 
@@ -206,13 +232,12 @@ public class ProfileService
 
     public string Serialize(DeckProfile profile)
     {
-        return JsonSerializer.Serialize(profile, JsonOptions);
+        return SerializeProfileJson(profile);
     }
 
     public string SerializeStore(DeckProfileStore store)
     {
-        store.Initialize();
-        return JsonSerializer.Serialize(store, JsonOptions);
+        return SerializeStoreJson(store);
     }
 
     public async Task SaveSerializedAsync(string json, CancellationToken cancellationToken = default)

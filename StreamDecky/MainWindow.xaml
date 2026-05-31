@@ -687,6 +687,27 @@
                                        FontSize="11"
                                        VerticalAlignment="Center"
                                        Margin="0,0,8,0"/>
+
+                            <Border Background="#20263A"
+                                    BorderBrush="#313B57"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="6"
+                                    VerticalAlignment="Center"
+                                    ToolTip="{Binding SaveStatusDetails}">
+                                <Grid Width="14" Height="14">
+                                    <Ellipse Width="14"
+                                             Height="14"
+                                             Fill="Transparent"
+                                             Stroke="{Binding SaveStatusColor, Converter={StaticResource StringToBrush}}"
+                                             StrokeThickness="1.5"/>
+                                    <Ellipse Width="6"
+                                             Height="6"
+                                             Fill="{Binding SaveStatusColor, Converter={StaticResource StringToBrush}}"
+                                             VerticalAlignment="Center"
+                                             HorizontalAlignment="Center"/>
+                                </Grid>
+                            </Border>
                         </StackPanel>
                     </DockPanel>
 

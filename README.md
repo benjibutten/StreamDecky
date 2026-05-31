@@ -7,7 +7,7 @@ Appen är byggd för snabba in-game/in-app actions där overlayen visas ovanpå 
 ## Teknik
 
 - Plattform: WPF
-- Runtime: .NET 10 (`net10.0-windows`)
+- Runtime: .NET 10 LTS (`net10.0-windows`)
 - Mönster: MVVM med CommunityToolkit.Mvvm
 - Inputsimulering: Win32 `SendInput` (scan-code-baserat)
 - Persistens: JSON i `%LOCALAPPDATA%\StreamDecky\profiles.json` (migrerar automatiskt från legacy `profile.json`)
@@ -126,29 +126,38 @@ I overlay:
 ## Data och profiler
 
 - Profil sparas automatiskt (debounce) samt vid explicit save-flöden
+- Profilformatet har explicit schema-version och migreras via en versionerad migreringskedja
 - Auto-save är riktad till faktiska datamutationer
 - Primär lagring: `%LOCALAPPDATA%\StreamDecky\profiles.json`
 - Legacy-läsning: `%LOCALAPPDATA%\StreamDecky\profile.json` (migreras in som standardprofil)
 - Backup (1 version bakåt): `%LOCALAPPDATA%\StreamDecky\profiles.backup.json`
 - Import/export i Settings gäller aktiv profil och lägger importerad profil som separat profil
 - Diagnostiklogg skrivs best effort till `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`
+- Huvudfönstret visar sparstatus för osparade ändringar, pågående save och save-fel
 
 ### Recovery och felsökning
 
 - Om `profiles.json` inte kan läsas försöker appen falla tillbaka till legacy-profil eller en ny standardprofil
 - Vid lyckad load/write roteras backupen så att föregående `profiles.json` kan återställas manuellt vid behov
-- Bakgrundsfel i autosave och action-exekvering loggas, men visas inte ännu i UI
+- Save-fel visas i UI och detaljer loggas till `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`
+- Konkreta recovery-scenarier, användarflöden och felsökningsexempel finns i [docs/recovery-and-troubleshooting.md](docs/recovery-and-troubleshooting.md)
+
+## Runtime target
+
+- Projektet ligger kvar på `net10.0-windows` i detta pass
+- Bedömningen är att behålla nuvarande target tills ett separat release- eller kompatibilitetskrav motiverar en downgrade
+- Motivering och beslutskriterier finns i [docs/runtime-target-assessment.md](docs/runtime-target-assessment.md)
 
 ## Arkitekturöversikt
 
 ```text
 StreamDecky/
 ├── Models/
-│   ├── DeckProfile, DeckPage, NotePage, StickyNote
+│   ├── DeckProfile, DeckProfileStore, DeckPage, NotePage, StickyNote
 │   ├── ButtonConfig, ActionStep
-│   └── enums (ActionType, ActionStepType, TextMode, ButtonShape)
+│   └── enums (ActionType, ActionStepType, TextMode, ButtonShape, ProfileSchemaVersion)
 ├── ViewModels/
-│   ├── MainViewModel
+│   ├── MainViewModel (+ partials för profiler, layouts, sticky notes, quick text och save)
 │   ├── ButtonViewModel
 │   └── StickyNoteViewModel
 ├── Views/
@@ -156,8 +165,12 @@ StreamDecky/
 │   └── SettingsWindow
 ├── Services/
 │   ├── ProfileService
+│   ├── ProfileSchemaMigrator
 │   ├── TextInputActionService
-│   └── MultiActionService
+│   ├── MultiActionService
+│   ├── OverlayWindowController
+│   ├── HotkeyRegistrationController
+│   └── StartupRegistrySyncService
 ├── Helpers/
 │   ├── OverlayInterop
 │   ├── InputSimulator
@@ -210,6 +223,8 @@ Versionsinfo och signering i release-pipeline:
 - Lokal build har fallback-version i `.csproj` som kan överskridas av pipeline.
 - Optional code-signing steg finns i pipeline om secrets för PFX-certifikat anges.
 - Utan kodsignering kan Windows SmartScreen fortfarande kräva manuellt godkännande vid uppdateringar.
+
+Testtäckning utöver ren modellpersistens omfattar nu även overlay-livscykel, hotkey-registrering, startup-registry-synk, import/export-roundtrip och action-exekvering via dedikerade seams.
 
 ## Kända begränsningar
 
