@@ -1084,9 +1084,7 @@
                                                         </Trigger>
                                                         <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                                             <Setter TargetName="RegularBg" Property="BorderBrush" Value="#6C5CE7"/>
-                                                            <Setter TargetName="RegularBg" Property="BorderThickness" Value="3"/>
                                                             <Setter TargetName="ShapeBg" Property="Stroke" Value="#6C5CE7"/>
-                                                            <Setter TargetName="ShapeBg" Property="StrokeThickness" Value="3"/>
                                                         </DataTrigger>
                                                     </ControlTemplate.Triggers>
                                                 </ControlTemplate>
