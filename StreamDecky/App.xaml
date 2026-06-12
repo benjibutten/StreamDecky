@@ -1,8 +1,10 @@
 ﻿<Application x:Class="StreamDecky.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:StreamDecky">
+             xmlns:local="clr-namespace:StreamDecky"
+             xmlns:helpers="clr-namespace:StreamDecky.Helpers">
     <Application.Resources>
+        <helpers:BoolToBrushConverter x:Key="BoolToColor"/>
         <DrawingImage x:Key="AppIcon">
             <DrawingImage.Drawing>
                 <GeometryDrawing Brush="#6C5CE7" 

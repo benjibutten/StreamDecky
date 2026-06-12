@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StreamDecky.Models;
@@ -490,5 +491,249 @@ public partial class MainViewModel
             return;
 
         _multiActionService.ExecuteWithItemText(_profile.QuickTextActionSteps, itemText, NaturalTypingEnabled);
+    }
+
+    [ObservableProperty]
+    private string _quickTextExportScope = "Category"; // "Category" or "All"
+
+    [ObservableProperty]
+    private string _quickTextImportMode = "Replace"; // "Replace" or "Append"
+
+    public bool IsExportScopeCategory => string.Equals(QuickTextExportScope, "Category", StringComparison.Ordinal);
+    public bool IsExportScopeAll => string.Equals(QuickTextExportScope, "All", StringComparison.Ordinal);
+    public bool IsImportModeReplace => string.Equals(QuickTextImportMode, "Replace", StringComparison.Ordinal);
+    public bool IsImportModeAppend => string.Equals(QuickTextImportMode, "Append", StringComparison.Ordinal);
+
+    partial void OnQuickTextExportScopeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsExportScopeCategory));
+        OnPropertyChanged(nameof(IsExportScopeAll));
+    }
+
+    partial void OnQuickTextImportModeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsImportModeReplace));
+        OnPropertyChanged(nameof(IsImportModeAppend));
+    }
+
+    [RelayCommand]
+    private void SetQuickTextExportScope(string? scope)
+    {
+        if (scope is "Category" or "All")
+            QuickTextExportScope = scope;
+    }
+
+    [RelayCommand]
+    private void SetQuickTextImportMode(string? mode)
+    {
+        if (mode is "Replace" or "Append")
+            QuickTextImportMode = mode;
+    }
+
+    [RelayCommand]
+    private void ExportQuickText()
+    {
+        var export = new QuickTextExport();
+
+        if (string.Equals(QuickTextExportScope, "All", StringComparison.Ordinal))
+        {
+            export.Categories = _profile.QuickTextCategories
+                .Select(c => new QuickTextExportCategory
+                {
+                    Name = c.Name,
+                    Items = _profile.QuickTextItems
+                        .Where(i => string.Equals(i.CategoryId, c.Id, StringComparison.Ordinal))
+                        .Select(i => new QuickTextExportItem { Text = i.Text })
+                        .ToList()
+                })
+                .Where(c => c.Items.Count > 0)
+                .ToList();
+        }
+        else
+        {
+            var current = CurrentQuickTextCategory;
+            if (current == null)
+                return;
+
+            export.Categories =
+            [
+                new QuickTextExportCategory
+                {
+                    Name = current.Name,
+                    Items = _profile.QuickTextItems
+                        .Where(i => string.Equals(i.CategoryId, current.Id, StringComparison.Ordinal))
+                        .Select(i => new QuickTextExportItem { Text = i.Text })
+                        .ToList()
+                }
+            ];
+        }
+
+        if (export.Categories.Count == 0)
+            return;
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+        string json = JsonSerializer.Serialize(export, options);
+        System.Windows.Clipboard.SetText(json);
+    }
+
+    [RelayCommand]
+    private void ImportQuickText()
+    {
+        string json;
+        try
+        {
+            json = System.Windows.Clipboard.GetText();
+            if (string.IsNullOrWhiteSpace(json))
+                return;
+        }
+        catch
+        {
+            return;
+        }
+
+        QuickTextExport? import;
+        try
+        {
+            import = JsonSerializer.Deserialize<QuickTextExport>(json);
+        }
+        catch
+        {
+            return;
+        }
+
+        if (import?.Categories == null || import.Categories.Count == 0)
+            return;
+
+        bool replace = string.Equals(QuickTextImportMode, "Replace", StringComparison.Ordinal);
+        bool scopeIsCategory = string.Equals(QuickTextExportScope, "Category", StringComparison.Ordinal);
+
+        if (replace && scopeIsCategory)
+        {
+            // Replace just the current category
+            var current = CurrentQuickTextCategory;
+            if (current == null)
+                return;
+
+            int oldItemCount = _profile.QuickTextItems.Count(i => string.Equals(i.CategoryId, current.Id, StringComparison.Ordinal));
+            var importCat = import.Categories[0];
+            int newItemCount = importCat.Items?.Count ?? 0;
+
+            if (oldItemCount > 0)
+            {
+                bool confirmed = Helpers.ConfirmDialog.Show(
+                    System.Windows.Application.Current?.MainWindow,
+                    "Import QuickText",
+                    $"Replace all items in \"{current.Name}\"?\n\nThis will remove {oldItemCount} item(s) and replace them with {newItemCount} item(s) from the JSON.",
+                    confirmText: "Replace",
+                    danger: true);
+
+                if (!confirmed)
+                    return;
+            }
+
+            // Remove old items in this category
+            _profile.QuickTextItems.RemoveAll(i => string.Equals(i.CategoryId, current.Id, StringComparison.Ordinal));
+
+            // Use the import category name or keep current
+            if (!string.IsNullOrWhiteSpace(importCat.Name) && !string.Equals(importCat.Name, current.Name, StringComparison.Ordinal))
+                current.Name = importCat.Name.Trim();
+
+            if (importCat.Items != null)
+            {
+                foreach (var item in importCat.Items)
+                {
+                    if (string.IsNullOrWhiteSpace(item?.Text))
+                        continue;
+                    var newItem = new QuickTextItem { Text = item.Text, CategoryId = current.Id };
+                    newItem.EnsureInitialized();
+                    _profile.QuickTextItems.Add(newItem);
+                }
+            }
+
+            LoadQuickTextCategories();
+            SelectedQuickTextCategoryId = current.Id;
+        }
+        else if (replace)
+        {
+            // Replace all — destructive, warn
+            int allItemCount = _profile.QuickTextItems.Count;
+            int allCatCount = _profile.QuickTextCategories.Count;
+
+            bool confirmed = Helpers.ConfirmDialog.Show(
+                System.Windows.Application.Current?.MainWindow,
+                "Import QuickText — Replace All",
+                $"Replace ALL QuickText data?\n\nThis will remove ALL {allCatCount} categor(ies) and {allItemCount} item(s) and replace them with the JSON content.",
+                confirmText: "Replace All",
+                danger: true);
+
+            if (!confirmed)
+                return;
+
+            _profile.QuickTextCategories.Clear();
+            QuickTextCategories.Clear();
+            _profile.QuickTextItems.Clear();
+
+            foreach (var cat in import.Categories)
+                ImportCategoryItems(cat, cat.Name.Trim());
+
+            SelectedQuickTextCategoryId = _profile.QuickTextCategories[^1].Id;
+        }
+        else
+        {
+            // Append
+            foreach (var cat in import.Categories)
+            {
+                string catName = string.IsNullOrWhiteSpace(cat.Name) ? "Imported" : cat.Name.Trim();
+                ImportCategoryItems(cat, CreateUniqueQuickTextCategoryName(catName));
+            }
+
+            SelectedQuickTextCategoryId = _profile.QuickTextCategories[^1].Id;
+        }
+
+        LoadQuickTextItemsForSelectedCategory();
+        NotifyQuickTextCategoryChanged();
+        OnPropertyChanged(nameof(HasQuickTextItems));
+        OnPropertyChanged(nameof(HasAnyQuickTextItems));
+        ScheduleAutoSave();
+    }
+
+    private void ImportCategoryItems(QuickTextExportCategory importCat, string categoryName)
+    {
+        var newCategory = new QuickTextCategory { Name = categoryName };
+        newCategory.EnsureInitialized();
+        _profile.QuickTextCategories.Add(newCategory);
+        QuickTextCategories.Add(newCategory);
+
+        if (importCat.Items == null)
+            return;
+
+        foreach (var item in importCat.Items)
+        {
+            if (string.IsNullOrWhiteSpace(item?.Text))
+                continue;
+            var newItem = new QuickTextItem { Text = item.Text, CategoryId = newCategory.Id };
+            newItem.EnsureInitialized();
+            _profile.QuickTextItems.Add(newItem);
+        }
+    }
+
+    private sealed class QuickTextExport
+    {
+        public List<QuickTextExportCategory> Categories { get; set; } = new();
+    }
+
+    private sealed class QuickTextExportCategory
+    {
+        public string Name { get; set; } = string.Empty;
+        public List<QuickTextExportItem> Items { get; set; } = new();
+    }
+
+    private sealed class QuickTextExportItem
+    {
+        public string Text { get; set; } = string.Empty;
     }
 }

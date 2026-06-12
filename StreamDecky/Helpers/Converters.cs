@@ -222,6 +222,37 @@ public class OpacityConverter : IValueConverter
     }
 }
 
+public class BoolToBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        bool flag = value is true;
+        if (parameter is string colorStr && !string.IsNullOrWhiteSpace(colorStr))
+        {
+            try
+            {
+                var converter = new BrushConverter();
+                var brush = converter.ConvertFromString(colorStr) as Brush;
+                if (brush != null)
+                {
+                    brush = brush.Clone();
+                    brush.Freeze();
+                }
+                return flag && brush != null
+                    ? brush
+                    : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2D, 0x2D, 0x44));
+            }
+            catch { }
+        }
+        return flag
+            ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x3F, 0x4F, 0x86))
+            : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2D, 0x2D, 0x44));
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => false;
+}
+
 public class StringEqualsConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)

@@ -2085,7 +2085,176 @@
                                   SelectedValuePath="Id"
                                   SelectedValue="{Binding SelectedQuickTextCategoryId, Mode=TwoWay}"
                                   Style="{StaticResource DarkComboBox}"
-                                  Margin="0,0,0,10"/>
+                                  Margin="0,0,0,8"/>
+
+                        <!-- Export/Import bar -->
+                        <Border Background="#252538" CornerRadius="6" Padding="8,6" Margin="0,0,0,8">
+                            <WrapPanel>
+                                <!-- Export scope -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,4">
+                                    <TextBlock Text="Export:" Foreground="#8FA3B8" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <Button Content="Category"
+                                            Command="{Binding SetQuickTextExportScopeCommand}"
+                                            CommandParameter="Category"
+                                            Background="{Binding IsExportScopeCategory, Converter={StaticResource BoolToColor}, ConverterParameter=#2D5A27}"
+                                            Foreground="White"
+                                            FontSize="10"
+                                            Padding="6,2"
+                                            BorderThickness="0"
+                                            Cursor="Hand"
+                                            Margin="0,0,2,0">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button Content="All"
+                                            Command="{Binding SetQuickTextExportScopeCommand}"
+                                            CommandParameter="All"
+                                            Background="{Binding IsExportScopeAll, Converter={StaticResource BoolToColor}, ConverterParameter=#3F4F86}"
+                                            Foreground="White"
+                                            FontSize="10"
+                                            Padding="6,2"
+                                            BorderThickness="0"
+                                            Cursor="Hand"
+                                            Margin="0,0,6,0">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button Content="Copy JSON"
+                                            Command="{Binding ExportQuickTextCommand}"
+                                            Background="#2D5A27"
+                                            Foreground="White"
+                                            FontSize="10"
+                                            FontWeight="SemiBold"
+                                            Padding="8,2"
+                                            BorderThickness="0"
+                                            Cursor="Hand"
+                                            ToolTip="Copy JSON to clipboard — paste into LLM">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#3D7A37"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Import section -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Import:" Foreground="#8FA3B8" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <Button Content="Replace"
+                                            Command="{Binding SetQuickTextImportModeCommand}"
+                                            CommandParameter="Replace"
+                                            Background="{Binding IsImportModeReplace, Converter={StaticResource BoolToColor}, ConverterParameter=#5A2727}"
+                                            Foreground="White"
+                                            FontSize="10"
+                                            Padding="6,2"
+                                            BorderThickness="0"
+                                            Cursor="Hand"
+                                            Margin="0,0,2,0">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button Content="Append"
+                                            Command="{Binding SetQuickTextImportModeCommand}"
+                                            CommandParameter="Append"
+                                            Background="{Binding IsImportModeAppend, Converter={StaticResource BoolToColor}, ConverterParameter=#2D5A27}"
+                                            Foreground="White"
+                                            FontSize="10"
+                                            Padding="6,2"
+                                            BorderThickness="0"
+                                            Cursor="Hand"
+                                            Margin="0,0,6,0">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button Content="Paste JSON"
+                                            Command="{Binding ImportQuickTextCommand}"
+                                            Background="#3F4F86"
+                                            Foreground="White"
+                                            FontSize="10"
+                                            FontWeight="SemiBold"
+                                            Padding="8,2"
+                                            BorderThickness="0"
+                                            Cursor="Hand"
+                                            ToolTip="Read JSON from clipboard and import">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#5A6FA0"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </StackPanel>
+                            </WrapPanel>
+                        </Border>
 
                         <DockPanel Margin="0,0,0,8" LastChildFill="False">
                             <TextBlock Text="Texter i vald kategori"
