@@ -22,9 +22,12 @@ public partial class MainWindow : Window
     private readonly OverlayWindowController _overlayController;
     private readonly HotkeyRegistrationController _hotkeyController = new();
     private readonly StartupRegistrySyncService _startupRegistrySyncService = new();
+    // Keep this short: it bounds the added latency between pressing the gamepad
+    // combo and the overlay toggling. The packet-number check in the tick handler
+    // keeps idle polling cheap.
     private readonly System.Windows.Threading.DispatcherTimer _gamepadToggleTimer = new()
     {
-        Interval = TimeSpan.FromMilliseconds(80)
+        Interval = TimeSpan.FromMilliseconds(30)
     };
     private ushort _previousGamepadButtons;
     private uint _previousGamepadPacketNumber;

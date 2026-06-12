@@ -7,9 +7,11 @@ public interface IOverlayWindowHandle
 {
     event EventHandler? Closed;
 
-    void Show();
+    bool IsOverlayVisible { get; }
 
-    void Close();
+    void ShowOverlay();
+
+    void HideOverlay();
 }
 
 public interface IOverlayWindowFactory
@@ -29,13 +31,14 @@ public sealed class OverlayWindowController
         _factory = factory ?? new OverlayWindowFactory();
     }
 
-    public bool IsOpen => _window != null;
+    public bool IsOpen => _window?.IsOverlayVisible == true;
 
     public void Toggle()
     {
-        if (_window != null)
+        if (IsOpen)
         {
-            _window.Close();
+            _window!.HideOverlay();
+            _viewModel.IsOverlayOpen = false;
             return;
         }
 
@@ -44,13 +47,19 @@ public sealed class OverlayWindowController
 
     public void Open()
     {
-        if (_window != null)
+        if (IsOpen)
             return;
 
+        // The window is kept alive across open/close cycles so the hotkey only
+        // pays the full visual-tree construction cost once.
+        if (_window == null)
+        {
+            _window = _factory.Create(_viewModel);
+            _window.Closed += OnWindowClosed;
+        }
+
         _viewModel.OpenOverlayCommand.Execute(null);
-        _window = _factory.Create(_viewModel);
-        _window.Closed += OnWindowClosed;
-        _window.Show();
+        _window.ShowOverlay();
     }
 
     private void OnWindowClosed(object? sender, EventArgs e)
@@ -85,14 +94,16 @@ public sealed class OverlayWindowController
             remove => _window.Closed -= value;
         }
 
-        public void Show()
+        public bool IsOverlayVisible => _window.IsVisible;
+
+        public void ShowOverlay()
         {
-            _window.Show();
+            _window.ShowOverlay();
         }
 
-        public void Close()
+        public void HideOverlay()
         {
-            _window.Close();
+            _window.HideOverlay();
         }
     }
 }

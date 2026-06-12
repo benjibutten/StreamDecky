@@ -68,16 +68,22 @@ public partial class OverlayWindow : Window
     {
         _viewModel = viewModel;
         DataContext = viewModel;
-        // Save the foreground window (e.g. GTA V) BEFORE our overlay takes focus
-        _previousForegroundWindow = OverlayInterop.GetCurrentForegroundWindow();
         InitializeComponent();
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         RebuildOverlayQuickTextItems();
         _gamepadTimer.Tick += GamepadTimer_Tick;
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Shows the overlay. The window instance is reused across open/close cycles,
+    /// so all per-session state is reset here rather than in the constructor.
+    /// </summary>
+    public void ShowOverlay()
     {
+        // Save the foreground window (e.g. GTA V) BEFORE our overlay takes focus
+        _previousForegroundWindow = OverlayInterop.GetCurrentForegroundWindow();
+        ResetQuickTextSessionState();
+        Show();
         OverlayInterop.MakeTopmost(this);
         Activate();
         Focus();
@@ -85,6 +91,26 @@ public partial class OverlayWindow : Window
         EnsureOverlaySelection();
         Dispatcher.BeginInvoke(new Action(ClampQuickTextPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         UpdateGamepadPolling();
+    }
+
+    /// <summary>
+    /// Hides the overlay but keeps the window (and its visual tree) alive so the
+    /// next hotkey press shows it instantly instead of rebuilding everything.
+    /// </summary>
+    public void HideOverlay()
+    {
+        _gamepadTimer.Stop();
+        ResetGamepadNavigationState();
+        Hide();
+    }
+
+    private void ResetQuickTextSessionState()
+    {
+        // Temporary quick-text edits are scoped to one overlay session; since the
+        // window survives between sessions now, clear them on every show.
+        _quickTextSessionOverrides.Clear();
+        _quickTextEditingIds.Clear();
+        RebuildOverlayQuickTextItems();
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -143,7 +169,7 @@ public partial class OverlayWindow : Window
     private void CloseOverlay()
     {
         _viewModel.CloseOverlayCommand.Execute(null);
-        Close();
+        HideOverlay();
     }
 
     private void OverlayPrevPage_Click(object sender, RoutedEventArgs e)
@@ -172,7 +198,7 @@ public partial class OverlayWindow : Window
 
         var prevHwnd = _previousForegroundWindow;
         _viewModel.CloseOverlayCommand.Execute(null);
-        Close();
+        HideOverlay();
 
         var mainWindow = System.Windows.Application.Current.MainWindow;
         if (mainWindow != null)
@@ -751,7 +777,7 @@ public partial class OverlayWindow : Window
 
         var prevHwnd = _previousForegroundWindow;
         _viewModel.CloseOverlayCommand.Execute(null);
-        Close();
+        HideOverlay();
 
         var mainWindow = System.Windows.Application.Current.MainWindow;
         if (mainWindow != null)
