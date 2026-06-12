@@ -54,7 +54,7 @@ jobs:
 
       - name: Restore dependencies
         shell: pwsh
-        run: dotnet restore $env:SOLUTION_PATH -r $env:RUNTIME_ID
+        run: dotnet restore $env:SOLUTION_PATH -r $env:RUNTIME_ID -p:PublishReadyToRun=true
 
       - name: Run tests
         shell: pwsh
