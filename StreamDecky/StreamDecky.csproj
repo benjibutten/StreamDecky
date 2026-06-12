@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationIcon>StreamDecky.ico</ApplicationIcon>
     <RootNamespace>StreamDecky</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>

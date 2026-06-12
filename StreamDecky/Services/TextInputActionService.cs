@@ -9,7 +9,7 @@ namespace StreamDecky.Services;
 
 public class TextInputActionService
 {
-    public void Execute(ButtonConfig config, bool useNaturalTyping = false)
+    public virtual void Execute(ButtonConfig config, bool useNaturalTyping = false)
     {
         if (string.IsNullOrEmpty(config.Text))
             return;
@@ -66,9 +66,9 @@ public class TextInputActionService
             {
                 await operation().ConfigureAwait(false);
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore background execution errors to avoid surfacing transient input failures to UI.
+                AppDiagnostics.Warning("Background text input action failed.", ex);
             }
         });
     }

@@ -1,24 +1,61 @@
 using System.IO;
 using System.Text.Json;
+using StreamDecky.Helpers;
 using StreamDecky.Models;
 
 namespace StreamDecky.Services;
 
 public class ProfileService
 {
-    private static readonly string AppDataFolder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "StreamDecky");
-
-    private static readonly string LegacyProfilePath = Path.Combine(AppDataFolder, "profile.json");
-    private static readonly string ProfilesPath = Path.Combine(AppDataFolder, "profiles.json");
-    private static readonly string ProfilesBackupPath = Path.Combine(AppDataFolder, "profiles.backup.json");
+    private readonly string _appDataFolder;
+    private readonly string _legacyProfilePath;
+    private readonly string _profilesPath;
+    private readonly string _profilesBackupPath;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
     };
+
+    public ProfileService(string? appDataFolder = null)
+    {
+        _appDataFolder = string.IsNullOrWhiteSpace(appDataFolder)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StreamDecky")
+            : appDataFolder;
+
+        _legacyProfilePath = Path.Combine(_appDataFolder, "profile.json");
+        _profilesPath = Path.Combine(_appDataFolder, "profiles.json");
+        _profilesBackupPath = Path.Combine(_appDataFolder, "profiles.backup.json");
+    }
+
+    public static DeckProfile DeserializeProfileJson(string json)
+    {
+        var profile = JsonSerializer.Deserialize<DeckProfile>(json, JsonOptions) ?? new DeckProfile();
+        ProfileSchemaMigrator.MigrateProfile(profile);
+        return profile;
+    }
+
+    public static DeckProfileStore DeserializeStoreJson(string json)
+    {
+        var store = JsonSerializer.Deserialize<DeckProfileStore>(json, JsonOptions) ?? new DeckProfileStore();
+        ProfileSchemaMigrator.MigrateStore(store);
+        return store;
+    }
+
+    public static string SerializeProfileJson(DeckProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ProfileSchemaMigrator.PrepareProfileForPersistence(profile);
+        return JsonSerializer.Serialize(profile, JsonOptions);
+    }
+
+    public static string SerializeStoreJson(DeckProfileStore store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        ProfileSchemaMigrator.PrepareStoreForPersistence(store);
+        return JsonSerializer.Serialize(store, JsonOptions);
+    }
 
     public DeckProfile Load()
     {
@@ -27,95 +64,93 @@ public class ProfileService
 
     public DeckProfileStore LoadStore()
     {
-        if (File.Exists(ProfilesPath))
+        if (File.Exists(_profilesPath))
         {
             try
             {
-                var json = File.ReadAllText(ProfilesPath);
-                var store = JsonSerializer.Deserialize<DeckProfileStore>(json, JsonOptions) ?? new DeckProfileStore();
-                store.Initialize();
-                RefreshStartupBackupIfChanged(ProfilesPath);
+                var json = File.ReadAllText(_profilesPath);
+                var store = DeserializeStoreJson(json);
+                RefreshStartupBackupIfChanged(_profilesPath);
                 return store;
             }
-            catch
+            catch (Exception ex)
             {
+                AppDiagnostics.Warning($"Failed to load '{_profilesPath}'. Falling back to legacy profile store.", ex);
                 var fallbackStore = CreateStoreFromLegacyProfile();
-                fallbackStore.Initialize();
-                if (File.Exists(LegacyProfilePath))
-                    RefreshStartupBackupIfChanged(LegacyProfilePath);
+                if (File.Exists(_legacyProfilePath))
+                    RefreshStartupBackupIfChanged(_legacyProfilePath);
                 return fallbackStore;
             }
         }
 
         var migratedStore = CreateStoreFromLegacyProfile();
-        migratedStore.Initialize();
-        if (File.Exists(LegacyProfilePath))
-            RefreshStartupBackupIfChanged(LegacyProfilePath);
+        if (File.Exists(_legacyProfilePath))
+            RefreshStartupBackupIfChanged(_legacyProfilePath);
         return migratedStore;
     }
 
-    private static void RefreshStartupBackupIfChanged(string sourcePath)
+    private void RefreshStartupBackupIfChanged(string sourcePath)
     {
         try
         {
             if (!File.Exists(sourcePath))
                 return;
 
-            Directory.CreateDirectory(AppDataFolder);
+            Directory.CreateDirectory(_appDataFolder);
 
             var sourceJson = File.ReadAllText(sourcePath);
-            if (File.Exists(ProfilesBackupPath))
+            if (File.Exists(_profilesBackupPath))
             {
-                var backupJson = File.ReadAllText(ProfilesBackupPath);
+                var backupJson = File.ReadAllText(_profilesBackupPath);
                 if (string.Equals(sourceJson, backupJson, StringComparison.Ordinal))
                     return;
             }
 
-            File.WriteAllText(ProfilesBackupPath, sourceJson);
+            WriteTextAtomically(_profilesBackupPath, sourceJson);
         }
-        catch
+        catch (Exception ex)
         {
-            // Backup must never block app startup.
-        }
-    }
-
-    private static void BackupCurrentProfilesIfChanged(string nextJson)
-    {
-        try
-        {
-            if (!File.Exists(ProfilesPath))
-                return;
-
-            var currentJson = File.ReadAllText(ProfilesPath);
-            if (string.Equals(currentJson, nextJson, StringComparison.Ordinal))
-                return;
-
-            Directory.CreateDirectory(AppDataFolder);
-            File.WriteAllText(ProfilesBackupPath, currentJson);
-        }
-        catch
-        {
-            // Ignore backup write failures; primary save still proceeds.
+            AppDiagnostics.Warning($"Failed to refresh startup backup from '{sourcePath}'.", ex);
         }
     }
 
-    private static async Task BackupCurrentProfilesIfChangedAsync(string nextJson, CancellationToken cancellationToken)
+    private void BackupCurrentProfilesIfChanged(string nextJson)
     {
         try
         {
-            if (!File.Exists(ProfilesPath))
+            if (!File.Exists(_profilesPath))
                 return;
 
-            var currentJson = await File.ReadAllTextAsync(ProfilesPath, cancellationToken);
+            var currentJson = File.ReadAllText(_profilesPath);
             if (string.Equals(currentJson, nextJson, StringComparison.Ordinal))
                 return;
 
-            Directory.CreateDirectory(AppDataFolder);
-            await File.WriteAllTextAsync(ProfilesBackupPath, currentJson, cancellationToken);
+            Directory.CreateDirectory(_appDataFolder);
+            WriteTextAtomically(_profilesBackupPath, currentJson);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore backup write failures; primary save still proceeds.
+            AppDiagnostics.Warning($"Failed to create profile backup '{_profilesBackupPath}'.", ex);
+        }
+    }
+
+    private async Task BackupCurrentProfilesIfChangedAsync(string nextJson, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!File.Exists(_profilesPath))
+                return;
+
+            var currentJson = await File.ReadAllTextAsync(_profilesPath, cancellationToken);
+            if (string.Equals(currentJson, nextJson, StringComparison.Ordinal))
+                return;
+
+            Directory.CreateDirectory(_appDataFolder);
+            await WriteTextAtomicallyAsync(_profilesBackupPath, currentJson, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning($"Failed to create async profile backup '{_profilesBackupPath}'.", ex);
         }
     }
 
@@ -124,29 +159,31 @@ public class ProfileService
         var profile = LoadLegacyProfile();
         profile.Name = string.IsNullOrWhiteSpace(profile.Name) ? "Standard" : profile.Name;
 
-        return new DeckProfileStore
+        var store = new DeckProfileStore
         {
             ActiveProfileId = profile.Id,
             Profiles = new List<DeckProfile> { profile }
         };
+
+        ProfileSchemaMigrator.MigrateStore(store);
+        return store;
     }
 
     private DeckProfile LoadLegacyProfile()
     {
-        if (!File.Exists(LegacyProfilePath))
+        if (!File.Exists(_legacyProfilePath))
         {
             return CreateDefaultProfile();
         }
 
         try
         {
-            var json = File.ReadAllText(LegacyProfilePath);
-            var profile = JsonSerializer.Deserialize<DeckProfile>(json, JsonOptions) ?? new DeckProfile();
-            profile.Initialize();
-            return profile;
+            var json = File.ReadAllText(_legacyProfilePath);
+            return DeserializeProfileJson(json);
         }
-        catch
+        catch (Exception ex)
         {
+            AppDiagnostics.Warning($"Failed to load legacy profile '{_legacyProfilePath}'. Falling back to default profile.", ex);
             return CreateDefaultProfile();
         }
     }
@@ -157,47 +194,130 @@ public class ProfileService
         {
             Name = "Standard"
         };
-        profile.Initialize();
+        ProfileSchemaMigrator.PrepareProfileForPersistence(profile);
         return profile;
     }
 
     public void Save(DeckProfile profile)
     {
-        Directory.CreateDirectory(AppDataFolder);
-        var json = Serialize(profile);
-        File.WriteAllText(LegacyProfilePath, json);
+        try
+        {
+            Directory.CreateDirectory(_appDataFolder);
+            var json = Serialize(profile);
+            WriteTextAtomically(_legacyProfilePath, json);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Error($"Failed to save legacy profile '{_legacyProfilePath}'.", ex);
+            throw;
+        }
     }
 
     public void SaveStore(DeckProfileStore store)
     {
-        store.Initialize();
-        Directory.CreateDirectory(AppDataFolder);
-        var json = SerializeStore(store);
-        BackupCurrentProfilesIfChanged(json);
-        File.WriteAllText(ProfilesPath, json);
+        try
+        {
+            store.Initialize();
+            Directory.CreateDirectory(_appDataFolder);
+            var json = SerializeStore(store);
+            BackupCurrentProfilesIfChanged(json);
+            WriteTextAtomically(_profilesPath, json);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Error($"Failed to save profile store '{_profilesPath}'.", ex);
+            throw;
+        }
     }
 
     public string Serialize(DeckProfile profile)
     {
-        return JsonSerializer.Serialize(profile, JsonOptions);
+        return SerializeProfileJson(profile);
     }
 
     public string SerializeStore(DeckProfileStore store)
     {
-        store.Initialize();
-        return JsonSerializer.Serialize(store, JsonOptions);
+        return SerializeStoreJson(store);
     }
 
     public async Task SaveSerializedAsync(string json, CancellationToken cancellationToken = default)
     {
-        Directory.CreateDirectory(AppDataFolder);
-        await File.WriteAllTextAsync(LegacyProfilePath, json, cancellationToken);
+        try
+        {
+            Directory.CreateDirectory(_appDataFolder);
+            await WriteTextAtomicallyAsync(_legacyProfilePath, json, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Error($"Failed to save serialized legacy profile '{_legacyProfilePath}'.", ex);
+            throw;
+        }
     }
 
     public async Task SaveStoreSerializedAsync(string json, CancellationToken cancellationToken = default)
     {
-        Directory.CreateDirectory(AppDataFolder);
-        await BackupCurrentProfilesIfChangedAsync(json, cancellationToken);
-        await File.WriteAllTextAsync(ProfilesPath, json, cancellationToken);
+        try
+        {
+            Directory.CreateDirectory(_appDataFolder);
+            await BackupCurrentProfilesIfChangedAsync(json, cancellationToken);
+            await WriteTextAtomicallyAsync(_profilesPath, json, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Error($"Failed to save serialized profile store '{_profilesPath}'.", ex);
+            throw;
+        }
+    }
+
+    private void WriteTextAtomically(string destinationPath, string content)
+    {
+        string tempPath = Path.Combine(_appDataFolder, $"{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.tmp");
+        File.WriteAllText(tempPath, content);
+        ReplaceFile(tempPath, destinationPath);
+    }
+
+    private async Task WriteTextAtomicallyAsync(string destinationPath, string content, CancellationToken cancellationToken)
+    {
+        string tempPath = Path.Combine(_appDataFolder, $"{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.tmp");
+        await File.WriteAllTextAsync(tempPath, content, cancellationToken);
+        ReplaceFile(tempPath, destinationPath);
+    }
+
+    private static void ReplaceFile(string tempPath, string destinationPath)
+    {
+        string? backupPath = null;
+
+        try
+        {
+            if (File.Exists(destinationPath))
+            {
+                backupPath = tempPath + ".bak";
+                File.Replace(tempPath, destinationPath, backupPath, ignoreMetadataErrors: true);
+            }
+            else
+            {
+                File.Move(tempPath, destinationPath);
+            }
+        }
+        finally
+        {
+            TryDeleteFile(tempPath);
+
+            if (!string.IsNullOrWhiteSpace(backupPath))
+                TryDeleteFile(backupPath);
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch
+        {
+            // Temporary cleanup failures should not mask the original result.
+        }
     }
 }

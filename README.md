@@ -1,161 +1,171 @@
 # StreamDecky
 
-StreamDecky är en Stream Deck-liknande desktopapp för Windows med fullskärms-overlay, redigerbar knappgrid, sticky notes och global hotkey.
+StreamDecky is a Stream Deck-inspired desktop app for Windows with a full-screen overlay, an editable button grid, sticky notes, quick clipboard text, and a global hotkey.
 
-Appen är byggd för snabba in-game/in-app actions där overlayen visas ovanpå andra fönster och kan skicka tangenttryckningar/text till tidigare aktivt fönster.
+It is designed for fast in-game or in-app actions where the overlay appears above other windows and can send keystrokes or text back to the previously active window.
 
-## Teknik
+## Requirements
 
-- Plattform: WPF
-- Runtime: .NET 10 (`net10.0-windows`)
-- Mönster: MVVM med CommunityToolkit.Mvvm
-- Inputsimulering: Win32 `SendInput` (scan-code-baserat)
-- Persistens: JSON i `%LOCALAPPDATA%\StreamDecky\profiles.json` (migrerar automatiskt från legacy `profile.json`)
+- Windows 10 or Windows 11
+- `.NET 10 SDK` for local development
+- A writable `%LOCALAPPDATA%\StreamDecky` folder for profiles, backups, and logs
+- A stable install path if you plan to use `Start with Windows`
 
-## Nuvarande funktionalitet
+Published releases are self-contained `win-x64` builds, so end users do not need a separate .NET runtime installation.
 
-### Overlay och fokus
+## Highlights
 
-- Fullskärms-overlay (`OverlayWindow`) med topmost-beteende
-- Stäng med `Esc` eller stängknapp
-- Overlay försöker återta fokus om det tappas
-- Vid action klickas overlay ner och fokus återställs aggressivt till tidigare foreground-fönster innan action körs
+### Overlay and focus
 
-### System tray och huvudfönster
+- Full-screen topmost overlay (`OverlayWindow`)
+- Close with `Esc` or the close button
+- Attempts to regain focus if the overlay loses it unexpectedly
+- Restores focus to the previous foreground window before executing actions
 
-- Appen skapar en tray-ikon med meny:
-  - `Show`
-  - `Exit`
-- Huvudfönstrets stängning minimerar till tray (hide) i stället för att avsluta appen
-- Tray-ikon laddas robust:
-  - Primärt från `StreamDecky.ico` i runtime-mappen
-  - Fallback till ikonen inbäddad i exe-filen
-  - Sista fallback: Windows standard-applikationsikon
+### Single instance and startup
 
-### Actions per knapp
+- Runs as a single-instance app
+- A second launch activates the existing window instead of starting a second process
+- Supports `--minimized` to start hidden in the tray
+- `Start with Windows` writes `"<path to exe>" --minimized` to `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`
+
+### Tray and main window
+
+- Creates a tray icon with `Show` and `Exit`
+- Closing the main window hides it to the tray instead of exiting the process
+- Loads the tray icon from the executable icon with a Windows application icon fallback
+
+### Button actions
 
 - `TextInput`
-  - Textläge: clipboard-paste eller simulerad typing
-  - Valfritt Enter efter text
+  - Clipboard paste mode or simulated typing
+  - Optional `Enter` after text input
 - `KeyPress`
-  - SendKeys-liknande strängformat med modifierare/specialtangenter
+  - SendKeys-style key strings with modifiers and special keys
 - `MultiAction`
-  - Sekvens av steps:
-    - KeyPress
-    - TextInput
-    - Delay
+  - Ordered action steps: `KeyPress`, `TextInput`, and `Delay`
 - `LayoutNavigation`
-  - Hoppar till target-layout (page eller virtual layout)
+  - Jumps directly to another page or virtual layout
 
-### Layoutsystem
+### Layouts, notes, and profiles
 
-- Vanliga pages med pager (föregående/nästa)
-- Virtual layouts som kan nås via navigation targets
-- Gemensam layoutstorlek (`Rows`/`Columns`) för alla pages/layouts i profil
-- Lägg till, ta bort, döp om pages/layouts
-- Layoutselector (`Go To Layout`) i editorn
+- Regular pages with previous/next navigation
+- Virtual layouts for hidden menus and direct navigation targets
+- Shared layout size (`Rows` and `Columns`) across layouts in a profile
+- Page-independent sticky notes stored in dedicated note pages
+- Multiple profiles with separate layouts, notes, quick text, and overlay/input settings
+- Import/export for the active profile from Settings
 
-### Knappeditor
+### Quick clipboard text
 
-- Titel, ikontext, bild, färger, corner radius, shape
-- Shapes: none, heart, star, diamond, hexagon
-- Högerklicksmeny + kortkommandon för copy/paste av knappkonfiguration
-- Dubbeklick på `LayoutNavigation`-knapp i editorn följer target direkt
+- Profile-scoped quick text items and categories
+- Overlay search/filter support
+- Shared multi-step action pipeline for clipboard rows
+- Session-only inline edits in the overlay without autosaving temporary changes
 
-### Sticky notes
+### Gamepad support
 
-- Notes är page-oberoende och ligger i separata note pages (`NotePages`)
-- Overlay kan:
-  - visa note pages
-  - dra notes
-  - ändra färg
-  - minimera/maximera
-  - ta bort note
-  - inline-redigera titel
-- Main window kan hantera note pages (lägg till/ta bort/navigera)
+- Optional per-profile XInput support
+- Recordable gamepad combo for toggling the overlay
+- D-pad and left stick navigation in the overlay
+- `A` activates the selected button, `LB` and `RB` switch pages
 
-### Profiler
+## Keyboard shortcuts
 
-- Flera profiler med helt separata:
-  - pages/virtual layouts/knappar
-  - notes areas/sticky notes
-  - overlay- och inputinställningar
-- Aktiv profil byts direkt i editorn via profillistan
-- Snabbhantering i editorn: add, duplicate, rename och remove
-- Import/export av profiler görs i Settings
-- Legacy data i `profile.json` läses in och blir automatiskt din första standardprofil
+In the main window, when a text field is not focused:
 
-### Inställningar
+- `Delete`: clear the selected button
+- `Ctrl+C`: copy the selected button configuration
+- `Ctrl+V`: paste onto the selected button
 
-- Overlay-bakgrundsfärg
-- Overlay-bakgrundsbild
-- Button size / spacing / overlay opacity
-- Grid layout (rows/columns, globalt för profilen)
-- Hotkey recording för overlay toggle
-- Start with Windows (HKCU Run)
-- Natural typing (experimentell)
-- Import/export av profiler till/från JSON
+In the overlay:
 
-## Kortkommandon
+- `Esc`: close the overlay
 
-I huvudfönstret (när textfält inte är fokuserat):
+## Installation
 
-- `Delete`: töm vald knapp
-- `Ctrl+C`: kopiera vald knapp
-- `Ctrl+V`: klistra in på vald knapp
+1. Download the latest release zip.
+2. Extract it to a stable folder, for example `%LOCALAPPDATA%\Programs\StreamDecky` or another folder you control.
+3. Run `StreamDecky.exe`.
+4. If you want background startup, enable `Start with Windows` from Settings after the app is running from its final location.
 
-I overlay:
+Keeping the same install path helps Windows preserve tray icon preferences and keeps the startup registry entry valid.
 
-- `Esc`: stäng overlay
+## Data storage and recovery
 
-## Data och profiler
+- Primary store: `%LOCALAPPDATA%\StreamDecky\profiles.json`
+- One-version-back backup: `%LOCALAPPDATA%\StreamDecky\profiles.backup.json`
+- Legacy import source: `%LOCALAPPDATA%\StreamDecky\profile.json`
+- Diagnostics log: `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`
 
-- Profil sparas automatiskt (debounce) samt vid explicit save-flöden
-- Auto-save är riktad till faktiska datamutationer
-- Primär lagring: `%LOCALAPPDATA%\StreamDecky\profiles.json`
-- Legacy-läsning: `%LOCALAPPDATA%\StreamDecky\profile.json` (migreras in som standardprofil)
-- Backup (1 version bakåt): `%LOCALAPPDATA%\StreamDecky\profiles.backup.json`
-- Import/export i Settings gäller aktiv profil och lägger importerad profil som separat profil
+Profile data is autosaved after real data mutations and can also be saved through explicit save flows.
 
-## Arkitekturöversikt
+The profile format uses explicit schema versions and versioned migrations. If StreamDecky opens data created by a newer app version, it will load that data without migration but block saving to avoid overwriting fields from a newer schema.
+
+Recovery guidance, startup troubleshooting, and import/export recovery flows are documented in [docs/recovery-and-troubleshooting.md](docs/recovery-and-troubleshooting.md).
+
+## Runtime target
+
+The project currently stays on `net10.0-windows`.
+
+The reasoning and release criteria for any future target change are documented in [docs/runtime-target-assessment.md](docs/runtime-target-assessment.md).
+
+## Architecture overview
 
 ```text
 StreamDecky/
-├── Models/
-│   ├── DeckProfile, DeckPage, NotePage, StickyNote
-│   ├── ButtonConfig, ActionStep
-│   └── enums (ActionType, ActionStepType, TextMode, ButtonShape)
-├── ViewModels/
-│   ├── MainViewModel
-│   ├── ButtonViewModel
-│   └── StickyNoteViewModel
-├── Views/
-│   ├── OverlayWindow
-│   └── SettingsWindow
-├── Services/
-│   ├── ProfileService
-│   ├── TextInputActionService
-│   └── MultiActionService
-├── Helpers/
-│   ├── OverlayInterop
-│   ├── InputSimulator
-│   ├── OverlayImageCache
-│   └── Converters
-└── MainWindow.xaml (+ code-behind)
+|-- Models/
+|   |-- DeckProfile, DeckProfileStore, DeckPage, NotePage, StickyNote
+|   |-- ButtonConfig, ActionStep
+|   `-- enums (ActionType, ActionStepType, TextMode, ButtonShape, ProfileSchemaVersion)
+|-- ViewModels/
+|   |-- MainViewModel (+ partials for profiles, layouts, sticky notes, quick text, and save flow)
+|   |-- ButtonViewModel
+|   `-- StickyNoteViewModel
+|-- Views/
+|   |-- OverlayWindow
+|   `-- SettingsWindow
+|-- Services/
+|   |-- ProfileService
+|   |-- ProfileSchemaMigrator
+|   |-- TextInputActionService
+|   |-- MultiActionService
+|   |-- OverlayWindowController
+|   |-- HotkeyRegistrationController
+|   `-- StartupRegistrySyncService
+|-- Helpers/
+|   |-- OverlayInterop
+|   |-- InputSimulator
+|   |-- OverlayImageCache
+|   `-- Converters
+`-- MainWindow.xaml (+ code-behind)
 ```
 
-## Köra lokalt
+## Run locally
 
-Krav: .NET 10 SDK på Windows.
+Requirement: Windows with the `.NET 10 SDK` installed.
 
 ```powershell
-dotnet restore StreamDecky/StreamDecky.csproj
+dotnet restore StreamDecky.slnx
 dotnet run --project StreamDecky/StreamDecky.csproj
 ```
 
-## Publicering
+If WPF design-time build or C# Dev Kit locks generated files such as `App.g.cs` and triggers `MC1000`-style failures, use the safer sequence below instead:
 
-Exempel (self-contained single-file, win-x64):
+```powershell
+dotnet build StreamDecky/StreamDecky.csproj -c Debug --disable-build-servers /nr:false
+dotnet run --project StreamDecky/StreamDecky.csproj --no-build
+```
+
+To run the full automated test suite locally:
+
+```powershell
+dotnet test StreamDecky.Tests/StreamDecky.Tests.csproj -c Debug --disable-build-servers /nr:false
+```
+
+## Publishing
+
+Example self-contained single-file publish for `win-x64`:
 
 ```powershell
 dotnet publish StreamDecky/StreamDecky.csproj \
@@ -168,32 +178,33 @@ dotnet publish StreamDecky/StreamDecky.csproj \
   -p:PublishReadyToRun=true
 ```
 
-Ikonhantering vid single-file:
+Single-file icon behavior:
 
-- Exe-filen har inbäddad appikon via `ApplicationIcon`.
-- Taskbar/fönster använder exe-ikonen direkt (ingen separat runtime-override av Window.Icon).
-- Tray-ikon hämtas från exe-ikonen vid runtime.
-- Ingen separat `.ico` behöver publiceras bredvid exe för att ikonerna ska visas i vanliga app-sammanhang.
+- The executable embeds the app icon via `ApplicationIcon`.
+- The taskbar and window use the executable icon directly.
+- The tray icon is loaded from the executable icon at runtime.
+- No separate `.ico` file needs to ship next to the executable for normal runtime icon behavior.
 
-Versionsinfo och signering i release-pipeline:
+Release pipeline notes:
 
-- `release.yml` sätter `Version`, `AssemblyVersion`, `FileVersion` och `InformationalVersion` vid publish.
-- Lokal build har fallback-version i `.csproj` som kan överskridas av pipeline.
-- Optional code-signing steg finns i pipeline om secrets för PFX-certifikat anges.
-- Utan kodsignering kan Windows SmartScreen fortfarande kräva manuellt godkännande vid uppdateringar.
+- `release.yml` injects `Version`, `AssemblyVersion`, `FileVersion`, and `InformationalVersion` during publish.
+- `pr-build.yml` and `release.yml` both run the automated test project before shipping artifacts.
+- The local `.csproj` version is a fallback and can be overridden by CI.
+- The release workflow supports optional code signing when the required PFX secrets are configured.
+- Without code signing, Windows SmartScreen may still require manual approval.
 
-## Kända begränsningar
+## Known limitations
 
-- Systemnivåfunktioner som `Ctrl+Alt+Del`, Secure Desktop och vissa UAC-scenarier kan inte blockeras av en vanlig desktopapp
-- Vissa spel/appar med stark anti-cheat eller låg nivå-inputfilter kan fortfarande ignorera simulerad input
-- Overlayen är primärt designad kring huvudskärmsbeteende
+- Desktop apps cannot intercept system-level flows such as `Ctrl+Alt+Del`, Secure Desktop, or some UAC transitions.
+- Some games or applications with aggressive anti-cheat or low-level input filtering may ignore simulated input.
+- The overlay is primarily designed around the primary display.
 
-## Säkerhet och privilegier
+## Security and privileges
 
-- `app.manifest` körs som `asInvoker` (ingen admin krävs)
-- Start with Windows skrivs till:
-  - `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`
+- The app runs as `asInvoker`; administrator rights are not required by default.
+- `Start with Windows` writes to `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`.
+- Profiles, backups, and logs stay under `%LOCALAPPDATA%\StreamDecky`.
 
-## Licens
+## License
 
-Se `LICENSE`.
+See `LICENSE`.

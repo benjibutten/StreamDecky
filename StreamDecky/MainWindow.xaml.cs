@@ -1,8 +1,8 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
-using Microsoft.Win32;
 using StreamDecky.Helpers;
+using StreamDecky.Services;
 using StreamDecky.ViewModels;
 using StreamDecky.Views;
 
@@ -17,19 +17,21 @@ public partial class MainWindow : Window
     private const int HOTKEY_ID = 9000;
     private static readonly TimeSpan GamepadToggleCooldown = TimeSpan.FromMilliseconds(350);
     private HwndSource? _hwndSource;
-    private OverlayWindow? _overlayWindow;
     private System.Windows.Forms.NotifyIcon? _trayIcon;
     private System.Drawing.Icon? _trayIconImage;
+    private readonly OverlayWindowController _overlayController;
+    private readonly HotkeyRegistrationController _hotkeyController = new();
+    private readonly StartupRegistrySyncService _startupRegistrySyncService = new();
+    // Keep this short: it bounds the added latency between pressing the gamepad
+    // combo and the overlay toggling. The packet-number check in the tick handler
+    // keeps idle polling cheap.
     private readonly System.Windows.Threading.DispatcherTimer _gamepadToggleTimer = new()
     {
-        Interval = TimeSpan.FromMilliseconds(80)
+        Interval = TimeSpan.FromMilliseconds(30)
     };
     private ushort _previousGamepadButtons;
     private uint _previousGamepadPacketNumber;
     private DateTime _nextGamepadToggleAllowedAtUtc = DateTime.MinValue;
-
-    private const string StartupRegistryKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-    private const string AppRegistryName = "StreamDecky";
 
     public MainWindow()
         : this(HasStartHiddenInTrayArgument(Environment.GetCommandLineArgs()))
@@ -44,6 +46,7 @@ public partial class MainWindow : Window
         Loaded += MainWindow_Loaded;
         StateChanged += MainWindow_StateChanged;
         InitializeTrayIcon();
+        _overlayController = new OverlayWindowController(_viewModel);
         SyncStartWithWindows();
 
         if (_startHiddenInTray)
@@ -178,7 +181,7 @@ public partial class MainWindow : Window
     {
         DisposeGamepadTogglePolling();
         DisposeTrayIcon();
-        OverlayInterop.UnregisterGlobalHotkey(this, HOTKEY_ID);
+        _hotkeyController.Unregister(this, HOTKEY_ID);
         _hwndSource?.RemoveHook(WndProc);
         System.Windows.Application.Current.Shutdown();
     }
@@ -194,11 +197,8 @@ public partial class MainWindow : Window
         if (e.PropertyName is nameof(MainViewModel.HotkeyModifiers) or nameof(MainViewModel.HotkeyVk))
         {
             if (_hwndSource != null)
-            {
-                OverlayInterop.UnregisterGlobalHotkey(this, HOTKEY_ID);
-                OverlayInterop.RegisterGlobalHotkey(this, HOTKEY_ID,
-                    _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
-            }
+                _hotkeyController.ReRegister(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+
             return;
         }
 
@@ -278,16 +278,14 @@ public partial class MainWindow : Window
 
     private void SyncStartWithWindows()
     {
-        var exePath = Environment.ProcessPath;
-        if (exePath == null) return;
-
-        using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey, true);
-        if (key == null) return;
-
-        if (_viewModel.StartWithWindows)
-            key.SetValue(AppRegistryName, $"\"{exePath}\" --minimized");
-        else
-            key.DeleteValue(AppRegistryName, false);
+        try
+        {
+            _startupRegistrySyncService.Sync(_viewModel.StartWithWindows, Environment.ProcessPath);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Failed to synchronize the Start with Windows registry setting.", ex);
+        }
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -296,8 +294,7 @@ public partial class MainWindow : Window
         var hwnd = new WindowInteropHelper(this).Handle;
         _hwndSource = HwndSource.FromHwnd(hwnd);
         _hwndSource?.AddHook(WndProc);
-        OverlayInterop.RegisterGlobalHotkey(this, HOTKEY_ID,
-            _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+        _hotkeyController.Register(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
 
         if (_startHiddenInTray)
             HideToTray();
@@ -316,36 +313,17 @@ public partial class MainWindow : Window
 
     private void ToggleOverlay()
     {
-        if (_viewModel.IsOverlayOpen && _overlayWindow != null)
-        {
-            _overlayWindow.Close();
-        }
-        else
-        {
-            OpenOverlay();
-        }
+        _overlayController.Toggle();
     }
 
     private void OpenOverlay()
     {
-        _viewModel.OpenOverlayCommand.Execute(null);
-        _overlayWindow = new OverlayWindow(_viewModel);
-        _overlayWindow.Closed += (_, _) =>
-        {
-            _viewModel.IsOverlayOpen = false;
-            _overlayWindow = null;
-        };
-        _overlayWindow.Show();
+        _overlayController.Open();
     }
 
     private void OpenOverlay_Click(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.IsOverlayOpen && _overlayWindow != null)
-        {
-            _overlayWindow.Close();
-            return;
-        }
-        OpenOverlay();
+        ToggleOverlay();
     }
 
     private void ToggleNotesAreasPopup_Click(object sender, RoutedEventArgs e)
@@ -427,13 +405,7 @@ public partial class MainWindow : Window
         settingsWindow.Owner = this;
         settingsWindow.ShowDialog();
 
-        // Re-register hotkey if changed
-        if (oldMod != _viewModel.HotkeyModifiers || oldVk != _viewModel.HotkeyVk)
-        {
-            OverlayInterop.UnregisterGlobalHotkey(this, HOTKEY_ID);
-            OverlayInterop.RegisterGlobalHotkey(this, HOTKEY_ID,
-                _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
-        }
+        _hotkeyController.ReRegisterIfChanged(this, HOTKEY_ID, oldMod, oldVk, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
 
         // Sync startup setting if changed
         if (oldStartup != _viewModel.StartWithWindows)
@@ -502,8 +474,12 @@ public partial class MainWindow : Window
 
         if (_viewModel.PageCount <= 1) return;
         var result = System.Windows.MessageBox.Show(
-            $"Remove page \"{_viewModel.CurrentPageName}\"?",
-            "Remove Page", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            this,
+            $"Remove page \"{_viewModel.CurrentPageName}\"?\n\nThis permanently removes the page and all of its button assignments.",
+            "Remove Page",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
         if (result == MessageBoxResult.Yes)
             _viewModel.RemovePageCommand.Execute(null);
     }
@@ -519,8 +495,12 @@ public partial class MainWindow : Window
             return;
 
         var result = System.Windows.MessageBox.Show(
-            $"Remove virtual layout \"{_viewModel.CurrentPageName}\"?",
-            "Remove Virtual Layout", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            this,
+            $"Remove virtual layout \"{_viewModel.CurrentPageName}\"?\n\nThis permanently removes the virtual layout and all of its button assignments.",
+            "Remove Virtual Layout",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
 
         if (result == MessageBoxResult.Yes)
             _viewModel.RemoveVirtualLayoutCommand.Execute(null);
@@ -708,7 +688,7 @@ public partial class MainWindow : Window
         DisposeGamepadTogglePolling();
         _viewModel.Dispose();
         DisposeTrayIcon();
-        OverlayInterop.UnregisterGlobalHotkey(this, HOTKEY_ID);
+        _hotkeyController.Unregister(this, HOTKEY_ID);
         _hwndSource?.RemoveHook(WndProc);
         base.OnClosed(e);
     }

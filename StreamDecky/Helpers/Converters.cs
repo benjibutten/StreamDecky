@@ -207,6 +207,53 @@ public class PathToImageSourceConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// Builds a rounded-rectangle clip geometry from (width, height[, cornerRadius]).
+/// Cheaper than a VisualBrush opacity mask, which forces extra render passes.
+/// The radius can come from a third binding or the converter parameter.
+/// </summary>
+public class CornerClipConverter : IMultiValueConverter
+{
+    public object? Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 2
+            || values[0] is not double width
+            || values[1] is not double height
+            || double.IsNaN(width) || double.IsNaN(height)
+            || width <= 0 || height <= 0)
+        {
+            return null;
+        }
+
+        double radius = 0;
+        if (values.Length > 2 && values[2] is IConvertible radiusValue && values[2] != DependencyProperty.UnsetValue)
+        {
+            try
+            {
+                radius = radiusValue.ToDouble(CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                radius = 0;
+            }
+        }
+        else if (parameter is string p
+            && double.TryParse(p, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsedRadius))
+        {
+            radius = parsedRadius;
+        }
+
+        var clip = new RectangleGeometry(new Rect(0, 0, width, height), radius, radius);
+        clip.Freeze();
+        return clip;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}
+
 public class OpacityConverter : IValueConverter
 {
     public static readonly OpacityConverter Instance = new();
@@ -220,6 +267,37 @@ public class OpacityConverter : IValueConverter
     {
         return true;
     }
+}
+
+public class BoolToBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        bool flag = value is true;
+        if (parameter is string colorStr && !string.IsNullOrWhiteSpace(colorStr))
+        {
+            try
+            {
+                var converter = new BrushConverter();
+                var brush = converter.ConvertFromString(colorStr) as Brush;
+                if (brush != null)
+                {
+                    brush = brush.Clone();
+                    brush.Freeze();
+                }
+                return flag && brush != null
+                    ? brush
+                    : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2D, 0x2D, 0x44));
+            }
+            catch { }
+        }
+        return flag
+            ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x3F, 0x4F, 0x86))
+            : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2D, 0x2D, 0x44));
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => false;
 }
 
 public class StringEqualsConverter : IMultiValueConverter

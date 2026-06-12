@@ -18,7 +18,7 @@ public class MultiActionService
         "{{itemText}}"
     };
 
-    public async Task ExecuteAsync(ButtonConfig config, bool useNaturalTyping = false)
+    public virtual async Task ExecuteAsync(ButtonConfig config, bool useNaturalTyping = false)
     {
         await ExecuteStepsAsync(config.Steps, itemText: null, useNaturalTyping);
     }
@@ -27,12 +27,12 @@ public class MultiActionService
     /// Executes a list of action steps on behalf of a clipboard item. For TextInput steps with
     /// empty Text, the provided <paramref name="itemText"/> is injected automatically.
     /// </summary>
-    public void ExecuteWithItemText(IEnumerable<ActionStep> steps, string itemText, bool useNaturalTyping = false)
+    public virtual void ExecuteWithItemText(IEnumerable<ActionStep> steps, string itemText, bool useNaturalTyping = false)
     {
         RunDetached(() => ExecuteStepsAsync(steps, itemText, useNaturalTyping));
     }
 
-    public async Task ExecuteKeyPressAsync(string keyText)
+    public virtual async Task ExecuteKeyPressAsync(string keyText)
     {
         if (string.IsNullOrEmpty(keyText)) return;
 
@@ -43,7 +43,7 @@ public class MultiActionService
     /// <summary>
     /// Synchronous fire-and-forget wrapper for button clicks.
     /// </summary>
-    public void ExecuteKeyPress(string keyText)
+    public virtual void ExecuteKeyPress(string keyText)
     {
         if (string.IsNullOrEmpty(keyText)) return;
 
@@ -138,9 +138,9 @@ public class MultiActionService
             {
                 await operation().ConfigureAwait(false);
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore background execution errors to avoid breaking user interaction flow.
+                AppDiagnostics.Warning("Background multi-action execution failed.", ex);
             }
         });
     }

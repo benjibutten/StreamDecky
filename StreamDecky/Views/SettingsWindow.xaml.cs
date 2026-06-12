@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json;
 using StreamDecky.Helpers;
 using StreamDecky.Models;
+using StreamDecky.Services;
 using StreamDecky.ViewModels;
 
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -37,12 +38,6 @@ public partial class SettingsWindow : Window
     private bool _isRecordingGamepadCombo;
     private bool _hasRecordedGamepadPress;
     private ushort _recordedGamepadButtons;
-
-    private static readonly JsonSerializerOptions ExportJsonOptions = new()
-    {
-        WriteIndented = true,
-        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
-    };
 
     public SettingsWindow(MainViewModel viewModel)
     {
@@ -100,7 +95,7 @@ public partial class SettingsWindow : Window
         try
         {
             string json = File.ReadAllText(dlg.FileName);
-            var importedProfile = JsonSerializer.Deserialize<DeckProfile>(json, ExportJsonOptions);
+            var importedProfile = ProfileService.DeserializeProfileJson(json);
             if (importedProfile == null)
             {
                 System.Windows.MessageBox.Show(
@@ -141,7 +136,7 @@ public partial class SettingsWindow : Window
 
         try
         {
-            var json = JsonSerializer.Serialize(_viewModel.Profile, ExportJsonOptions);
+            var json = ProfileService.SerializeProfileJson(_viewModel.Profile);
             File.WriteAllText(dlg.FileName, json);
 
             System.Windows.MessageBox.Show(

@@ -2,6 +2,7 @@ namespace StreamDecky.Models;
 
 public class DeckProfileStore
 {
+    public int SchemaVersion { get; set; }
     public string ActiveProfileId { get; set; } = string.Empty;
     public List<DeckProfile> Profiles { get; set; } = new();
 

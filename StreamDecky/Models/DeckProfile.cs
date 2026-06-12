@@ -11,6 +11,7 @@ public class DeckProfile
     public const double MinQuickTextPanelHeight = 180;
     public const double MaxQuickTextPanelHeight = 3000;
 
+    public int SchemaVersion { get; set; }
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Name { get; set; } = "Standard";
     public string OverlayBackgroundColor { get; set; } = "#1E1E2E";
@@ -38,11 +39,11 @@ public class DeckProfile
     public double QuickTextPanelHeight { get; set; } = 380;
     public double QuickTextFontSize { get; set; } = 12;
     public List<ActionStep> QuickTextActionSteps { get; set; } = new();
-    public int LayoutRows { get; set; }
-    public int LayoutColumns { get; set; }
+    public int LayoutRows { get; set; } = 3;
+    public int LayoutColumns { get; set; } = 5;
     public List<DeckPage> Pages { get; set; } = new() { new DeckPage() };
     public List<DeckPage> VirtualLayouts { get; set; } = new();
-    public List<NotePage> NotePages { get; set; } = new() { new NotePage() };
+    public List<NotePage> NotePages { get; set; } = new();
     public int CurrentNotePageIndex { get; set; }
 
     public void Initialize()
@@ -70,23 +71,14 @@ public class DeckProfile
         if (Pages.Count == 0)
             Pages.Add(new DeckPage());
 
-        // Backwards compatibility: old profiles stored rows/columns per page only.
-        if (LayoutRows < DeckPage.MinRows || LayoutRows > DeckPage.MaxRows)
-            LayoutRows = Pages[0].Rows;
-
-        if (LayoutColumns < DeckPage.MinColumns || LayoutColumns > DeckPage.MaxColumns)
-            LayoutColumns = Pages[0].Columns;
-
-        LayoutRows = Math.Clamp(LayoutRows, DeckPage.MinRows, DeckPage.MaxRows);
-        LayoutColumns = Math.Clamp(LayoutColumns, DeckPage.MinColumns, DeckPage.MaxColumns);
+        LayoutRows = Math.Clamp(LayoutRows == 0 ? 3 : LayoutRows, DeckPage.MinRows, DeckPage.MaxRows);
+        LayoutColumns = Math.Clamp(LayoutColumns == 0 ? 5 : LayoutColumns, DeckPage.MinColumns, DeckPage.MaxColumns);
 
         foreach (var page in Pages)
             page.EnsureButtonCount(LayoutRows, LayoutColumns);
 
         foreach (var layout in VirtualLayouts)
             layout.EnsureButtonCount(LayoutRows, LayoutColumns);
-
-        MigrateLegacyStickyNotes();
 
         if (NotePages.Count == 0)
             NotePages.Add(new NotePage());
@@ -121,29 +113,5 @@ public class DeckProfile
 
         QuickTextPanelX = Math.Max(0, QuickTextPanelX);
         QuickTextPanelY = Math.Max(0, QuickTextPanelY);
-    }
-
-    private void MigrateLegacyStickyNotes()
-    {
-        if (NotePages.Count > 0)
-            return;
-
-        bool hasLegacyNotes = Pages.Any(page => page.StickyNotes is { Count: > 0 });
-        if (!hasLegacyNotes)
-            return;
-
-        for (int i = 0; i < Pages.Count; i++)
-        {
-            var page = Pages[i];
-            var migratedNotes = page.StickyNotes ?? new List<StickyNote>();
-
-            NotePages.Add(new NotePage
-            {
-                Name = $"Notes {i + 1}",
-                StickyNotes = migratedNotes
-            });
-
-            page.StickyNotes = new List<StickyNote>();
-        }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using System.Threading;
 using System.Windows;
+using System.Windows.Threading;
+using StreamDecky.Helpers;
 
 using Application = System.Windows.Application;
 
@@ -18,6 +20,10 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += OnCurrentDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+
         bool startHiddenInTray = HasStartHiddenInTrayArgument(e.Args);
 
         _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out bool isFirstInstance);
@@ -54,6 +60,10 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        DispatcherUnhandledException -= OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException -= OnCurrentDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
+
         _activationWaitHandle?.Unregister(null);
         _activationWaitHandle = null;
 
@@ -67,6 +77,29 @@ public partial class App : Application
         _singleInstanceMutex = null;
 
         base.OnExit(e);
+    }
+
+    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        AppDiagnostics.Error("Unhandled dispatcher exception.", e.Exception);
+    }
+
+    private void OnCurrentDomainUnhandledException(object? sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception exception)
+        {
+            AppDiagnostics.Error(
+                e.IsTerminating ? "Unhandled terminating exception." : "Unhandled exception.",
+                exception);
+            return;
+        }
+
+        AppDiagnostics.Error($"Unhandled non-exception object: {e.ExceptionObject}");
+    }
+
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        AppDiagnostics.Error("Unobserved task exception.", e.Exception);
     }
 
     private static void SignalRunningInstanceToActivate()

@@ -9,7 +9,6 @@
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         KeyDown="Window_KeyDown"
-        Loaded="Window_Loaded"
         Background="Transparent">
 
     <Window.Resources>
@@ -24,6 +23,7 @@
         <helpers:CellImageBrushConverter x:Key="CellImageBrush"/>
         <helpers:AdaptiveButtonSizeConverter x:Key="AdaptiveButtonSize"/>
         <helpers:CellClusterCornerRadiusConverter x:Key="CellClusterCornerRadius"/>
+        <helpers:CornerClipConverter x:Key="CornerClip"/>
 
         <Style x:Key="TopMiniButton"
                 TargetType="Button">
@@ -326,16 +326,15 @@
                         Padding="0"
                         Opacity="{Binding ButtonOverlayOpacity}">
                     <Grid>
-                        <Grid.OpacityMask>
-                            <VisualBrush>
-                                <VisualBrush.Visual>
-                                    <Border Background="Black"
-                                            CornerRadius="12"
-                                            Width="{Binding ActualWidth, ElementName=GridClipBorder}"
-                                            Height="{Binding ActualHeight, ElementName=GridClipBorder}"/>
-                                </VisualBrush.Visual>
-                            </VisualBrush>
-                        </Grid.OpacityMask>
+                        <Grid.Clip>
+                            <MultiBinding Converter="{StaticResource CornerClip}"
+                                    ConverterParameter="12">
+                                <Binding Path="ActualWidth"
+                                        ElementName="GridClipBorder"/>
+                                <Binding Path="ActualHeight"
+                                        ElementName="GridClipBorder"/>
+                            </MultiBinding>
+                        </Grid.Clip>
                         <ItemsControl ItemsSource="{Binding Buttons}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -448,16 +447,15 @@
                                                                                 BorderBrush="Transparent"
                                                                                 Background="{Binding BackgroundColor, Converter={StaticResource StringToBrush}}">
                                                                             <Grid>
-                                                                                <Grid.OpacityMask>
-                                                                                    <VisualBrush>
-                                                                                        <VisualBrush.Visual>
-                                                                                            <Border Background="Black"
-                                                                                                    CornerRadius="{Binding CornerRadius, Converter={StaticResource DoubleToCornerRadius}}"
-                                                                                                    Width="{Binding ActualWidth, ElementName=RegularBg}"
-                                                                                                    Height="{Binding ActualHeight, ElementName=RegularBg}"/>
-                                                                                        </VisualBrush.Visual>
-                                                                                    </VisualBrush>
-                                                                                </Grid.OpacityMask>
+                                                                                <Grid.Clip>
+                                                                                    <MultiBinding Converter="{StaticResource CornerClip}">
+                                                                                        <Binding Path="ActualWidth"
+                                                                                                RelativeSource="{RelativeSource Self}"/>
+                                                                                        <Binding Path="ActualHeight"
+                                                                                                RelativeSource="{RelativeSource Self}"/>
+                                                                                        <Binding Path="CornerRadius"/>
+                                                                                    </MultiBinding>
+                                                                                </Grid.Clip>
                                                                                 <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageSource}, ConverterParameter=256}"
                                                                                        Stretch="UniformToFill"
                                                                                        Visibility="{Binding ImagePath, Converter={StaticResource HasTextVisibility}}"/>
@@ -973,7 +971,7 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0"
-                               Text="Snabbkopiera text direkt till clipboarden · ✎ = tillfallig redigering (sparas inte)"
+                               Text="Quick copy text directly to the clipboard · ✎ = temporary editing (not saved)"
                                Foreground="#C4D3E4"
                                FontSize="11"
                                Margin="0,0,0,8"/>
@@ -993,7 +991,7 @@
                                  BorderThickness="1"
                                  Padding="8,5"
                                  FontSize="12"
-                                 ToolTip="Sok i alla kategorier"/>
+                                 ToolTip="Search all categories"/>
 
                         <Button Grid.Column="1"
                                 Command="{Binding ClearQuickTextSearchCommand}"
@@ -1035,7 +1033,7 @@
                     </Grid>
 
                     <TextBlock Grid.Row="2"
-                               Text="Inga texter matchade filtret eller sokningen."
+                               Text="No texts matched the current filter or search."
                                Foreground="#8B9FB5"
                                FontSize="12"
                                TextWrapping="Wrap"
@@ -1104,7 +1102,7 @@
                                                      Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}"/>
                                             <TextBlock Grid.Row="1"
                                                        Grid.Column="0"
-                                                       Text="Tillfallig redigering aktiv for overlaysessionen"
+                                                       Text="Temporary editing is active for this overlay session"
                                                        Foreground="#92A8BF"
                                                        TextWrapping="Wrap"
                                                        TextTrimming="CharacterEllipsis"
@@ -1134,7 +1132,7 @@
                                                         MinWidth="28"
                                                         Cursor="Hand"
                                                         VerticalAlignment="Center"
-                                                        ToolTip="Tillfallig redigering (sparas inte)">
+                                                        ToolTip="Temporary editing (not saved)">
                                                     <Button.Style>
                                                         <Style TargetType="Button">
                                                             <Setter Property="Content"
@@ -1256,7 +1254,7 @@
                                                         </Button.Style>
                                                     </Button>
 
-                                                    <Button Grid.Column="1"
+                                                        <Button Grid.Column="1"
                                                             Content="➜"
                                                             Click="QuickTextAction_Click"
                                                             Background="#3D7A37"
@@ -1266,7 +1264,7 @@
                                                             Margin="1,0,0,0"
                                                             Cursor="Hand"
                                                             VerticalAlignment="Center"
-                                                            ToolTip="Korer den delade clipboard-actionen med aktuell radtext">
+                                                            ToolTip="Run the shared clipboard action with the current row text">
                                                         <Button.Style>
                                                             <Style TargetType="Button">
                                                                 <Setter Property="Template">
