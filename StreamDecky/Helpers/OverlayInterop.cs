@@ -16,7 +16,7 @@ public static class OverlayInterop
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", SetLastError = true)]
     private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
 
     [DllImport("user32.dll")]
@@ -36,6 +36,12 @@ public static class OverlayInterop
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    // Without MOD_NOREPEAT, holding the hotkey down makes Windows post repeated
+    // WM_HOTKEY messages (keyboard auto-repeat), which would toggle the overlay
+    // open/closed several times per press and make it look like it flickers or
+    // "didn't activate". This flag delivers exactly one message per physical press.
+    private const uint MOD_NOREPEAT = 0x4000;
 
     private static readonly IntPtr HWND_TOPMOST = new(-1);
     private const uint SWP_NOSIZE = 0x0001;
@@ -62,7 +68,15 @@ public static class OverlayInterop
     public static bool RegisterGlobalHotkey(Window window, int id, uint modifiers, uint vk)
     {
         var hwnd = new WindowInteropHelper(window).Handle;
-        return RegisterHotKey(hwnd, id, modifiers, vk);
+        bool registered = RegisterHotKey(hwnd, id, modifiers | MOD_NOREPEAT, vk);
+        if (!registered)
+        {
+            AppDiagnostics.Warning(
+                $"Failed to register global hotkey (id={id}, modifiers=0x{modifiers:X}, vk=0x{vk:X}, lastError={Marshal.GetLastWin32Error()}). " +
+                "Another application may already own this key combination.");
+        }
+
+        return registered;
     }
 
     public static void UnregisterGlobalHotkey(Window window, int id)
