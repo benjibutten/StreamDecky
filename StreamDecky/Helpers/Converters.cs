@@ -89,7 +89,11 @@ public class HasTextToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        return value is string s && !string.IsNullOrEmpty(s)
+        bool hasText = value is string s && !string.IsNullOrEmpty(s);
+        if (parameter is string option && string.Equals(option, "Invert", StringComparison.OrdinalIgnoreCase))
+            hasText = !hasText;
+
+        return hasText
             ? Visibility.Visible
             : Visibility.Collapsed;
     }
