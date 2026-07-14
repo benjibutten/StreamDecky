@@ -22,6 +22,13 @@ public partial class MainWindow : Window
     private readonly OverlayWindowController _overlayController;
     private readonly HotkeyRegistrationController _hotkeyController = new();
     private readonly StartupRegistrySyncService _startupRegistrySyncService = new();
+    private ForegroundIntegrityMonitor? _foregroundIntegrityMonitor;
+    // Watches the foreground window for elevated apps that would silently block the global hotkey.
+    // A few syscalls every few seconds is negligible; the cadence only bounds how soon the notice appears.
+    private readonly System.Windows.Threading.DispatcherTimer _foregroundIntegrityTimer = new()
+    {
+        Interval = TimeSpan.FromSeconds(3)
+    };
     // Keep this short: it bounds the added latency between pressing the gamepad
     // combo and the overlay toggling. The packet-number check in the tick handler
     // keeps idle polling cheap.
@@ -180,6 +187,7 @@ public partial class MainWindow : Window
     private void ExitApplication()
     {
         DisposeGamepadTogglePolling();
+        DisposeForegroundIntegrityMonitor();
         DisposeTrayIcon();
         _hotkeyController.Unregister(this, HOTKEY_ID);
         _hwndSource?.RemoveHook(WndProc);
@@ -295,9 +303,96 @@ public partial class MainWindow : Window
         _hwndSource = HwndSource.FromHwnd(hwnd);
         _hwndSource?.AddHook(WndProc);
         _hotkeyController.Register(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+        StartForegroundIntegrityMonitor();
 
         if (_startHiddenInTray)
             HideToTray();
+    }
+
+    private void StartForegroundIntegrityMonitor()
+    {
+        _foregroundIntegrityMonitor = new ForegroundIntegrityMonitor();
+
+        // If we couldn't read our own integrity level there's nothing actionable to detect.
+        if (!_foregroundIntegrityMonitor.IsActive)
+            return;
+
+        _foregroundIntegrityMonitor.HigherIntegrityForegroundDetected += ShowHotkeyBlockedNotice;
+        _foregroundIntegrityTimer.Tick += ForegroundIntegrityTimer_Tick;
+        _foregroundIntegrityTimer.Start();
+    }
+
+    private void ForegroundIntegrityTimer_Tick(object? sender, EventArgs e)
+    {
+        _foregroundIntegrityMonitor?.CheckForeground();
+    }
+
+    private void ShowHotkeyBlockedNotice()
+    {
+        // Detection happens while the elevated app owns the foreground. A tray balloon cannot draw
+        // over an exclusive-fullscreen game and is suppressed by Focus Assist during gameplay, so it
+        // is unreliable here. Instead surface a persistent banner in the main window: the user sees it
+        // the moment they open StreamDecky to investigate why the hotkey did nothing, and can fix it
+        // in one click. A balloon is still raised as a best-effort nudge in case the window is hidden.
+        HotkeyElevationBanner.Visibility = Visibility.Visible;
+        _trayIcon?.ShowBalloonTip(
+            10000,
+            "Overlay hotkey may not work",
+            "A game or app running as administrator is in the foreground. Open StreamDecky to restart " +
+            "it as administrator so the overlay hotkey works inside that app.",
+            System.Windows.Forms.ToolTipIcon.Warning);
+    }
+
+    private void DismissHotkeyElevationBanner_Click(object sender, RoutedEventArgs e)
+    {
+        HotkeyElevationBanner.Visibility = Visibility.Collapsed;
+    }
+
+    private void RestartAsAdministrator_Click(object sender, RoutedEventArgs e)
+    {
+        var exePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(exePath))
+            return;
+
+        var startInfo = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = exePath,
+            UseShellExecute = true,
+            Verb = "runas", // triggers the UAC elevation prompt
+        };
+
+        // Forward the original arguments minus the executable path, but drop --minimized: this is a
+        // deliberate user action, so the elevated instance should come back visible as confirmation
+        // (and the banner will be gone, since we are now at the same elevation as the game).
+        foreach (var arg in Environment.GetCommandLineArgs().Skip(1))
+        {
+            if (!arg.Equals("--minimized", StringComparison.OrdinalIgnoreCase))
+                startInfo.ArgumentList.Add(arg);
+        }
+
+        try
+        {
+            System.Diagnostics.Process.Start(startInfo);
+        }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            // 1223 = ERROR_CANCELLED: the user declined the UAC prompt. Leave the app running as-is.
+            if (ex.NativeErrorCode == 1223)
+                return;
+
+            AppDiagnostics.Warning("Failed to restart StreamDecky as administrator.", ex);
+            return;
+        }
+
+        ExitApplication();
+    }
+
+    private void DisposeForegroundIntegrityMonitor()
+    {
+        _foregroundIntegrityTimer.Stop();
+        _foregroundIntegrityTimer.Tick -= ForegroundIntegrityTimer_Tick;
+        if (_foregroundIntegrityMonitor != null)
+            _foregroundIntegrityMonitor.HigherIntegrityForegroundDetected -= ShowHotkeyBlockedNotice;
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -686,6 +781,7 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         DisposeGamepadTogglePolling();
+        DisposeForegroundIntegrityMonitor();
         _viewModel.Dispose();
         DisposeTrayIcon();
         _hotkeyController.Unregister(this, HOTKEY_ID);

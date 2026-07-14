@@ -101,6 +101,8 @@ Actions:
 3. Confirm that the app is still running in the tray.
 4. Try opening the overlay from the main window to separate hotkey problems from overlay problems.
 5. If the problem only happens in one game or application, low-level input filtering, exclusive fullscreen mode, or anti-cheat may be the cause.
+6. If that game runs as administrator while StreamDecky does not, Windows suppresses the hotkey while the game is in focus. When this is detected, StreamDecky shows a warning banner at the top of the main window with a `Restart as administrator` button; the same elevation as the game is what makes the hotkey work, so use that button (or launch StreamDecky as administrator manually).
+7. Separately, if the game uses exclusive fullscreen, switching it to borderless windowed mode can help. Note that this addresses fullscreen input capture only; it does not change the game's elevation, so it does not resolve the administrator case in step 6.
 
 ## Recovery: import succeeds but the profile looks wrong
 

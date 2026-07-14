@@ -67,6 +67,29 @@
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
 
+        <!-- Banner action buttons (e.g. the elevated-app hotkey warning) -->
+        <Style x:Key="BannerButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Margin" Value="8,0,0,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Thin ScrollBar Thumb -->
         <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
             <Setter Property="Template">
@@ -245,6 +268,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="36"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -310,8 +334,21 @@
             </DockPanel>
         </Border>
 
+        <!-- Elevated-app hotkey warning banner (hidden until detected) -->
+        <Border x:Name="HotkeyElevationBanner" Grid.Row="1" Visibility="Collapsed"
+                Background="#3A2D12" BorderBrush="#C9A227" BorderThickness="0,0,0,1" Padding="14,9">
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Right" Content="Dismiss" Style="{StaticResource BannerButtonStyle}"
+                        Background="Transparent" Foreground="#CFC9B0" Click="DismissHotkeyElevationBanner_Click"/>
+                <Button DockPanel.Dock="Right" Content="Restart as administrator" Style="{StaticResource BannerButtonStyle}"
+                        Background="#6C5CE7" Click="RestartAsAdministrator_Click"/>
+                <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#F0D58A" FontSize="12"
+                           Text="A game or app running as administrator is in the foreground, which blocks the overlay hotkey while it is active. Restart StreamDecky as administrator to make the hotkey work inside it."/>
+            </DockPanel>
+        </Border>
+
         <!-- Main content area -->
-        <Grid x:Name="MainContentGrid" Grid.Row="1" ClipToBounds="True" SizeChanged="MainContentGrid_SizeChanged">
+        <Grid x:Name="MainContentGrid" Grid.Row="2" ClipToBounds="True" SizeChanged="MainContentGrid_SizeChanged">
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="DeckColumn" Width="*" MinWidth="660"/>
             <ColumnDefinition x:Name="EditorSplitterColumn" Width="Auto"/>
