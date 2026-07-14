@@ -404,6 +404,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         _ = RefreshOverlayBackgroundImageAsync();
         IsOverlayOpen = true;
+        ActivateMusicWidgetIfVisible();
     }
 
     [RelayCommand]
@@ -659,5 +660,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _autoSaveTimer.Stop();
         _autoSaveTimer.Dispose();
         DetachButtonHandlers();
+        _musicWidget?.Dispose();
     }
 }

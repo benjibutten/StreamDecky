@@ -63,6 +63,15 @@ Published releases are self-contained `win-x64` builds, so end users do not need
 - Shared multi-step action pipeline for clipboard rows
 - Session-only inline edits in the overlay without autosaving temporary changes
 
+### MicMixer music widget
+
+- Optional overlay widget (`Music` in the overlay top bar) that remote-controls MicMixer's built-in music player
+- Transport controls, seek, music/monitor volume, and a volume-link toggle synced with MicMixer
+- Delayed start with a configurable countdown that plays the track marked in the list, plus single-track mode
+- Library browsing with search, per-folder filter chips, click-to-mark and play/enqueue per track, and a reorderable queue
+- Compact mode hides the queue and library, keeping only the player controls
+- Draggable, resizable from both bottom corners, and persisted per profile; reconnects automatically when MicMixer is not running
+
 ### Gamepad support
 
 - Optional per-profile XInput support
@@ -140,6 +149,23 @@ StreamDecky/
 |   `-- Converters
 `-- MainWindow.xaml (+ code-behind)
 ```
+
+### MicMixer integration
+
+`Integrations/MicMixer` contains a reconnecting, same-user named-pipe client for
+MicMixer's built-in music player. It provides typed state, all configured library
+folders, folder management, transport, queue, volume, delayed-start, single-track,
+source-mode, and download operations. The client does not start MicMixer and has no
+UI or profile coupling.
+
+`ViewModels/MusicWidgetViewModel` owns an `IMicMixerClient` for the overlay music
+widget. The client is created lazily and `Start()` is only called once the widget is
+visible in an open overlay, so sessions that never show the widget pay no pipe cost.
+Widget visibility, compact mode, position, and size are persisted per profile.
+
+No extra service or companion process is required. The matching server runs inside
+`MicMixer.exe` and the connection remains offline until MicMixer is running for the
+same Windows user.
 
 ## Run locally
 

@@ -57,6 +57,17 @@ public partial class OverlayWindow : Window
     private double _quickTextPanelResizeStartX;
     private double _quickTextPanelResizeStartWidth;
     private double _quickTextPanelResizeStartHeight;
+    private bool _isDraggingMusicWidget;
+    private System.Windows.Point _musicWidgetDragStart;
+    private double _musicWidgetStartX;
+    private double _musicWidgetStartY;
+    private bool _isResizingMusicWidget;
+    private System.Windows.Point _musicWidgetResizeStart;
+    private double _musicWidgetResizeStartX;
+    private double _musicWidgetResizeStartWidth;
+    private double _musicWidgetResizeStartHeight;
+    private bool _isDraggingMusicSeek;
+    private bool _isUpdatingMusicSeekSlider;
     private readonly Dictionary<string, string> _quickTextSessionOverrides = new(StringComparer.Ordinal);
     private readonly HashSet<string> _quickTextEditingIds = new(StringComparer.Ordinal);
     public ObservableCollection<OverlayQuickTextSessionItemViewModel> OverlayQuickTextItems { get; } = new();
@@ -70,6 +81,7 @@ public partial class OverlayWindow : Window
         DataContext = viewModel;
         InitializeComponent();
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        _viewModel.MusicWidget.PropertyChanged += MusicWidget_PropertyChanged;
         RebuildOverlayQuickTextItems();
         _gamepadTimer.Tick += GamepadTimer_Tick;
     }
@@ -90,6 +102,7 @@ public partial class OverlayWindow : Window
         OverlayInterop.ForceFocus(this);
         EnsureOverlaySelection();
         Dispatcher.BeginInvoke(new Action(ClampQuickTextPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
+        Dispatcher.BeginInvoke(new Action(ClampMusicWidgetToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         UpdateGamepadPolling();
     }
 
@@ -766,6 +779,248 @@ public partial class OverlayWindow : Window
         _isResizingQuickTextPanel = false;
     }
 
+    private void MusicWidgetHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isDraggingMusicWidget = true;
+        _musicWidgetDragStart = e.GetPosition(this);
+        _musicWidgetStartX = _viewModel.MusicWidgetX;
+        _musicWidgetStartY = _viewModel.MusicWidgetY;
+
+        if (sender is UIElement element)
+            element.CaptureMouse();
+
+        e.Handled = true;
+    }
+
+    private void MusicWidgetHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isDraggingMusicWidget)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _musicWidgetDragStart.X;
+        double dy = pos.Y - _musicWidgetDragStart.Y;
+
+        UpdateMusicWidgetPosition(_musicWidgetStartX + dx, _musicWidgetStartY + dy);
+        e.Handled = true;
+    }
+
+    private void MusicWidgetHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _isDraggingMusicWidget = false;
+    }
+
+    private void UpdateMusicWidgetPosition(double desiredX, double desiredY)
+    {
+        double panelWidth = MusicWidgetPanel.ActualWidth > 1 ? MusicWidgetPanel.ActualWidth : _viewModel.MusicWidgetWidth;
+        double panelHeight = MusicWidgetPanel.ActualHeight > 1 ? MusicWidgetPanel.ActualHeight : _viewModel.MusicWidgetHeight;
+
+        double maxX = Math.Max(0, ActualWidth - panelWidth - 12);
+        double maxY = Math.Max(0, ActualHeight - panelHeight - 12);
+        double minY = Math.Min(42, maxY);
+
+        _viewModel.MusicWidgetX = Math.Clamp(desiredX, 0, maxX);
+        _viewModel.MusicWidgetY = Math.Clamp(desiredY, minY, maxY);
+    }
+
+    private void ClampMusicWidgetToBounds()
+    {
+        UpdateMusicWidgetPosition(_viewModel.MusicWidgetX, _viewModel.MusicWidgetY);
+    }
+
+    private void MusicWidgetResizeHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isResizingMusicWidget = true;
+        _musicWidgetResizeStart = e.GetPosition(this);
+        _musicWidgetResizeStartX = _viewModel.MusicWidgetX;
+        _musicWidgetResizeStartWidth = _viewModel.MusicWidgetWidth;
+        _musicWidgetResizeStartHeight = _viewModel.MusicWidgetHeight;
+
+        if (sender is UIElement element)
+            element.CaptureMouse();
+
+        e.Handled = true;
+    }
+
+    private void MusicWidgetResizeHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isResizingMusicWidget)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _musicWidgetResizeStart.X;
+        double dy = pos.Y - _musicWidgetResizeStart.Y;
+
+        // Bottom-left handle: the left edge follows the mouse while the right edge stays anchored.
+        double rightEdge = Math.Min(_musicWidgetResizeStartX + _musicWidgetResizeStartWidth, ActualWidth - 12);
+        double desiredWidth = _musicWidgetResizeStartWidth - dx;
+        double maxWidthByRightEdge = Math.Max(
+            Models.DeckProfile.MinMusicWidgetWidth,
+            Math.Min(Models.DeckProfile.MaxMusicWidgetWidth, rightEdge));
+        double clampedWidth = Math.Clamp(desiredWidth, Models.DeckProfile.MinMusicWidgetWidth, maxWidthByRightEdge);
+
+        double desiredHeight = _musicWidgetResizeStartHeight + dy;
+        double maxHeightByBounds = Math.Min(
+            Models.DeckProfile.MaxMusicWidgetHeight,
+            Math.Max(Models.DeckProfile.MinMusicWidgetHeight, ActualHeight - _viewModel.MusicWidgetY - 12));
+        double clampedHeight = Math.Clamp(desiredHeight, Models.DeckProfile.MinMusicWidgetHeight, maxHeightByBounds);
+
+        double desiredX = rightEdge - clampedWidth;
+        double maxX = Math.Max(0, ActualWidth - clampedWidth - 12);
+        _viewModel.MusicWidgetX = Math.Clamp(desiredX, 0, maxX);
+        _viewModel.MusicWidgetWidth = clampedWidth;
+        _viewModel.MusicWidgetHeight = clampedHeight;
+        ClampMusicWidgetToBounds();
+
+        e.Handled = true;
+    }
+
+    private void MusicWidgetResizeHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _isResizingMusicWidget = false;
+    }
+
+    private void MusicWidgetResizeRightHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isResizingMusicWidget = true;
+        _musicWidgetResizeStart = e.GetPosition(this);
+        _musicWidgetResizeStartX = _viewModel.MusicWidgetX;
+        _musicWidgetResizeStartWidth = _viewModel.MusicWidgetWidth;
+        _musicWidgetResizeStartHeight = _viewModel.MusicWidgetHeight;
+
+        if (sender is UIElement element)
+            element.CaptureMouse();
+
+        e.Handled = true;
+    }
+
+    private void MusicWidgetResizeRightHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isResizingMusicWidget)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _musicWidgetResizeStart.X;
+        double dy = pos.Y - _musicWidgetResizeStart.Y;
+
+        // Bottom-right handle: the left edge stays anchored while width and height follow the mouse.
+        double maxWidthByBounds = Math.Min(
+            Models.DeckProfile.MaxMusicWidgetWidth,
+            Math.Max(Models.DeckProfile.MinMusicWidgetWidth, ActualWidth - _musicWidgetResizeStartX - 12));
+        double clampedWidth = Math.Clamp(
+            _musicWidgetResizeStartWidth + dx,
+            Models.DeckProfile.MinMusicWidgetWidth,
+            maxWidthByBounds);
+
+        double maxHeightByBounds = Math.Min(
+            Models.DeckProfile.MaxMusicWidgetHeight,
+            Math.Max(Models.DeckProfile.MinMusicWidgetHeight, ActualHeight - _viewModel.MusicWidgetY - 12));
+        double clampedHeight = Math.Clamp(
+            _musicWidgetResizeStartHeight + dy,
+            Models.DeckProfile.MinMusicWidgetHeight,
+            maxHeightByBounds);
+
+        _viewModel.MusicWidgetWidth = clampedWidth;
+        _viewModel.MusicWidgetHeight = clampedHeight;
+        ClampMusicWidgetToBounds();
+
+        e.Handled = true;
+    }
+
+    private void MusicWidgetResizeRightHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _isResizingMusicWidget = false;
+    }
+
+    private void MusicWidget_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is not (nameof(MusicWidgetViewModel.PositionSeconds)
+            or nameof(MusicWidgetViewModel.DurationSeconds)))
+        {
+            return;
+        }
+
+        if (_isDraggingMusicSeek)
+            return;
+
+        var widget = _viewModel.MusicWidget;
+        _isUpdatingMusicSeekSlider = true;
+        try
+        {
+            MusicSeekSlider.Maximum = Math.Max(1, widget.DurationSeconds);
+            MusicSeekSlider.Value = Math.Clamp(widget.PositionSeconds, 0, MusicSeekSlider.Maximum);
+            MusicSeekSlider.IsEnabled = widget.DurationSeconds > 0;
+        }
+        finally
+        {
+            _isUpdatingMusicSeekSlider = false;
+        }
+    }
+
+    private void MusicSeek_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
+    {
+        _isDraggingMusicSeek = true;
+        _viewModel.MusicWidget.IsSeekDragging = true;
+    }
+
+    private void MusicSeek_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        _isDraggingMusicSeek = false;
+        _viewModel.MusicWidget.IsSeekDragging = false;
+        _ = _viewModel.MusicWidget.SeekToAsync(MusicSeekSlider.Value);
+    }
+
+    private void MusicSeekSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        // Only direct clicks on the track (IsMoveToPointEnabled) should seek here;
+        // programmatic updates and thumb drags are handled elsewhere.
+        if (_isUpdatingMusicSeekSlider || _isDraggingMusicSeek)
+            return;
+
+        _ = _viewModel.MusicWidget.SeekToAsync(e.NewValue);
+    }
+
+    private void MusicDelayOption_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string tag })
+            _viewModel.MusicWidget.SetDelayedStartSecondsCommand.Execute(tag);
+
+        MusicDelayMenuToggle.IsChecked = false;
+    }
+
+    private void MusicTrackRow_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: MusicTrackItemViewModel track })
+            return;
+
+        if (e.ClickCount >= 2)
+        {
+            _viewModel.MusicWidget.PlayTrackCommand.Execute(track);
+            e.Handled = true;
+            return;
+        }
+
+        _viewModel.MusicWidget.ToggleTrackSelectionCommand.Execute(track);
+    }
+
     private void QuickTextAction_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { DataContext: OverlayQuickTextSessionItemViewModel item })
@@ -874,6 +1129,14 @@ public partial class OverlayWindow : Window
         {
             Dispatcher.BeginInvoke(new Action(ClampQuickTextPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         }
+
+        if (e.PropertyName is nameof(MainViewModel.MusicWidgetVisible)
+            or nameof(MainViewModel.MusicWidgetMinimized)
+            or nameof(MainViewModel.MusicWidgetWidth)
+            or nameof(MainViewModel.MusicWidgetHeight))
+        {
+            Dispatcher.BeginInvoke(new Action(ClampMusicWidgetToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
     }
 
     private static System.Windows.Controls.TextBox? FindDescendant(
@@ -906,6 +1169,7 @@ public partial class OverlayWindow : Window
         _gamepadTimer.Stop();
         _gamepadTimer.Tick -= GamepadTimer_Tick;
         _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        _viewModel.MusicWidget.PropertyChanged -= MusicWidget_PropertyChanged;
 
         foreach (var item in OverlayQuickTextItems)
             item.PropertyChanged -= OverlayQuickTextItem_PropertyChanged;

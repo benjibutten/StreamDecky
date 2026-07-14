@@ -10,6 +10,10 @@ public class DeckProfile
     public const double MaxQuickTextPanelWidth = 700;
     public const double MinQuickTextPanelHeight = 180;
     public const double MaxQuickTextPanelHeight = 3000;
+    public const double MinMusicWidgetWidth = 300;
+    public const double MaxMusicWidgetWidth = 700;
+    public const double MinMusicWidgetHeight = 260;
+    public const double MaxMusicWidgetHeight = 3000;
 
     public int SchemaVersion { get; set; }
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
@@ -39,6 +43,12 @@ public class DeckProfile
     public double QuickTextPanelHeight { get; set; } = 380;
     public double QuickTextFontSize { get; set; } = 12;
     public List<ActionStep> QuickTextActionSteps { get; set; } = new();
+    public bool MusicWidgetVisible { get; set; }
+    public bool MusicWidgetMinimized { get; set; }
+    public double MusicWidgetX { get; set; } = 30;
+    public double MusicWidgetY { get; set; } = 96;
+    public double MusicWidgetWidth { get; set; } = 380;
+    public double MusicWidgetHeight { get; set; } = 540;
     public int LayoutRows { get; set; } = 3;
     public int LayoutColumns { get; set; } = 5;
     public List<DeckPage> Pages { get; set; } = new() { new DeckPage() };
@@ -113,5 +123,10 @@ public class DeckProfile
 
         QuickTextPanelX = Math.Max(0, QuickTextPanelX);
         QuickTextPanelY = Math.Max(0, QuickTextPanelY);
+
+        MusicWidgetWidth = Math.Clamp(MusicWidgetWidth == 0 ? 380 : MusicWidgetWidth, MinMusicWidgetWidth, MaxMusicWidgetWidth);
+        MusicWidgetHeight = Math.Clamp(MusicWidgetHeight == 0 ? 540 : MusicWidgetHeight, MinMusicWidgetHeight, MaxMusicWidgetHeight);
+        MusicWidgetX = Math.Max(0, MusicWidgetX);
+        MusicWidgetY = Math.Max(0, MusicWidgetY);
     }
 }

@@ -194,6 +194,12 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(QuickTextPanelY));
         OnPropertyChanged(nameof(QuickTextPanelWidth));
         OnPropertyChanged(nameof(QuickTextPanelHeight));
+        OnPropertyChanged(nameof(MusicWidgetVisible));
+        OnPropertyChanged(nameof(MusicWidgetMinimized));
+        OnPropertyChanged(nameof(MusicWidgetX));
+        OnPropertyChanged(nameof(MusicWidgetY));
+        OnPropertyChanged(nameof(MusicWidgetWidth));
+        OnPropertyChanged(nameof(MusicWidgetHeight));
         OnPropertyChanged(nameof(QuickTextFontSize));
         OnPropertyChanged(nameof(QuickTextPreviewLineHeight));
         OnPropertyChanged(nameof(QuickTextPreviewHeight));
@@ -212,6 +218,9 @@ public partial class MainViewModel
 
         RebuildProfileOptions();
         SyncSelectedProfileId();
+        if (IsOverlayOpen)
+            ActivateMusicWidgetIfVisible();
+
         ScheduleAutoSave();
         return true;
     }

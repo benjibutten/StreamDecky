@@ -124,6 +124,239 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Music widget icon geometries (Material Design icon paths, shared with MicMixer) -->
+        <Geometry x:Key="MusicIconPlay">M8,5.14V19.14L19,12.14L8,5.14Z</Geometry>
+        <Geometry x:Key="MusicIconPause">M14,19H18V5H14M6,19H10V5H6V19Z</Geometry>
+        <Geometry x:Key="MusicIconStop">M18,18H6V6H18V18Z</Geometry>
+        <Geometry x:Key="MusicIconSkipPrev">M6,18V6H8V18H6M9.5,12L18,6V18L9.5,12Z</Geometry>
+        <Geometry x:Key="MusicIconSkipNext">M16,18H18V6H16M6,18L14.5,12L6,6V18Z</Geometry>
+        <Geometry x:Key="MusicIconTimedPlay">M13,2.05C18.05,2.55 22,6.82 22,12C22,17.18 18.05,21.45 13,21.95V19.93C16.95,19.44 20,16.08 20,12C20,7.92 16.95,4.56 13,4.07V2.05M11,2.05V4.07C9.43,4.27 8,4.89 6.77,5.82L5.36,4.36C7,3.11 8.87,2.3 11,2.05M4.36,5.36L5.82,6.77C4.89,8 4.27,9.43 4.07,11H2.05C2.3,8.87 3.11,7 4.36,5.36M2.05,13H4.07C4.27,14.57 4.89,16 5.82,17.23L4.36,18.64C3.11,17 2.3,15.13 2.05,13M6.77,18.18C8,19.11 9.43,19.73 11,19.93V21.95C8.87,21.7 7,20.89 5.36,19.64L6.77,18.18M16,12L10,16V8L16,12Z</Geometry>
+        <Geometry x:Key="MusicIconSingleTrack">M14,17H12V9H10V7H14V17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V5H19V19Z</Geometry>
+        <Geometry x:Key="MusicIconLink">M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z</Geometry>
+        <Geometry x:Key="MusicIconClose">M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z</Geometry>
+        <Geometry x:Key="MusicIconRefresh">M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z</Geometry>
+        <Geometry x:Key="MusicIconChevronDown">M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z</Geometry>
+        <Geometry x:Key="MusicIconChevronUp">M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z</Geometry>
+        <Geometry x:Key="MusicIconPlus">M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z</Geometry>
+        <Geometry x:Key="MusicIconNote">M12,3V13.55A4,4 0 0,0 10,13A4,4 0 0,0 6,17A4,4 0 0,0 10,21A4,4 0 0,0 14,17V7H18V3H12Z</Geometry>
+        <Geometry x:Key="MusicIconMinimize">M20,14H4V10H20V14Z</Geometry>
+        <Geometry x:Key="MusicIconRestore">M4,8H8V4H20V16H16V20H4V8M16,8V14H18V6H10V8H16M6,12V18H14V12H6Z</Geometry>
+
+        <Style x:Key="MusicTransportButton"
+                TargetType="Button">
+            <Setter Property="Background"
+                    Value="#2AFFFFFF"/>
+            <Setter Property="Foreground"
+                    Value="#E6EEF8"/>
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+            <Setter Property="Width"
+                    Value="34"/>
+            <Setter Property="Height"
+                    Value="30"/>
+            <Setter Property="FontSize"
+                    Value="13"/>
+            <Setter Property="Padding"
+                    Value="0"/>
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                    Value="True">
+                                <Setter TargetName="Bd"
+                                        Property="Background"
+                                        Value="#3AFFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed"
+                                    Value="True">
+                                <Setter TargetName="Bd"
+                                        Property="Background"
+                                        Value="#46FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled"
+                                    Value="False">
+                                <Setter TargetName="Bd"
+                                        Property="Opacity"
+                                        Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MusicPrimaryTransportButton"
+                TargetType="Button"
+                BasedOn="{StaticResource MusicTransportButton}">
+            <Setter Property="Background"
+                    Value="#6C5CE7"/>
+            <Setter Property="Foreground"
+                    Value="White"/>
+            <Setter Property="Width"
+                    Value="44"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                    Value="True">
+                                <Setter TargetName="Bd"
+                                        Property="Background"
+                                        Value="#7C6CF7"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed"
+                                    Value="True">
+                                <Setter TargetName="Bd"
+                                        Property="Background"
+                                        Value="#5C4CD7"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled"
+                                    Value="False">
+                                <Setter TargetName="Bd"
+                                        Property="Opacity"
+                                        Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MusicFolderChipButton"
+                TargetType="Button">
+            <Setter Property="Background"
+                    Value="#2AFFFFFF"/>
+            <Setter Property="Foreground"
+                    Value="#E6EEF8"/>
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+            <Setter Property="Padding"
+                    Value="10,4"/>
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+            <Setter Property="Margin"
+                    Value="0,0,6,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                    Value="True">
+                                <Setter TargetName="Bd"
+                                        Property="Background"
+                                        Value="#3AFFFFFF"/>
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsSelected}"
+                                    Value="True">
+                                <Setter TargetName="Bd"
+                                        Property="Background"
+                                        Value="#4A6EA0"/>
+                                <Setter Property="Foreground"
+                                        Value="White"/>
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Minimal scrollbar used inside the music widget. The transparent
+             track avoids the bright native WPF gutter against the dark panel. -->
+        <Style x:Key="MusicScrollPageButton"
+                TargetType="RepeatButton">
+            <Setter Property="OverridesDefaultStyle"
+                    Value="True"/>
+            <Setter Property="Focusable"
+                    Value="False"/>
+            <Setter Property="IsTabStop"
+                    Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Rectangle Fill="Transparent"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <ControlTemplate x:Key="MusicScrollThumb"
+                TargetType="Thumb">
+            <Border x:Name="ThumbBackground"
+                    Background="#708B7CF7"
+                    CornerRadius="3"/>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver"
+                        Value="True">
+                    <Setter TargetName="ThumbBackground"
+                            Property="Background"
+                            Value="#A0A89BFF"/>
+                </Trigger>
+                <Trigger Property="IsDragging"
+                        Value="True">
+                    <Setter TargetName="ThumbBackground"
+                            Property="Background"
+                            Value="#D0B9A8F5"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+        <Style x:Key="MusicScrollBar"
+                TargetType="ScrollBar">
+            <Setter Property="OverridesDefaultStyle"
+                    Value="True"/>
+            <Setter Property="Width"
+                    Value="6"/>
+            <Setter Property="MinWidth"
+                    Value="6"/>
+            <Setter Property="Margin"
+                    Value="3,0,0,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Track x:Name="PART_Track"
+                                   IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource MusicScrollPageButton}"
+                                                  Command="ScrollBar.PageUpCommand"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource MusicScrollPageButton}"
+                                                  Command="ScrollBar.PageDownCommand"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Template="{StaticResource MusicScrollThumb}"
+                                           Margin="1,3"
+                                           MinHeight="24"/>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <!-- Full screen overlay background with slight transparency -->
@@ -197,6 +430,61 @@
                             Style="{StaticResource TopMiniButton}"/>
                 </StackPanel>
             </Border>
+
+            <Button DockPanel.Dock="Right"
+                    Command="{Binding ToggleMusicWidgetCommand}"
+                    ToolTip="Show or hide the MicMixer music widget"
+                    Foreground="#EEEEEE"
+                    BorderThickness="0"
+                    Padding="12,8"
+                    Margin="0,0,8,0"
+                    FontSize="13"
+                    Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background"
+                                Value="#2F000000"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd"
+                                            Background="{TemplateBinding Background}"
+                                            CornerRadius="6"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding MusicWidgetVisible}"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#4A6EA0"/>
+                                        </DataTrigger>
+                                        <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#4A000000"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource MusicIconNote}"
+                          Width="11"
+                          Height="11"
+                          Stretch="Uniform"
+                          Fill="#EEEEEE"
+                          VerticalAlignment="Center"
+                          Margin="0,0,6,0"/>
+                    <TextBlock Text="Music"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
 
             <Button Content="＋ Note"
                     DockPanel.Dock="Right"
@@ -1322,6 +1610,1045 @@
                               Stroke="#264C4C4C" StrokeThickness="1" SnapsToDevicePixels="True"/>
                     </Grid>
                 </Border>
+            </Grid>
+        </Border>
+
+        <!-- MicMixer music widget -->
+        <Border x:Name="MusicWidgetPanel"
+                Width="{Binding MusicWidgetWidth, Mode=TwoWay}"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Panel.ZIndex="9"
+                Visibility="{Binding MusicWidgetVisible, Converter={StaticResource BoolToVisibility}}"
+                Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
+                Opacity="{Binding ButtonOverlayOpacity}"
+                BorderBrush="#44FFFFFF"
+                BorderThickness="1"
+                CornerRadius="10">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Height"
+                            Value="{Binding MusicWidgetHeight}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding MusicWidgetMinimized}"
+                                Value="True">
+                            <Setter Property="Height"
+                                    Value="Auto"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding MusicWidget.ShowPlayerControls}"
+                                Value="False">
+                            <Setter Property="Height"
+                                    Value="Auto"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Border.RenderTransform>
+                <TranslateTransform X="{Binding MusicWidgetX, Mode=TwoWay}"
+                                    Y="{Binding MusicWidgetY, Mode=TwoWay}"/>
+            </Border.RenderTransform>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Rectangle Grid.RowSpan="4"
+                           Opacity="0.78"
+                           Visibility="{Binding OverlayBackgroundImagePath, Converter={StaticResource HasTextVisibility}}">
+                    <Rectangle.Fill>
+                        <ImageBrush ImageSource="{Binding OverlayBackgroundImagePath, Converter={StaticResource PathToImageSource}}"
+                                    Stretch="UniformToFill"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+
+                <Border Grid.RowSpan="4"
+                        Background="#A810141D"
+                        CornerRadius="10"/>
+
+                <!-- Header / drag handle -->
+                <Border Grid.Row="0"
+                        Background="#28000000"
+                        CornerRadius="10,10,0,0"
+                        Cursor="SizeAll"
+                        MouseLeftButtonDown="MusicWidgetHandle_MouseLeftButtonDown"
+                        MouseMove="MusicWidgetHandle_MouseMove"
+                        MouseLeftButtonUp="MusicWidgetHandle_MouseLeftButtonUp">
+                    <DockPanel Margin="10,7,8,7"
+                            LastChildFill="True">
+                        <StackPanel DockPanel.Dock="Right"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                            <Button Command="{Binding ToggleMusicWidgetMinimizedCommand}"
+                                    Style="{StaticResource TopMiniButton}"
+                                    Width="22"
+                                    Height="20"
+                                    Padding="0"
+                                    ToolTip="Compact mode – hides the queue and library">
+                                <Path Width="10"
+                                      Height="10"
+                                      Stretch="Uniform"
+                                      Fill="#DCE7F2">
+                                    <Path.Style>
+                                        <Style TargetType="Path">
+                                            <Setter Property="Data"
+                                                    Value="{StaticResource MusicIconMinimize}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding MusicWidgetMinimized}"
+                                                        Value="True">
+                                                    <Setter Property="Data"
+                                                            Value="{StaticResource MusicIconRestore}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Path.Style>
+                                </Path>
+                            </Button>
+                            <Button Command="{Binding HideMusicWidgetCommand}"
+                                    Style="{StaticResource TopMiniButton}"
+                                    Width="22"
+                                    Height="20"
+                                    Padding="0"
+                                    Margin="2,0,0,0"
+                                    ToolTip="Hide the music widget">
+                                <Path Data="{StaticResource MusicIconClose}"
+                                      Width="9"
+                                      Height="9"
+                                      Stretch="Uniform"
+                                      Fill="#DCE7F2"/>
+                            </Button>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                            <Path Data="{StaticResource MusicIconNote}"
+                                  Width="12"
+                                  Height="12"
+                                  Stretch="Uniform"
+                                  Fill="#B9A8F5"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,7,0"/>
+                            <TextBlock Text="MicMixer Music"
+                                       Foreground="#EAF2FA"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <Ellipse Width="8"
+                                     Height="8"
+                                     Margin="9,1,0,0"
+                                     VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill"
+                                                Value="#8B9FB5"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding MusicWidget.ConnectionState}"
+                                                    Value="Connected">
+                                                <Setter Property="Fill"
+                                                        Value="#5FCB8C"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding MusicWidget.ConnectionState}"
+                                                    Value="Connecting">
+                                                <Setter Property="Fill"
+                                                        Value="#E8B45A"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding MusicWidget.ConnectionState}"
+                                                    Value="Unavailable">
+                                                <Setter Property="Fill"
+                                                        Value="#E36B6B"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Disconnected card + connected-state banners -->
+                <StackPanel Grid.Row="1">
+                    <StackPanel Margin="12,14,12,16"
+                            Visibility="{Binding MusicWidget.IsConnected, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                        <TextBlock Text="MicMixer is not running"
+                                   Foreground="#EAF2FA"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding MusicWidget.ConnectionStatusText}"
+                                   Foreground="#8B9FB5"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Margin="0,6,0,0"/>
+                        <Button Command="{Binding MusicWidget.RetryConnectCommand}"
+                                Style="{StaticResource MusicTransportButton}"
+                                Width="Auto"
+                                Height="Auto"
+                                Padding="12,6"
+                                FontSize="11.5"
+                                HorizontalAlignment="Left"
+                                Margin="0,10,0,0"
+                                Visibility="{Binding MusicWidget.ShowRetryButton, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource MusicIconRefresh}"
+                                      Width="11"
+                                      Height="11"
+                                      Stretch="Uniform"
+                                      Fill="#E6EEF8"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,6,0"/>
+                                <TextBlock Text="Try again"
+                                           VerticalAlignment="Center"
+                                           FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Visibility="{Binding MusicWidget.IsConnected, Converter={StaticResource BoolToVisibility}}">
+                        <Border Margin="10,10,10,0"
+                                Padding="10,8"
+                                Background="#2EFFB157"
+                                BorderBrush="#66FFB157"
+                                BorderThickness="1"
+                                CornerRadius="7"
+                                Visibility="{Binding MusicWidget.IsExternalMode, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <TextBlock Text="MicMixer is in external capture mode, so direct playback control is unavailable."
+                                           Foreground="#FFD9A8"
+                                           FontSize="11"
+                                           TextWrapping="Wrap"/>
+                                <Button Content="Switch to library mode"
+                                        Command="{Binding MusicWidget.SwitchToLibraryModeCommand}"
+                                        Style="{StaticResource MusicTransportButton}"
+                                        Width="Auto"
+                                        Height="Auto"
+                                        Padding="10,5"
+                                        FontSize="11"
+                                        HorizontalAlignment="Left"
+                                        Margin="0,8,0,2"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Margin="10,10,10,0"
+                                Padding="10,7"
+                                Background="#2EFF6B6B"
+                                BorderBrush="#55FF6B6B"
+                                BorderThickness="1"
+                                CornerRadius="7"
+                                Visibility="{Binding MusicWidget.PlaybackBlockedReason, Converter={StaticResource HasTextVisibility}}">
+                            <TextBlock Text="{Binding MusicWidget.PlaybackBlockedReason}"
+                                       Foreground="#FFB4B4"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"/>
+                        </Border>
+
+                        <TextBlock Margin="12,8,12,0"
+                                   FontSize="10.5"
+                                   Foreground="#D9B25F"
+                                   TextWrapping="Wrap"
+                                   Text="Routing is off in MicMixer — the music is only heard locally."
+                                   Visibility="{Binding MusicWidget.ShowRoutingHint, Converter={StaticResource BoolToVisibility}}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Core player: now playing, seek, transport, volumes -->
+                <StackPanel Grid.Row="2"
+                        Visibility="{Binding MusicWidget.ShowPlayerControls, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Margin"
+                                    Value="12,8,12,4"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding MusicWidgetMinimized}"
+                                        Value="True">
+                                    <Setter Property="Margin"
+                                            Value="12,8,12,12"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="{Binding MusicWidget.NowPlayingText}"
+                               Foreground="#ECF3FA"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding MusicWidget.NowPlayingText}"/>
+
+                    <Grid Margin="0,7,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="MusicSeekSlider"
+                                Minimum="0"
+                                Maximum="1"
+                                IsEnabled="False"
+                                VerticalAlignment="Center"
+                                IsMoveToPointEnabled="True"
+                                Thumb.DragStarted="MusicSeek_DragStarted"
+                                Thumb.DragCompleted="MusicSeek_DragCompleted"
+                                ValueChanged="MusicSeekSlider_ValueChanged"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding MusicWidget.TrackTimeText}"
+                                   Foreground="#8B9FB5"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"
+                                   MinWidth="78"
+                                   TextAlignment="Right"
+                                   Margin="8,0,0,0"/>
+                    </Grid>
+
+                    <DockPanel Margin="0,8,0,0"
+                            LastChildFill="False">
+                        <Button DockPanel.Dock="Left"
+                                Command="{Binding MusicWidget.PreviousCommand}"
+                                Style="{StaticResource MusicTransportButton}"
+                                ToolTip="Previous / restart track">
+                            <Path Data="{StaticResource MusicIconSkipPrev}"
+                                  Width="13"
+                                  Height="13"
+                                  Stretch="Uniform"
+                                  Fill="#E6EEF8"/>
+                        </Button>
+                        <Button DockPanel.Dock="Left"
+                                Command="{Binding MusicWidget.TogglePlayPauseCommand}"
+                                Style="{StaticResource MusicPrimaryTransportButton}"
+                                Margin="6,0,0,0"
+                                ToolTip="Play / pause">
+                            <Path Width="13"
+                                  Height="13"
+                                  Stretch="Uniform"
+                                  Fill="White">
+                                <Path.Style>
+                                    <Style TargetType="Path">
+                                        <Setter Property="Data"
+                                                Value="{StaticResource MusicIconPlay}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding MusicWidget.IsPlaying}"
+                                                    Value="True">
+                                                <Setter Property="Data"
+                                                        Value="{StaticResource MusicIconPause}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                        </Button>
+                        <Button DockPanel.Dock="Left"
+                                Command="{Binding MusicWidget.StopPlaybackCommand}"
+                                Style="{StaticResource MusicTransportButton}"
+                                Margin="6,0,0,0"
+                                ToolTip="Stop and deselect the active track">
+                            <Path Data="{StaticResource MusicIconStop}"
+                                  Width="12"
+                                  Height="12"
+                                  Stretch="Uniform"
+                                  Fill="#E6EEF8"/>
+                        </Button>
+                        <Button DockPanel.Dock="Left"
+                                Command="{Binding MusicWidget.NextCommand}"
+                                Style="{StaticResource MusicTransportButton}"
+                                Margin="6,0,0,0"
+                                ToolTip="Next track">
+                            <Path Data="{StaticResource MusicIconSkipNext}"
+                                  Width="13"
+                                  Height="13"
+                                  Stretch="Uniform"
+                                  Fill="#E6EEF8"/>
+                        </Button>
+
+                        <Button DockPanel.Dock="Left"
+                                Command="{Binding MusicWidget.ToggleDelayedPlayCommand}"
+                                Margin="12,0,0,0"
+                                Width="Auto"
+                                Padding="12,0"
+                                FontSize="11.5"
+                                ToolTip="{Binding MusicWidget.DelayedPlayToolTip}"
+                                ToolTipService.ShowDuration="60000">
+                            <Button.Style>
+                                <Style TargetType="Button"
+                                        BasedOn="{StaticResource MusicTransportButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding MusicWidget.IsDelayedStartActive}"
+                                                Value="True">
+                                            <Setter Property="Background"
+                                                    Value="#6C5CE7"/>
+                                            <Setter Property="Foreground"
+                                                    Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource MusicIconTimedPlay}"
+                                      Width="13"
+                                      Height="13"
+                                      Stretch="Uniform"
+                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,5,0"/>
+                                <TextBlock Text="{Binding MusicWidget.DelayedPlayText}"
+                                        VerticalAlignment="Center"
+                                        FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                        <ToggleButton x:Name="MusicDelayMenuToggle"
+                                      DockPanel.Dock="Left"
+                                      Width="18"
+                                      Height="30"
+                                      Margin="2,0,0,0"
+                                      Cursor="Hand"
+                                      ToolTip="Choose the delay length">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="Bd"
+                                            Background="#2AFFFFFF"
+                                            CornerRadius="6">
+                                        <Path Data="{StaticResource MusicIconChevronDown}"
+                                              Width="9"
+                                              Height="9"
+                                              Stretch="Uniform"
+                                              Fill="#E6EEF8"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#3AFFFFFF"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#4A6EA0"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <Popup PlacementTarget="{Binding ElementName=MusicDelayMenuToggle}"
+                               Placement="Bottom"
+                               StaysOpen="False"
+                               AllowsTransparency="True"
+                               PopupAnimation="Fade"
+                               IsOpen="{Binding IsChecked, ElementName=MusicDelayMenuToggle, Mode=TwoWay}">
+                            <Border Background="#F0141B26"
+                                    BorderBrush="#44FFFFFF"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="8"
+                                    Margin="4">
+                                <StackPanel>
+                                    <TextBlock Text="Delay before start"
+                                               Foreground="#C4D3E4"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Margin="2,0,2,6"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="1 s"
+                                                Tag="1"
+                                                Click="MusicDelayOption_Click"
+                                                Style="{StaticResource MusicFolderChipButton}"/>
+                                        <Button Content="2 s"
+                                                Tag="2"
+                                                Click="MusicDelayOption_Click"
+                                                Style="{StaticResource MusicFolderChipButton}"/>
+                                        <Button Content="3 s"
+                                                Tag="3"
+                                                Click="MusicDelayOption_Click"
+                                                Style="{StaticResource MusicFolderChipButton}"/>
+                                        <Button Content="5 s"
+                                                Tag="5"
+                                                Click="MusicDelayOption_Click"
+                                                Style="{StaticResource MusicFolderChipButton}"/>
+                                        <Button Content="10 s"
+                                                Tag="10"
+                                                Click="MusicDelayOption_Click"
+                                                Style="{StaticResource MusicFolderChipButton}"
+                                                Margin="0,0,0,6"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+
+                        <Button DockPanel.Dock="Right"
+                                Command="{Binding MusicWidget.CycleSingleTrackModeCommand}"
+                                Width="34"
+                                Height="30"
+                                Cursor="Hand"
+                                ToolTipService.ShowDuration="60000">
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <TextBlock Text="Single-track mode: stop when the current track ends instead of auto-advancing. Click to cycle Off → Once → Always."
+                                               MaxWidth="260"
+                                               TextWrapping="Wrap"/>
+                                </ToolTip>
+                            </Button.ToolTip>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd"
+                                            Background="#2AFFFFFF"
+                                            CornerRadius="6">
+                                        <Path x:Name="Glyph"
+                                              Data="{StaticResource MusicIconSingleTrack}"
+                                              Width="13"
+                                              Height="13"
+                                              Stretch="Uniform"
+                                              Fill="#8B9FB5"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#3AFFFFFF"/>
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding MusicWidget.SingleTrackModeText}"
+                                                Value="Once">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#3A2F63"/>
+                                            <Setter TargetName="Bd"
+                                                    Property="BorderBrush"
+                                                    Value="#8B7CF7"/>
+                                            <Setter TargetName="Bd"
+                                                    Property="BorderThickness"
+                                                    Value="1"/>
+                                            <Setter TargetName="Glyph"
+                                                    Property="Fill"
+                                                    Value="#C9BEFF"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding MusicWidget.SingleTrackModeText}"
+                                                Value="Always">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#6C5CE7"/>
+                                            <Setter TargetName="Glyph"
+                                                    Property="Fill"
+                                                    Value="White"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </DockPanel>
+
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"
+                                    SharedSizeGroup="MusicVolumeLabels"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Music"
+                                   Foreground="#8B9FB5"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,10,0"/>
+                        <Slider Grid.Column="1"
+                                Minimum="0"
+                                Maximum="100"
+                                SmallChange="5"
+                                LargeChange="10"
+                                VerticalAlignment="Center"
+                                Value="{Binding MusicWidget.MusicVolumePercent, Mode=TwoWay}"
+                                ToolTip="How loud the music is for others (in the mic channel)"/>
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding MusicWidget.MusicVolumePercent, StringFormat={}{0:0} %}"
+                                   Foreground="#ECF3FA"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   MinWidth="36"
+                                   TextAlignment="Right"
+                                   Margin="8,0,0,0"/>
+
+                        <TextBlock Grid.Row="1"
+                                   Text="Monitor"
+                                   Foreground="#8B9FB5"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"
+                                   Margin="0,6,10,0"
+                                   Visibility="{Binding MusicWidget.HasMonitorOutput, Converter={StaticResource BoolToVisibility}}"/>
+                        <Slider Grid.Row="1"
+                                Grid.Column="1"
+                                Minimum="0"
+                                Maximum="100"
+                                SmallChange="5"
+                                LargeChange="10"
+                                VerticalAlignment="Center"
+                                Margin="0,6,0,0"
+                                Value="{Binding MusicWidget.MonitorVolumePercent, Mode=TwoWay}"
+                                ToolTip="How loud the music is in your own headphones"
+                                Visibility="{Binding MusicWidget.HasMonitorOutput, Converter={StaticResource BoolToVisibility}}"/>
+                        <TextBlock Grid.Row="1"
+                                   Grid.Column="2"
+                                   Text="{Binding MusicWidget.MonitorVolumePercent, StringFormat={}{0:0} %}"
+                                   Foreground="#ECF3FA"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   MinWidth="36"
+                                   TextAlignment="Right"
+                                   Margin="8,6,0,0"
+                                   Visibility="{Binding MusicWidget.HasMonitorOutput, Converter={StaticResource BoolToVisibility}}"/>
+
+                        <Button Grid.Column="3"
+                                Grid.RowSpan="2"
+                                Command="{Binding MusicWidget.ToggleVolumesLinkedCommand}"
+                                Width="26"
+                                Height="26"
+                                Margin="8,0,0,0"
+                                VerticalAlignment="Center"
+                                Cursor="Hand"
+                                ToolTipService.ShowDuration="60000"
+                                Visibility="{Binding MusicWidget.HasMonitorOutput, Converter={StaticResource BoolToVisibility}}">
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <TextBlock Text="Sync the volumes — drag one slider and the other follows, keeping the difference between them. Mirrors MicMixer's volume link."
+                                               MaxWidth="260"
+                                               TextWrapping="Wrap"/>
+                                </ToolTip>
+                            </Button.ToolTip>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd"
+                                            Background="Transparent"
+                                            CornerRadius="6">
+                                        <Path x:Name="LinkGlyph"
+                                              Data="{StaticResource MusicIconLink}"
+                                              Width="14"
+                                              Height="14"
+                                              Stretch="Uniform"
+                                              Fill="#8B9FB5"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#2AFFFFFF"/>
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding MusicWidget.VolumesLinked}"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#3A2F63"/>
+                                            <Setter TargetName="LinkGlyph"
+                                                    Property="Fill"
+                                                    Value="#C9BEFF"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock Text="{Binding MusicWidget.ErrorMessage}"
+                               Foreground="#FF9B9B"
+                               FontSize="10.5"
+                               TextWrapping="Wrap"
+                               Margin="0,7,0,0"
+                               Visibility="{Binding MusicWidget.ErrorMessage, Converter={StaticResource HasTextVisibility}}"/>
+                </StackPanel>
+
+                <!-- Queue + library (hidden in compact mode) -->
+                <Grid Grid.Row="3"
+                        Visibility="{Binding MusicWidget.ShowPlayerControls, Converter={StaticResource BoolToVisibility}}">
+                    <Grid Margin="12,4,12,10"
+                            Visibility="{Binding MusicWidgetMinimized, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Queue -->
+                        <DockPanel Grid.Row="0"
+                                Margin="0,4,0,0"
+                                Visibility="{Binding MusicWidget.HasQueue, Converter={StaticResource BoolToVisibility}}">
+                            <Button Content="Clear"
+                                    DockPanel.Dock="Right"
+                                    Command="{Binding MusicWidget.ClearQueueCommand}"
+                                    Style="{StaticResource TopMiniButton}"
+                                    FontSize="11"
+                                    ToolTip="Clear the queue"/>
+                            <TextBlock Text="{Binding MusicWidget.QueueCountText}"
+                                       Foreground="#B9A8F5"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <ScrollViewer Grid.Row="1"
+                                      MaxHeight="126"
+                                      Margin="0,4,0,2"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      Visibility="{Binding MusicWidget.HasQueue, Converter={StaticResource BoolToVisibility}}">
+                            <ScrollViewer.Resources>
+                                <Style TargetType="ScrollBar"
+                                       BasedOn="{StaticResource MusicScrollBar}"/>
+                            </ScrollViewer.Resources>
+                            <ItemsControl ItemsSource="{Binding MusicWidget.Queue}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#1CFFFFFF"
+                                                CornerRadius="5"
+                                                Padding="6,2"
+                                                Margin="0,0,0,3">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding NumberText}"
+                                                           Foreground="#B9A8F5"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"
+                                                           MinWidth="20"/>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding Name}"
+                                                           Foreground="#ECF3FA"
+                                                           FontSize="11.5"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           VerticalAlignment="Center"
+                                                           Margin="2,0,6,0"/>
+                                                <Button Grid.Column="2"
+                                                        Command="{Binding DataContext.MusicWidget.MoveQueueItemUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        Style="{StaticResource TopMiniButton}"
+                                                        Padding="4,2"
+                                                        ToolTip="Move up">
+                                                    <Path Data="{StaticResource MusicIconChevronUp}"
+                                                          Width="9"
+                                                          Height="9"
+                                                          Stretch="Uniform"
+                                                          Fill="#DCE7F2"/>
+                                                </Button>
+                                                <Button Grid.Column="3"
+                                                        Command="{Binding DataContext.MusicWidget.MoveQueueItemDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        Style="{StaticResource TopMiniButton}"
+                                                        Padding="4,2"
+                                                        ToolTip="Move down">
+                                                    <Path Data="{StaticResource MusicIconChevronDown}"
+                                                          Width="9"
+                                                          Height="9"
+                                                          Stretch="Uniform"
+                                                          Fill="#DCE7F2"/>
+                                                </Button>
+                                                <Button Grid.Column="4"
+                                                        Command="{Binding DataContext.MusicWidget.RemoveQueueItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        Style="{StaticResource TopMiniButton}"
+                                                        Padding="4,2"
+                                                        ToolTip="Remove from the queue">
+                                                    <Path Data="{StaticResource MusicIconClose}"
+                                                          Width="8"
+                                                          Height="8"
+                                                          Stretch="Uniform"
+                                                          Fill="#DCE7F2"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <!-- Library header -->
+                        <DockPanel Grid.Row="2"
+                                Margin="0,6,0,0">
+                            <Button DockPanel.Dock="Right"
+                                    Command="{Binding MusicWidget.RefreshLibraryCommand}"
+                                    Style="{StaticResource TopMiniButton}"
+                                    Padding="6,2"
+                                    ToolTip="Rescan the music library">
+                                <Path Data="{StaticResource MusicIconRefresh}"
+                                      Width="11"
+                                      Height="11"
+                                      Stretch="Uniform"
+                                      Fill="#DCE7F2"/>
+                            </Button>
+                            <TextBlock DockPanel.Dock="Right"
+                                       Text="{Binding MusicWidget.TrackCountText}"
+                                       Foreground="#8B9FB5"
+                                       FontSize="10.5"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <TextBlock Text="Library"
+                                       Foreground="#EAF2FA"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+
+                        <!-- Search -->
+                        <Grid Grid.Row="3"
+                                Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding MusicWidget.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Foreground="#EFF4FA"
+                                     Background="#26000000"
+                                     BorderBrush="#3CFFFFFF"
+                                     BorderThickness="1"
+                                     Padding="8,5"
+                                     FontSize="12"
+                                     ToolTip="Search the whole library"/>
+                            <Button Grid.Column="1"
+                                    Command="{Binding MusicWidget.ClearSearchCommand}"
+                                    Style="{StaticResource TopMiniButton}"
+                                    Margin="6,0,0,0"
+                                    Visibility="{Binding MusicWidget.SearchQuery, Converter={StaticResource HasTextVisibility}}">
+                                <Path Data="{StaticResource MusicIconClose}"
+                                      Width="9"
+                                      Height="9"
+                                      Stretch="Uniform"
+                                      Fill="#DCE7F2"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- Folder filter chips -->
+                        <ScrollViewer Grid.Row="4"
+                                      Margin="0,8,0,0"
+                                      MaxHeight="62"
+                                      VerticalScrollBarVisibility="Hidden"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      CanContentScroll="False"
+                                      Visibility="{Binding MusicWidget.ShowFolderFilter, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl ItemsSource="{Binding MusicWidget.Folders}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding Name}"
+                                                ToolTip="{Binding Name}"
+                                                FontSize="11"
+                                                Style="{StaticResource MusicFolderChipButton}"
+                                                Command="{Binding DataContext.MusicWidget.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <!-- Track list -->
+                        <TextBlock Grid.Row="5"
+                                   Text="No tracks matched the current filter or search."
+                                   Foreground="#8B9FB5"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   VerticalAlignment="Top"
+                                   Margin="0,12,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility"
+                                            Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding MusicWidget.HasTracks}"
+                                                        Value="False"/>
+                                                <Condition Binding="{Binding MusicWidget.IsLoadingTracks}"
+                                                        Value="False"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility"
+                                                    Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <ItemsControl Grid.Row="5"
+                                      Margin="0,6,0,0"
+                                      ItemsSource="{Binding MusicWidget.Tracks}"
+                                      VirtualizingPanel.IsVirtualizing="True"
+                                      VirtualizingPanel.VirtualizationMode="Recycling"
+                                      ScrollViewer.CanContentScroll="True">
+                            <ItemsControl.Template>
+                                <ControlTemplate TargetType="ItemsControl">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled"
+                                                  CanContentScroll="True"
+                                                  Focusable="False">
+                                        <ScrollViewer.Resources>
+                                            <Style TargetType="ScrollBar"
+                                                   BasedOn="{StaticResource MusicScrollBar}"/>
+                                        </ScrollViewer.Resources>
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </ControlTemplate>
+                            </ItemsControl.Template>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="TrackRow"
+                                            Background="#14FFFFFF"
+                                            BorderBrush="Transparent"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="7,4"
+                                            Margin="0,0,0,4"
+                                            Cursor="Hand"
+                                            ToolTip="Click to mark for the play and delayed-start buttons · double-click to play"
+                                            ToolTipService.InitialShowDelay="900"
+                                            MouseLeftButtonDown="MusicTrackRow_MouseLeftButtonDown">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}"
+                                                           Foreground="#ECF3FA"
+                                                           FontSize="12"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding Name}"/>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding FolderName}"
+                                                               Foreground="#7F8FA2"
+                                                               FontSize="10"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding QueueBadgeText}"
+                                                               Foreground="#B9A8F5"
+                                                               FontSize="10"
+                                                               Margin="8,0,0,0"
+                                                               Visibility="{Binding QueueBadgeText, Converter={StaticResource HasTextVisibility}}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <Button Grid.Column="1"
+                                                    Command="{Binding DataContext.MusicWidget.PlayTrackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource TopMiniButton}"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip="Play now">
+                                                <Path Data="{StaticResource MusicIconPlay}"
+                                                      Width="10"
+                                                      Height="10"
+                                                      Stretch="Uniform"
+                                                      Fill="#DCE7F2"/>
+                                            </Button>
+                                            <Button Grid.Column="2"
+                                                    Command="{Binding DataContext.MusicWidget.EnqueueTrackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource TopMiniButton}"
+                                                    Margin="2,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip="Add to the queue">
+                                                <Path Data="{StaticResource MusicIconPlus}"
+                                                      Width="10"
+                                                      Height="10"
+                                                      Stretch="Uniform"
+                                                      Fill="#DCE7F2"/>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsSelected}"
+                                                Value="True">
+                                            <Setter TargetName="TrackRow"
+                                                    Property="Background"
+                                                    Value="#2E4A6EA0"/>
+                                            <Setter TargetName="TrackRow"
+                                                    Property="BorderBrush"
+                                                    Value="#887FB2E5"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsCurrent}"
+                                                Value="True">
+                                            <Setter TargetName="TrackRow"
+                                                    Property="Background"
+                                                    Value="#336C5CE7"/>
+                                            <Setter TargetName="TrackRow"
+                                                    Property="BorderBrush"
+                                                    Value="#886C5CE7"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Button Grid.Row="6"
+                                Content="Load more tracks"
+                                Command="{Binding MusicWidget.LoadMoreTracksCommand}"
+                                Style="{StaticResource TopMiniButton}"
+                                FontSize="11"
+                                HorizontalAlignment="Center"
+                                Margin="0,2,0,0"
+                                Visibility="{Binding MusicWidget.HasMoreTracks, Converter={StaticResource BoolToVisibility}}"/>
+
+                        <TextBlock Grid.Row="7"
+                                   Text="{Binding MusicWidget.StatusText}"
+                                   Foreground="#7F8FA2"
+                                   FontSize="10.5"
+                                   TextWrapping="Wrap"
+                                   Margin="0,6,0,0"
+                                   Visibility="{Binding MusicWidget.StatusText, Converter={StaticResource HasTextVisibility}}"/>
+                    </Grid>
+                </Grid>
+
+                <!-- Bottom corner resize handles (full mode only) -->
+                <Grid Grid.RowSpan="4"
+                        Visibility="{Binding MusicWidget.ShowPlayerControls, Converter={StaticResource BoolToVisibility}}">
+                    <Border Width="14"
+                            Height="14"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Bottom"
+                            Margin="-7,0,0,-7"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Cursor="SizeNESW"
+                            Panel.ZIndex="20"
+                            Visibility="{Binding MusicWidgetMinimized, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"
+                            MouseLeftButtonDown="MusicWidgetResizeHandle_MouseLeftButtonDown"
+                            MouseMove="MusicWidgetResizeHandle_MouseMove"
+                            MouseLeftButtonUp="MusicWidgetResizeHandle_MouseLeftButtonUp"/>
+                    <Border Width="14"
+                            Height="14"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,-7,-7"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Cursor="SizeNWSE"
+                            Panel.ZIndex="20"
+                            Visibility="{Binding MusicWidgetMinimized, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"
+                            MouseLeftButtonDown="MusicWidgetResizeRightHandle_MouseLeftButtonDown"
+                            MouseMove="MusicWidgetResizeRightHandle_MouseMove"
+                            MouseLeftButtonUp="MusicWidgetResizeRightHandle_MouseLeftButtonUp"/>
+                </Grid>
             </Grid>
         </Border>
 
