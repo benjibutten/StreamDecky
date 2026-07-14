@@ -34,6 +34,8 @@ public class DeckProfile
     public ushort GamepadToggleButtons { get; set; } = 0x0030; // Back + Start
     public bool StickyNotesVisible { get; set; }
     public double StickyNoteFontSize { get; set; } = 13;
+    public List<QuickTextCollection> QuickTextCollections { get; set; } = new();
+    public string ActiveQuickTextCollectionId { get; set; } = string.Empty;
     public List<QuickTextCategory> QuickTextCategories { get; set; } = new() { new QuickTextCategory() };
     public string ActiveQuickTextCategoryId { get; set; } = string.Empty;
     public List<QuickTextItem> QuickTextItems { get; set; } = new();
@@ -75,6 +77,7 @@ public class DeckProfile
         Pages ??= new List<DeckPage>();
         VirtualLayouts ??= new List<DeckPage>();
         NotePages ??= new List<NotePage>();
+        QuickTextCollections ??= new List<QuickTextCollection>();
         QuickTextCategories ??= new List<QuickTextCategory>();
         QuickTextItems ??= new List<QuickTextItem>();
 
@@ -96,11 +99,23 @@ public class DeckProfile
         foreach (var notePage in NotePages)
             notePage.EnsureInitialized();
 
+        if (QuickTextCollections.Count == 0)
+            QuickTextCollections.Add(new QuickTextCollection { Name = "General" });
+
+        foreach (var collection in QuickTextCollections)
+            collection.EnsureInitialized();
+
         if (QuickTextCategories.Count == 0)
             QuickTextCategories.Add(new QuickTextCategory { Name = "General" });
 
         foreach (var category in QuickTextCategories)
             category.EnsureInitialized();
+
+        if (string.IsNullOrWhiteSpace(ActiveQuickTextCollectionId)
+            || !QuickTextCollections.Any(collection => string.Equals(collection.Id, ActiveQuickTextCollectionId, StringComparison.Ordinal)))
+        {
+            ActiveQuickTextCollectionId = QuickTextCollections[0].Id;
+        }
 
         if (string.IsNullOrWhiteSpace(ActiveQuickTextCategoryId)
             || !QuickTextCategories.Any(category => string.Equals(category.Id, ActiveQuickTextCategoryId, StringComparison.Ordinal)))
@@ -111,12 +126,22 @@ public class DeckProfile
         foreach (var item in QuickTextItems)
         {
             item.EnsureInitialized();
+            var validCategoryIds = item.CategoryIds
+                .Where(id => QuickTextCategories.Any(category => string.Equals(category.Id, id, StringComparison.Ordinal)))
+                .ToList();
 
-            if (string.IsNullOrWhiteSpace(item.CategoryId)
-                || !QuickTextCategories.Any(category => string.Equals(category.Id, item.CategoryId, StringComparison.Ordinal)))
-            {
-                item.CategoryId = ActiveQuickTextCategoryId;
-            }
+            if (validCategoryIds.Count == 0)
+                validCategoryIds.Add(ActiveQuickTextCategoryId);
+
+            item.SetCategories(validCategoryIds);
+
+            var validCollectionIds = item.CollectionIds
+                .Where(id => QuickTextCollections.Any(collection => string.Equals(collection.Id, id, StringComparison.Ordinal)))
+                .ToList();
+            if (validCollectionIds.Count == 0)
+                validCollectionIds.Add(ActiveQuickTextCollectionId);
+
+            item.SetCollections(validCollectionIds);
         }
 
         CurrentNotePageIndex = Math.Clamp(CurrentNotePageIndex, 0, NotePages.Count - 1);

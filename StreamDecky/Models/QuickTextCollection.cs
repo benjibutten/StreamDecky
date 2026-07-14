@@ -2,7 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace StreamDecky.Models;
 
-public class QuickTextCategory : ObservableObject
+public class QuickTextCollection : ObservableObject
 {
     private string _name = "General";
 
@@ -12,8 +12,6 @@ public class QuickTextCategory : ObservableObject
         get => _name;
         set => SetProperty(ref _name, value ?? string.Empty);
     }
-    // Legacy schema-3 field. Tags are global from schema 4 onward.
-    public string CollectionId { get; set; } = string.Empty;
 
     public void EnsureInitialized()
     {
@@ -22,8 +20,6 @@ public class QuickTextCategory : ObservableObject
 
         if (string.IsNullOrWhiteSpace(Name))
             Name = "General";
-
-        CollectionId ??= string.Empty;
     }
 
     public override string ToString() => Name;

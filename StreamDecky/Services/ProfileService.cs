@@ -69,7 +69,9 @@ public class ProfileService
             try
             {
                 var json = File.ReadAllText(_profilesPath);
+                int sourceSchemaVersion = ReadSchemaVersion(json);
                 var store = DeserializeStoreJson(json);
+                PreservePreMigrationBackup(_profilesPath, json, sourceSchemaVersion);
                 RefreshStartupBackupIfChanged(_profilesPath);
                 return store;
             }
@@ -179,7 +181,10 @@ public class ProfileService
         try
         {
             var json = File.ReadAllText(_legacyProfilePath);
-            return DeserializeProfileJson(json);
+            int sourceSchemaVersion = ReadSchemaVersion(json);
+            DeckProfile profile = DeserializeProfileJson(json);
+            PreservePreMigrationBackup(_legacyProfilePath, json, sourceSchemaVersion);
+            return profile;
         }
         catch (Exception ex)
         {
@@ -196,6 +201,41 @@ public class ProfileService
         };
         ProfileSchemaMigrator.PrepareProfileForPersistence(profile);
         return profile;
+    }
+
+    private static int ReadSchemaVersion(string json)
+    {
+        using JsonDocument document = JsonDocument.Parse(json);
+        if (document.RootElement.TryGetProperty(nameof(DeckProfile.SchemaVersion), out JsonElement versionElement)
+            && versionElement.TryGetInt32(out int version))
+        {
+            return version <= ProfileSchemaVersion.Unspecified ? ProfileSchemaVersion.Baseline : version;
+        }
+
+        return ProfileSchemaVersion.Baseline;
+    }
+
+    private void PreservePreMigrationBackup(string sourcePath, string sourceJson, int sourceSchemaVersion)
+    {
+        if (sourceSchemaVersion >= ProfileSchemaVersion.Current)
+            return;
+
+        try
+        {
+            Directory.CreateDirectory(_appDataFolder);
+            string sourceName = Path.GetFileNameWithoutExtension(sourcePath);
+            string backupPath = Path.Combine(
+                _appDataFolder,
+                $"{sourceName}.pre-migration-v{sourceSchemaVersion}.json");
+            if (!File.Exists(backupPath))
+                WriteTextAtomically(backupPath, sourceJson);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning(
+                $"Failed to preserve the pre-migration backup for '{sourcePath}'.",
+                ex);
+        }
     }
 
     public void Save(DeckProfile profile)

@@ -225,10 +225,13 @@ public sealed class ProfileServiceTests
         [Fact]
         public void SerializeAndDeserializeProfileJson_RoundTripsNotesQuickTextAndLayout()
         {
-            var category = new QuickTextCategory { Id = "cat-1", Name = "Macros" };
+            var collection = new QuickTextCollection { Id = "collection-1", Name = "Work" };
+            var category = new QuickTextCategory { Id = "cat-1", Name = "Macros", CollectionId = collection.Id };
             var profile = new DeckProfile
             {
                 Name = "Roundtrip",
+                QuickTextCollections = new List<QuickTextCollection> { collection },
+                ActiveQuickTextCollectionId = collection.Id,
                 LayoutRows = 4,
                 LayoutColumns = 6,
                 Pages = new List<DeckPage>
@@ -268,9 +271,95 @@ public sealed class ProfileServiceTests
             Assert.Equal("Remember this", imported.NotePages[0].StickyNotes[0].Text);
             Assert.Single(imported.QuickTextCategories);
             Assert.Equal(category.Id, imported.ActiveQuickTextCategoryId);
+            Assert.Equal(string.Empty, imported.QuickTextCategories[0].CollectionId);
             Assert.Single(imported.QuickTextItems);
             Assert.Equal("Clip item", imported.QuickTextItems[0].Text);
             Assert.Single(imported.QuickTextActionSteps);
+        }
+
+        [Fact]
+        public void DeserializeProfileJson_OlderQuickTextCategoryWithoutPin_PreservesData()
+        {
+            const string json = """
+                {
+                  "Name": "Existing profile",
+                  "QuickTextCategories": [
+                    { "Id": "cat-existing", "Name": "Important" }
+                  ],
+                  "ActiveQuickTextCategoryId": "cat-existing",
+                  "QuickTextItems": [
+                    { "Id": "item-existing", "CategoryId": "cat-existing", "Text": "Do not lose this" }
+                  ]
+                }
+                """;
+
+            DeckProfile profile = ProfileService.DeserializeProfileJson(json);
+
+            var category = Assert.Single(profile.QuickTextCategories);
+            Assert.Equal("Important", category.Name);
+            Assert.Single(profile.QuickTextCollections);
+            Assert.Equal(string.Empty, category.CollectionId);
+            Assert.Equal("Do not lose this", Assert.Single(profile.QuickTextItems).Text);
+        }
+
+        [Fact]
+        public void LoadAndSaveStore_FromOriginMain_PreservesEveryClipboardItemAndBacksUpOriginalJson()
+        {
+            using var tempDirectory = new TemporaryDirectory();
+            string profilesPath = System.IO.Path.Combine(tempDirectory.Path, "profiles.json");
+            string backupPath = System.IO.Path.Combine(tempDirectory.Path, "profiles.backup.json");
+            string migrationBackupPath = System.IO.Path.Combine(tempDirectory.Path, "profiles.pre-migration-v2.json");
+            const string originMainJson = """
+                {
+                  "SchemaVersion": 2,
+                  "ActiveProfileId": "existing-profile",
+                  "Profiles": [
+                    {
+                      "SchemaVersion": 2,
+                      "Id": "existing-profile",
+                      "Name": "Existing profile",
+                      "QuickTextCategories": [
+                        { "Id": "cat-work", "Name": "Work" },
+                        { "Id": "cat-private", "Name": "Private" }
+                      ],
+                      "ActiveQuickTextCategoryId": "cat-private",
+                      "QuickTextItems": [
+                        { "Id": "clip-1", "CategoryId": "cat-work", "Text": "First existing clipboard text" },
+                        { "Id": "clip-2", "CategoryId": "cat-private", "Text": "Second existing clipboard text" }
+                      ]
+                    }
+                  ]
+                }
+                """;
+            System.IO.File.WriteAllText(profilesPath, originMainJson);
+            var service = new ProfileService(tempDirectory.Path);
+
+            DeckProfileStore migratedStore = service.LoadStore();
+            DeckProfile migratedProfile = migratedStore.GetActiveProfile();
+
+            Assert.Equal(ProfileSchemaVersion.Current, migratedStore.SchemaVersion);
+            Assert.Equal(ProfileSchemaVersion.Current, migratedProfile.SchemaVersion);
+            Assert.Equal(2, migratedProfile.QuickTextCategories.Count);
+            Assert.Equal(2, migratedProfile.QuickTextItems.Count);
+            Assert.Equal(
+                new[] { "First existing clipboard text", "Second existing clipboard text" },
+                migratedProfile.QuickTextItems.Select(item => item.Text));
+            Assert.Equal("cat-work", migratedProfile.QuickTextItems[0].CategoryId);
+            Assert.Equal("cat-private", migratedProfile.QuickTextItems[1].CategoryId);
+            var migratedCollection = Assert.Single(migratedProfile.QuickTextCollections);
+            Assert.All(migratedProfile.QuickTextItems, item => Assert.Contains(migratedCollection.Id, item.CollectionIds));
+            Assert.Equal(originMainJson, System.IO.File.ReadAllText(migrationBackupPath));
+
+            service.SaveStore(migratedStore);
+            Assert.Equal(originMainJson, System.IO.File.ReadAllText(backupPath));
+            DeckProfile reloadedProfile = service.LoadStore().GetActiveProfile();
+
+            Assert.Equal(originMainJson, System.IO.File.ReadAllText(migrationBackupPath));
+            Assert.Equal(2, reloadedProfile.QuickTextItems.Count);
+            Assert.Equal(
+                new[] { "First existing clipboard text", "Second existing clipboard text" },
+                reloadedProfile.QuickTextItems.Select(item => item.Text));
+            Assert.All(reloadedProfile.QuickTextItems, item => Assert.Contains(migratedCollection.Id, item.CollectionIds));
         }
 
     private sealed class TemporaryDirectory : IDisposable
