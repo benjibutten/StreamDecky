@@ -74,8 +74,39 @@
             </Setter>
         </Style>
 
-        <Style x:Key="QuickFilterChipButton"
-                TargetType="Button">
+        <Style x:Key="QuickFilterClearButton"
+               TargetType="Button">
+            <Setter Property="Foreground" Value="#AFC3D6"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="6,1"/>
+            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Opacity" Value="0.72"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#E5EEF7"/>
+                                <Setter Property="Opacity" Value="1"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="QuickFilterChipToggleButton"
+                TargetType="ToggleButton">
             <Setter Property="Background"
                     Value="#2AFFFFFF"/>
             <Setter Property="Foreground"
@@ -90,7 +121,7 @@
                     Value="0,0,6,6"/>
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="Button">
+                    <ControlTemplate TargetType="ToggleButton">
                         <Border x:Name="Bd"
                                 Background="{TemplateBinding Background}"
                                 CornerRadius="6"
@@ -105,20 +136,13 @@
                                         Property="Background"
                                         Value="#3AFFFFFF"/>
                             </Trigger>
-                            <DataTrigger Value="True">
-                                <DataTrigger.Binding>
-                                    <MultiBinding Converter="{StaticResource StringEquals}">
-                                        <Binding Path="Id"/>
-                                        <Binding Path="DataContext.SelectedQuickTextCategoryId"
-                                                RelativeSource="{RelativeSource AncestorType=Window}"/>
-                                    </MultiBinding>
-                                </DataTrigger.Binding>
+                            <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Bd"
                                         Property="Background"
                                         Value="#4A6EA0"/>
                                 <Setter Property="Foreground"
                                         Value="White"/>
-                            </DataTrigger>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -1199,55 +1223,119 @@
 
                 <Border Grid.Row="0"
                         Background="#28000000"
-                        CornerRadius="10,10,0,0"
-                        Cursor="SizeAll"
-                        MouseLeftButtonDown="QuickTextPanelHandle_MouseLeftButtonDown"
-                        MouseMove="QuickTextPanelHandle_MouseMove"
-                        MouseLeftButtonUp="QuickTextPanelHandle_MouseLeftButtonUp">
-                    <Grid Margin="10,8,10,8"
-                            VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+                        CornerRadius="10,10,0,0">
+                    <StackPanel Margin="10,8,10,8">
+                        <Border Background="Transparent"
+                                Cursor="SizeAll"
+                                Padding="0,0,0,7"
+                                MouseLeftButtonDown="QuickTextPanelHandle_MouseLeftButtonDown"
+                                MouseMove="QuickTextPanelHandle_MouseMove"
+                                MouseLeftButtonUp="QuickTextPanelHandle_MouseLeftButtonUp">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="Drag to reorder"
+                                           Foreground="#71859A"
+                                           FontSize="9"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Text="Clipboard List"
+                                           Foreground="#EAF2FA"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"/>
+                            </DockPanel>
+                        </Border>
 
-                        <Grid Grid.Row="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                        <TextBlock Text="COLLECTIONS"
+                                   Foreground="#70859A"
+                                   FontSize="9"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,4"/>
+                        <ItemsControl ItemsSource="{Binding QuickTextCollections}"
+                                      Margin="0,0,0,4">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Name}"
+                                            Click="OverlayQuickTextCollection_Click"
+                                            PreviewMouseLeftButtonDown="QuickTextCollection_DragStart"
+                                            PreviewMouseMove="QuickTextCollection_DragMove"
+                                            Drop="QuickTextCollection_Drop"
+                                            AllowDrop="True"
+                                            ToolTip="Drag to reorder collections"
+                                            BorderThickness="0"
+                                            Padding="10,4"
+                                            Margin="0,0,6,6"
+                                            Cursor="Hand">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Background" Value="#26394B"/>
+                                                <Setter Property="Foreground" Value="#D8E5F1"/>
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border x:Name="CollectionBorder"
+                                                                    Background="{TemplateBinding Background}"
+                                                                    CornerRadius="6"
+                                                                    Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource StringEquals}">
+                                                                <Binding Path="Id"/>
+                                                                <Binding Path="OverlaySelectedQuickTextCollectionId" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Background" Value="#3C6387"/>
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
-                            <TextBlock Grid.Column="0"
-                                       Text="Clipboard List"
-                                       Foreground="#EAF2FA"
-                                       FontSize="13"
+                        <DockPanel Margin="0,0,0,4">
+                            <Button DockPanel.Dock="Right"
+                                    Content="Clear"
+                                    Click="ClearOverlayQuickTextTags_Click"
+                                    Style="{StaticResource QuickFilterClearButton}"
+                                    ToolTip="Deselect all tag filters"/>
+                            <TextBlock Text="TAGS"
+                                       Foreground="#70859A"
+                                       FontSize="9"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
-                        </Grid>
-
-                        <ScrollViewer Grid.Row="1"
-                                      Margin="0,8,0,0"
-                                      MaxHeight="104"
-                                      VerticalScrollBarVisibility="Hidden"
-                                      HorizontalScrollBarVisibility="Disabled"
-                                      CanContentScroll="False">
-                            <ItemsControl ItemsSource="{Binding QuickTextCategories}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Content="{Binding Name}"
-                                                ToolTip="{Binding Name}"
-                                                Style="{StaticResource QuickFilterChipButton}"
-                                                Command="{Binding DataContext.SetQuickTextCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding}"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Grid>
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding OverlayQuickTextCategories, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ToggleButton Content="{Binding Category.Name}"
+                                            Style="{StaticResource QuickFilterChipToggleButton}"
+                                            IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                            PreviewMouseLeftButtonDown="QuickTextCategory_DragStart"
+                                            PreviewMouseMove="QuickTextCategory_DragMove"
+                                            Drop="QuickTextCategory_Drop"
+                                            AllowDrop="True"
+                                            ToolTip="Select multiple tags or drag to reorder"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </Border>
 
                 <Grid Grid.Row="1"
@@ -1271,18 +1359,25 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBox Grid.Column="0"
-                                 Text="{Binding QuickTextSearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 Foreground="#EFF4FA"
-                                 Background="#26000000"
-                                 BorderBrush="#3CFFFFFF"
-                                 BorderThickness="1"
-                                 Padding="8,5"
-                                 FontSize="12"
-                                 ToolTip="Search all categories"/>
+                        <Grid Grid.Column="0">
+                            <TextBox Text="{Binding OverlayQuickTextSearchQuery, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=220}"
+                                     Foreground="#EFF4FA"
+                                     Background="#26000000"
+                                     BorderBrush="#3CFFFFFF"
+                                     BorderThickness="1"
+                                     Padding="8,5"
+                                     FontSize="12"
+                                     ToolTip="Search all categories"/>
+                            <TextBlock Text="Sök i alla kategorier…"
+                                       Foreground="#71859A"
+                                       Margin="9,0,0,0"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="{Binding OverlayQuickTextSearchQuery, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource HasTextVisibility}, ConverterParameter=Invert}"/>
+                        </Grid>
 
                         <Button Grid.Column="1"
-                                Command="{Binding ClearQuickTextSearchCommand}"
+                                Click="ClearOverlayQuickTextSearch_Click"
                                 Content="✕"
                                 Margin="6,0,0,0"
                                 Padding="8,4"
@@ -1291,7 +1386,7 @@
                                 BorderThickness="0"
                                 FontSize="11"
                                 Cursor="Hand"
-                                Visibility="{Binding QuickTextSearchQuery, Converter={StaticResource HasTextVisibility}}">
+                                Visibility="{Binding OverlayQuickTextSearchQuery, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource HasTextVisibility}}">
                             <Button.Style>
                                 <Style TargetType="Button">
                                     <Setter Property="Template">
@@ -1329,13 +1424,13 @@
                                HorizontalAlignment="Center"
                                TextAlignment="Center"
                                          Margin="0,8,0,0"
-                               Visibility="{Binding HasQuickTextItems, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
+                               Visibility="{Binding HasOverlayQuickTextItems, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
 
                     <ScrollViewer Grid.Row="2"
                                   VerticalAlignment="Stretch"
                                   VerticalScrollBarVisibility="Hidden"
                                   HorizontalScrollBarVisibility="Disabled"
-                                  Visibility="{Binding HasQuickTextItems, Converter={StaticResource BoolToVisibility}}">
+                                  Visibility="{Binding HasOverlayQuickTextItems, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
                         <ItemsControl ItemsSource="{Binding OverlayQuickTextItems, RelativeSource={RelativeSource AncestorType=Window}}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -1349,6 +1444,7 @@
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
@@ -1356,6 +1452,15 @@
                                             </Grid.ColumnDefinitions>
 
                                             <TextBlock Grid.Row="0"
+                                                       Grid.Column="0"
+                                                       Text="{Binding CategoryName}"
+                                                       Foreground="#7FA8CF"
+                                                       FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       Margin="0,0,6,3"
+                                                       Visibility="{Binding OverlayQuickTextSearchQuery, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource HasTextVisibility}}"/>
+
+                                            <TextBlock Grid.Row="1"
                                                        Grid.Column="0"
                                                        Text="{Binding PreviewText}"
                                                        Foreground="#ECF3FA"
@@ -1369,7 +1474,7 @@
                                                        VerticalAlignment="Top"
                                                        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
 
-                                            <TextBox Grid.Row="0"
+                                            <TextBox Grid.Row="1"
                                                      Grid.Column="0"
                                                      Text="{Binding SessionText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                      Tag="QuickTextInlineEditor"
@@ -1388,7 +1493,7 @@
                                                      Height="{Binding DataContext.QuickTextEditorHeight, RelativeSource={RelativeSource AncestorType=Window}}"
                                                      Margin="0,0,6,0"
                                                      Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}"/>
-                                            <TextBlock Grid.Row="1"
+                                            <TextBlock Grid.Row="2"
                                                        Grid.Column="0"
                                                        Text="Temporary editing is active for this overlay session"
                                                        Foreground="#92A8BF"
@@ -1402,7 +1507,7 @@
                                                        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}"/>
 
                                             <Grid Grid.Row="0"
-                                                  Grid.RowSpan="2"
+                                                  Grid.RowSpan="3"
                                                   Grid.Column="1"
                                                   Margin="0,2,0,0"
                                                   VerticalAlignment="Top">

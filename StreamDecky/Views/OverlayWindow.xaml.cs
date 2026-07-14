@@ -16,6 +16,59 @@ namespace StreamDecky.Views;
 
 public partial class OverlayWindow : Window
 {
+    public static readonly DependencyProperty OverlayQuickTextSearchQueryProperty = DependencyProperty.Register(
+        nameof(OverlayQuickTextSearchQuery),
+        typeof(string),
+        typeof(OverlayWindow),
+        new FrameworkPropertyMetadata(string.Empty, OnOverlayQuickTextSearchQueryChanged));
+
+    public static readonly DependencyProperty HasOverlayQuickTextItemsProperty = DependencyProperty.Register(
+        nameof(HasOverlayQuickTextItems),
+        typeof(bool),
+        typeof(OverlayWindow),
+        new PropertyMetadata(false));
+
+    public static readonly DependencyProperty OverlaySelectedQuickTextCollectionIdProperty = DependencyProperty.Register(
+        nameof(OverlaySelectedQuickTextCollectionId),
+        typeof(string),
+        typeof(OverlayWindow),
+        new FrameworkPropertyMetadata(string.Empty, OnOverlaySelectedQuickTextCollectionIdChanged));
+
+    public string OverlayQuickTextSearchQuery
+    {
+        get => (string)GetValue(OverlayQuickTextSearchQueryProperty);
+        set => SetValue(OverlayQuickTextSearchQueryProperty, value ?? string.Empty);
+    }
+
+    public bool HasOverlayQuickTextItems
+    {
+        get => (bool)GetValue(HasOverlayQuickTextItemsProperty);
+        private set => SetValue(HasOverlayQuickTextItemsProperty, value);
+    }
+
+    public string OverlaySelectedQuickTextCollectionId
+    {
+        get => (string)GetValue(OverlaySelectedQuickTextCollectionIdProperty);
+        set => SetValue(OverlaySelectedQuickTextCollectionIdProperty, value ?? string.Empty);
+    }
+
+    public IReadOnlyCollection<string> OverlaySelectedQuickTextCategoryIds => _overlaySelectedQuickTextCategoryIds;
+
+    private static void OnOverlayQuickTextSearchQueryChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is OverlayWindow window)
+            window.RebuildOverlayQuickTextItems();
+    }
+
+    private static void OnOverlaySelectedQuickTextCollectionIdChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is OverlayWindow window)
+        {
+            window.RebuildOverlayQuickTextCategories();
+            window.RebuildOverlayQuickTextItems();
+        }
+    }
+
     private enum OverlayNavigationDirection
     {
         None,
@@ -70,7 +123,12 @@ public partial class OverlayWindow : Window
     private bool _isUpdatingMusicSeekSlider;
     private readonly Dictionary<string, string> _quickTextSessionOverrides = new(StringComparer.Ordinal);
     private readonly HashSet<string> _quickTextEditingIds = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _overlaySelectedQuickTextCategoryIds = new(StringComparer.Ordinal);
+    private System.Windows.Point _quickTextReorderDragStart;
+    private QuickTextCollection? _draggedQuickTextCollection;
+    private QuickTextCategory? _draggedQuickTextCategory;
     public ObservableCollection<OverlayQuickTextSessionItemViewModel> OverlayQuickTextItems { get; } = new();
+    public ObservableCollection<QuickTextTagAssignmentViewModel> OverlayQuickTextCategories { get; } = new();
     private ushort _previousGamepadButtons;
     private OverlayNavigationDirection _heldNavigationDirection;
     private DateTime _nextNavigationRepeatAtUtc = DateTime.MinValue;
@@ -82,6 +140,7 @@ public partial class OverlayWindow : Window
         InitializeComponent();
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         _viewModel.MusicWidget.PropertyChanged += MusicWidget_PropertyChanged;
+        InitializeOverlayQuickTextFilters();
         RebuildOverlayQuickTextItems();
         _gamepadTimer.Tick += GamepadTimer_Tick;
     }
@@ -138,6 +197,100 @@ public partial class OverlayWindow : Window
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         CloseOverlay();
+    }
+
+    private void QuickTextCollection_DragStart(object sender, MouseButtonEventArgs e)
+    {
+        _quickTextReorderDragStart = e.GetPosition(this);
+        _draggedQuickTextCollection = (sender as FrameworkElement)?.DataContext as QuickTextCollection;
+    }
+
+    private void QuickTextCollection_DragMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _draggedQuickTextCollection == null)
+            return;
+
+        var position = e.GetPosition(this);
+        if (Math.Abs(position.X - _quickTextReorderDragStart.X) < SystemParameters.MinimumHorizontalDragDistance
+            && Math.Abs(position.Y - _quickTextReorderDragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        DragDrop.DoDragDrop((DependencyObject)sender, _draggedQuickTextCollection, System.Windows.DragDropEffects.Move);
+        _draggedQuickTextCollection = null;
+        e.Handled = true;
+    }
+
+    private void QuickTextCollection_Drop(object sender, System.Windows.DragEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not QuickTextCollection target)
+            return;
+
+        if (e.Data.GetData(typeof(QuickTextCollection)) is QuickTextCollection source)
+        {
+            _viewModel.MoveQuickTextCollection(source, target);
+            e.Handled = true;
+        }
+    }
+
+    private void QuickTextCategory_DragStart(object sender, MouseButtonEventArgs e)
+    {
+        _quickTextReorderDragStart = e.GetPosition(this);
+        _draggedQuickTextCategory = ((sender as FrameworkElement)?.DataContext as QuickTextTagAssignmentViewModel)?.Category;
+    }
+
+    private void QuickTextCategory_DragMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _draggedQuickTextCategory == null)
+            return;
+
+        var position = e.GetPosition(this);
+        if (Math.Abs(position.X - _quickTextReorderDragStart.X) < SystemParameters.MinimumHorizontalDragDistance
+            && Math.Abs(position.Y - _quickTextReorderDragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        DragDrop.DoDragDrop((DependencyObject)sender, _draggedQuickTextCategory, System.Windows.DragDropEffects.Move);
+        _draggedQuickTextCategory = null;
+        e.Handled = true;
+    }
+
+    private void QuickTextCategory_Drop(object sender, System.Windows.DragEventArgs e)
+    {
+        if (e.Data.GetData(typeof(QuickTextCategory)) is QuickTextCategory source
+            && (sender as FrameworkElement)?.DataContext is QuickTextTagAssignmentViewModel target)
+        {
+            _viewModel.MoveQuickTextCategory(source, target.Category);
+            e.Handled = true;
+        }
+    }
+
+    private void ClearOverlayQuickTextSearch_Click(object sender, RoutedEventArgs e)
+    {
+        OverlayQuickTextSearchQuery = string.Empty;
+    }
+
+    private void ClearOverlayQuickTextTags_Click(object sender, RoutedEventArgs e)
+    {
+        ClearOverlayQuickTextTags();
+    }
+
+    public void ClearOverlayQuickTextTags()
+    {
+        if (_overlaySelectedQuickTextCategoryIds.Count == 0)
+            return;
+
+        _overlaySelectedQuickTextCategoryIds.Clear();
+        RebuildOverlayQuickTextCategories();
+        RebuildOverlayQuickTextItems();
+    }
+
+    private void OverlayQuickTextCollection_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is QuickTextCollection collection)
+            OverlaySelectedQuickTextCollectionId = collection.Id;
     }
 
     private void DeckButton_Click(object sender, RoutedEventArgs e)
@@ -1083,19 +1236,90 @@ public partial class OverlayWindow : Window
 
         OverlayQuickTextItems.Clear();
 
-        foreach (var sourceItem in _viewModel.QuickTextItems)
+        string query = OverlayQuickTextSearchQuery.Trim();
+        bool hasQuery = !string.IsNullOrWhiteSpace(query);
+        var categoriesById = _viewModel.Profile.QuickTextCategories
+            .GroupBy(category => category.Id, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+
+        foreach (var sourceItem in _viewModel.Profile.QuickTextItems)
         {
             string sessionText = _quickTextSessionOverrides.TryGetValue(sourceItem.Id, out var overrideText)
                 ? overrideText
                 : sourceItem.Text;
+            string categoryName = string.Join(", ", sourceItem.CategoryIds.Select(id =>
+            {
+                if (!categoriesById.TryGetValue(id, out var category))
+                    return string.Empty;
 
-            var sessionItem = new OverlayQuickTextSessionItemViewModel(sourceItem.Id, sessionText)
+                return category.Name;
+            }).Where(label => !string.IsNullOrWhiteSpace(label)));
+
+            bool matchesSelectedTag = _overlaySelectedQuickTextCategoryIds.Count == 0
+                || sourceItem.CategoryIds.Any(_overlaySelectedQuickTextCategoryIds.Contains);
+            if (!hasQuery && (!sourceItem.HasCollection(OverlaySelectedQuickTextCollectionId) || !matchesSelectedTag))
+                continue;
+
+            if (hasQuery
+                && !sessionText.Contains(query, StringComparison.OrdinalIgnoreCase)
+                && !categoryName.Contains(query, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var sessionItem = new OverlayQuickTextSessionItemViewModel(sourceItem.Id, sessionText, categoryName)
             {
                 IsEditing = _quickTextEditingIds.Contains(sourceItem.Id)
             };
 
             sessionItem.PropertyChanged += OverlayQuickTextItem_PropertyChanged;
             OverlayQuickTextItems.Add(sessionItem);
+        }
+
+        HasOverlayQuickTextItems = OverlayQuickTextItems.Count > 0;
+    }
+
+    private void InitializeOverlayQuickTextFilters()
+    {
+        string collectionId = _viewModel.Profile.ActiveQuickTextCollectionId;
+        if (string.IsNullOrWhiteSpace(collectionId)
+            || !_viewModel.Profile.QuickTextCollections.Any(collection => string.Equals(collection.Id, collectionId, StringComparison.Ordinal)))
+        {
+            collectionId = _viewModel.Profile.QuickTextCollections.FirstOrDefault()?.Id ?? string.Empty;
+        }
+
+        _overlaySelectedQuickTextCategoryIds.Clear();
+        string activeTagId = _viewModel.Profile.ActiveQuickTextCategoryId;
+        if (!string.IsNullOrWhiteSpace(activeTagId))
+            _overlaySelectedQuickTextCategoryIds.Add(activeTagId);
+
+        OverlaySelectedQuickTextCollectionId = collectionId;
+        RebuildOverlayQuickTextCategories();
+    }
+
+    private void RebuildOverlayQuickTextCategories()
+    {
+        var relevantTagIds = _viewModel.Profile.QuickTextItems
+            .Where(item => item.HasCollection(OverlaySelectedQuickTextCollectionId))
+            .SelectMany(item => item.CategoryIds)
+            .ToHashSet(StringComparer.Ordinal);
+
+        _overlaySelectedQuickTextCategoryIds.RemoveWhere(id => !relevantTagIds.Contains(id));
+        OverlayQuickTextCategories.Clear();
+        foreach (var category in _viewModel.Profile.QuickTextCategories.Where(category => relevantTagIds.Contains(category.Id)))
+        {
+            OverlayQuickTextCategories.Add(new QuickTextTagAssignmentViewModel(
+                category,
+                _overlaySelectedQuickTextCategoryIds.Contains(category.Id),
+                (changedCategory, isSelected) =>
+                {
+                    if (isSelected)
+                        _overlaySelectedQuickTextCategoryIds.Add(changedCategory.Id);
+                    else
+                        _overlaySelectedQuickTextCategoryIds.Remove(changedCategory.Id);
+
+                    RebuildOverlayQuickTextItems();
+                }));
         }
     }
 
@@ -1119,8 +1343,25 @@ public partial class OverlayWindow : Window
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainViewModel.QuickTextItems))
+        if (e.PropertyName is nameof(MainViewModel.QuickTextCollections)
+            or nameof(MainViewModel.QuickTextCategories))
+        {
+            if (!_viewModel.Profile.QuickTextCollections.Any(collection =>
+                string.Equals(collection.Id, OverlaySelectedQuickTextCollectionId, StringComparison.Ordinal)))
+            {
+                InitializeOverlayQuickTextFilters();
+            }
+            else
+            {
+                RebuildOverlayQuickTextCategories();
+                RebuildOverlayQuickTextItems();
+            }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.QuickTextItems))
+        {
+            RebuildOverlayQuickTextCategories();
             RebuildOverlayQuickTextItems();
+        }
 
         if (e.PropertyName is nameof(MainViewModel.QuickTextItems)
             or nameof(MainViewModel.QuickTextPanelWidth)
