@@ -1942,150 +1942,61 @@
                             </Popup>
                         </Grid>
 
-                        <DockPanel Margin="0,0,0,8" LastChildFill="False">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Content="◀"
-                                        Command="{Binding PreviousQuickTextCategoryCommand}"
-                                        IsEnabled="{Binding CanGoToPreviousQuickTextCategory}"
-                                        Background="#2D2D44"
-                                        Foreground="White"
-                                        FontSize="12"
-                                        Padding="8,2"
-                                        BorderThickness="0"
-                                        Cursor="Hand"
-                                        ToolTip="Previous category"
-                                        Margin="0,0,6,0">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                                                Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
-                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                        </Border>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
+                        <Border Background="#252538" CornerRadius="6" Padding="9" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="COLLECTION"
+                                           Foreground="#7F92A8"
+                                           FontSize="9"
+                                           FontWeight="Bold"
+                                           Margin="0,0,0,3"/>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox ItemsSource="{Binding QuickTextCollections}"
+                                              DisplayMemberPath="Name"
+                                              SelectedValuePath="Id"
+                                              SelectedValue="{Binding SelectedQuickTextCollectionId, Mode=TwoWay}"
+                                              Style="{StaticResource DarkComboBox}"/>
+                                    <Button Grid.Column="1" Content="+" Command="{Binding AddQuickTextCollectionCommand}"
+                                            ToolTip="Add collection" Background="#2D5A27" Foreground="White" BorderThickness="0" Width="30" Margin="6,0,0,0" Cursor="Hand"/>
+                                    <Button Grid.Column="2" Content="✎" Click="RenameQuickTextCollection_Click"
+                                            ToolTip="Rename collection" Background="#3F4F86" Foreground="White" BorderThickness="0" Width="30" Margin="5,0,0,0" Cursor="Hand"/>
+                                    <Button Grid.Column="3" Content="−" Command="{Binding RemoveQuickTextCollectionCommand}"
+                                            IsEnabled="{Binding HasMultipleQuickTextCollections}"
+                                            ToolTip="Remove collection; its tags are moved to another collection" Background="#5A2727" Foreground="White" BorderThickness="0" Width="30" Margin="5,0,0,0" Cursor="Hand"/>
+                                </Grid>
 
-                                <Button Content="▶"
-                                        Command="{Binding NextQuickTextCategoryCommand}"
-                                        IsEnabled="{Binding CanGoToNextQuickTextCategory}"
-                                        Background="#2D2D44"
-                                        Foreground="White"
-                                        FontSize="12"
-                                        Padding="8,2"
-                                        BorderThickness="0"
-                                        ToolTip="Next category"
-                                        Cursor="Hand">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                                                Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
-                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                        </Border>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
+                                <TextBlock Text="TAG"
+                                           Foreground="#7F92A8"
+                                           FontSize="9"
+                                           FontWeight="Bold"
+                                           Margin="0,0,0,3"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox ItemsSource="{Binding QuickTextCategories}"
+                                              DisplayMemberPath="Name"
+                                              SelectedValuePath="Id"
+                                              SelectedValue="{Binding SelectedQuickTextCategoryId, Mode=TwoWay}"
+                                              Style="{StaticResource DarkComboBox}"/>
+                                    <Button Grid.Column="1" Content="+" Command="{Binding AddQuickTextCategoryCommand}"
+                                            ToolTip="Add tag" Background="#2D5A27" Foreground="White" BorderThickness="0" Width="30" Margin="6,0,0,0" Cursor="Hand"/>
+                                    <Button Grid.Column="2" Content="✎" Click="RenameQuickTextCategory_Click"
+                                            ToolTip="Rename tag" Background="#3F4F86" Foreground="White" BorderThickness="0" Width="30" Margin="5,0,0,0" Cursor="Hand"/>
+                                    <Button Grid.Column="3" Content="−" Command="{Binding RemoveQuickTextCategoryCommand}"
+                                            IsEnabled="{Binding HasMultipleQuickTextCategories}"
+                                            ToolTip="Remove tag" Background="#5A2727" Foreground="White" BorderThickness="0" Width="30" Margin="5,0,0,0" Cursor="Hand"/>
+                                </Grid>
                             </StackPanel>
-
-                            <WrapPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Content="+"
-                                        Command="{Binding AddQuickTextCategoryCommand}"
-                                        Background="#2D5A27"
-                                        Foreground="White"
-                                        FontSize="11"
-                                        Width="32"
-                                        Height="28"
-                                        ToolTip="Add category"
-                                        BorderThickness="0"
-                                        Cursor="Hand"
-                                        Margin="0,0,6,0">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                        </Border>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-
-                                <Button Content="✎"
-                                        Click="RenameQuickTextCategory_Click"
-                                        Background="#3F4F86"
-                                        Foreground="White"
-                                        FontSize="11"
-                                    Width="32"
-                                    Height="28"
-                                    ToolTip="Rename category"
-                                        BorderThickness="0"
-                                        Cursor="Hand"
-                                        Margin="0,0,6,0">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                        </Border>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-
-                                <Button Content="−"
-                                        Command="{Binding RemoveQuickTextCategoryCommand}"
-                                        IsEnabled="{Binding HasMultipleQuickTextCategories}"
-                                        Background="#5A2727"
-                                        Foreground="White"
-                                        FontSize="11"
-                                    Width="32"
-                                    Height="28"
-                                    ToolTip="Remove category"
-                                        BorderThickness="0"
-                                        Cursor="Hand">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                                                Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
-                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                        </Border>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                            </WrapPanel>
-                        </DockPanel>
-
-                        <ComboBox ItemsSource="{Binding QuickTextCategories}"
-                                  DisplayMemberPath="Name"
-                                  SelectedValuePath="Id"
-                                  SelectedValue="{Binding SelectedQuickTextCategoryId, Mode=TwoWay}"
-                                  Style="{StaticResource DarkComboBox}"
-                                  Margin="0,0,0,8"/>
+                        </Border>
 
                         <!-- Export/Import bar -->
                         <Border Background="#252538" CornerRadius="6" Padding="8,6" Margin="0,0,0,8">
@@ -2093,7 +2004,7 @@
                                 <!-- Export scope -->
                                 <StackPanel Orientation="Horizontal" Margin="0,0,12,4">
                                     <TextBlock Text="Export:" Foreground="#8FA3B8" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <Button Content="Category"
+                                    <Button Content="Tag"
                                             Command="{Binding SetQuickTextExportScopeCommand}"
                                             CommandParameter="Category"
                                             Background="{Binding IsExportScopeCategory, Converter={StaticResource BoolToColor}, ConverterParameter=#2D5A27}"
@@ -2288,7 +2199,7 @@
                             </Button>
                         </DockPanel>
 
-                        <TextBlock Text="No texts in this category yet."
+                        <TextBlock Text="No texts with this tag yet."
                                    Foreground="#777"
                                    FontSize="12"
                                    Margin="0,2,0,8"
@@ -2308,6 +2219,10 @@
                                                 Padding="8"
                                                 Margin="0,0,0,8">
                                             <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
@@ -2385,6 +2300,64 @@
                                                         </Style>
                                                     </Button.Style>
                                                 </Button>
+
+                                                <Expander Grid.Row="1"
+                                                          Grid.ColumnSpan="3"
+                                                          Margin="0,7,0,0"
+                                                          Foreground="#AFC0D2">
+                                                    <Expander.Header>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="Organize: " FontWeight="SemiBold"/>
+                                                            <TextBlock Text="{Binding CollectionSummary}"
+                                                                       Foreground="#8FA4B9"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       MaxWidth="150"/>
+                                                            <TextBlock Text=" · " Foreground="#64788E"/>
+                                                            <TextBlock Text="{Binding TagSummary}"
+                                                                       Foreground="#8FA4B9"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       MaxWidth="150"/>
+                                                        </StackPanel>
+                                                    </Expander.Header>
+                                                    <Border Background="#222234"
+                                                            CornerRadius="4"
+                                                            Padding="7"
+                                                            Margin="0,5,0,0">
+                                                        <StackPanel>
+                                                            <TextBlock Text="COLLECTIONS" Foreground="#71869C" FontSize="9" FontWeight="Bold" Margin="0,0,0,5"/>
+                                                            <ItemsControl ItemsSource="{Binding CollectionAssignments}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <CheckBox Content="{Binding Collection.Name}"
+                                                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                                                  Foreground="#D5DFEA"
+                                                                                  Margin="0,0,12,6"
+                                                                                  Cursor="Hand"/>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+
+                                                            <TextBlock Text="TAGS" Foreground="#71869C" FontSize="9" FontWeight="Bold" Margin="0,4,0,5"/>
+                                                            <ItemsControl ItemsSource="{Binding TagAssignments}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <CheckBox Content="{Binding Category.Name}"
+                                                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                                                  Foreground="#D5DFEA"
+                                                                                  Margin="0,0,12,6"
+                                                                                  Cursor="Hand"/>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Expander>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>

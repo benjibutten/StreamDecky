@@ -570,13 +570,26 @@ public partial class MainWindow : Window
     {
         string? renamed = TextPromptDialog.Show(
             this,
-            "Rename Clipboard Category",
-            "Enter a category name:",
+            "Rename Clipboard Tag",
+            "Enter a tag name:",
             _viewModel.CurrentQuickTextCategoryName,
             maxLength: 48);
 
         if (!string.IsNullOrWhiteSpace(renamed))
             _viewModel.RenameQuickTextCategoryCommand.Execute(renamed);
+    }
+
+    private void RenameQuickTextCollection_Click(object sender, RoutedEventArgs e)
+    {
+        string? renamed = TextPromptDialog.Show(
+            this,
+            "Rename Clipboard Collection",
+            "Enter a collection name:",
+            _viewModel.CurrentQuickTextCollectionName,
+            maxLength: 48);
+
+        if (!string.IsNullOrWhiteSpace(renamed))
+            _viewModel.RenameQuickTextCollectionCommand.Execute(renamed);
     }
 
     private static bool IsTextEditingControlFocused()

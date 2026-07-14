@@ -174,7 +174,7 @@ public partial class MainViewModel
 
         RebuildLayoutTargets();
         LoadCurrentLayout();
-        LoadQuickTextCategories();
+        LoadQuickTextCollections();
         LoadQuickTextActionSteps();
         NotifyPageChanged();
         NotifyNotePageChanged();

@@ -43,7 +43,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         LoadCurrentLayout();
         StickyNotesVisible = true;
-        LoadQuickTextCategories();
+        LoadQuickTextCollections();
         LoadQuickTextActionSteps();
 
         RebuildProfileOptions();
