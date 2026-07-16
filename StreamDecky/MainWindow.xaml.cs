@@ -21,6 +21,12 @@ public partial class MainWindow : Window
     private System.Drawing.Icon? _trayIconImage;
     private readonly OverlayWindowController _overlayController;
     private readonly HotkeyRegistrationController _hotkeyController = new();
+    private readonly RawInputHotkeyMatcher _rawInputHotkeyMatcher = new();
+    // The raw-input fallback only runs when we actually own the hotkey via
+    // RegisterHotKey; otherwise it would bypass another app's ownership of
+    // the same combination and both apps would react to it.
+    private bool _globalHotkeyRegistered;
+    private bool _rawInputSinkRegistered;
     private readonly StartupRegistrySyncService _startupRegistrySyncService = new();
     // Keep this short: it bounds the added latency between pressing the gamepad
     // combo and the overlay toggling. The packet-number check in the tick handler
@@ -182,6 +188,7 @@ public partial class MainWindow : Window
         DisposeGamepadTogglePolling();
         DisposeTrayIcon();
         _hotkeyController.Unregister(this, HOTKEY_ID);
+        RawInputInterop.UnregisterKeyboardSink();
         _hwndSource?.RemoveHook(WndProc);
         System.Windows.Application.Current.Shutdown();
     }
@@ -197,8 +204,9 @@ public partial class MainWindow : Window
         if (e.PropertyName is nameof(MainViewModel.HotkeyModifiers) or nameof(MainViewModel.HotkeyVk))
         {
             if (_hwndSource != null)
-                _hotkeyController.ReRegister(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+                _globalHotkeyRegistered = _hotkeyController.ReRegister(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
 
+            ConfigureRawInputHotkeyMatcher();
             return;
         }
 
@@ -294,19 +302,55 @@ public partial class MainWindow : Window
         var hwnd = new WindowInteropHelper(this).Handle;
         _hwndSource = HwndSource.FromHwnd(hwnd);
         _hwndSource?.AddHook(WndProc);
-        _hotkeyController.Register(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+        _globalHotkeyRegistered = _hotkeyController.Register(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+
+        // Fallback path: some games (raw-input titles like Doom: The Dark Ages)
+        // suppress WM_HOTKEY delivery while they have focus. The raw-input sink
+        // still receives every keystroke, so the hotkey keeps working there.
+        _rawInputSinkRegistered = RawInputInterop.RegisterKeyboardSink(hwnd);
+        ConfigureRawInputHotkeyMatcher();
 
         if (_startHiddenInTray)
             HideToTray();
     }
 
+    private void ConfigureRawInputHotkeyMatcher()
+    {
+        _rawInputHotkeyMatcher.Configure(
+            _viewModel.HotkeyModifiers,
+            _viewModel.HotkeyVk,
+            RawInputInterop.GetPressedModifierVirtualKeys(),
+            RawInputInterop.IsKeyPressed(_viewModel.HotkeyVk));
+    }
+
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         const int WM_HOTKEY = 0x0312;
+        const int WM_INPUT = 0x00FF;
+
         if (msg == WM_HOTKEY && wParam.ToInt32() == HOTKEY_ID)
         {
-            ToggleOverlay();
+            // The raw-input path may already have toggled for this physical
+            // press; the matcher claims each press exactly once. Without a
+            // working sink there is no duplicate source, so toggle directly.
+            if (!_rawInputSinkRegistered || _rawInputHotkeyMatcher.TryHandleHotkeyMessage())
+                ToggleOverlay();
+
             handled = true;
+        }
+        else if (msg == WM_INPUT)
+        {
+            // Only act when we own the hotkey via RegisterHotKey. If another
+            // app owns the combination, registration failed and reacting here
+            // anyway would ignore that ownership.
+            if (_globalHotkeyRegistered
+                && RawInputInterop.TryGetKeyboardEvent(lParam, out uint vk, out bool isKeyDown)
+                && _rawInputHotkeyMatcher.ProcessKeyEvent(vk, isKeyDown))
+            {
+                ToggleOverlay();
+            }
+            // Leave handled = false so WPF runs DefWindowProc, which performs
+            // the required WM_INPUT cleanup.
         }
         return IntPtr.Zero;
     }
@@ -397,15 +441,15 @@ public partial class MainWindow : Window
 
     private void OpenSettings_Click(object sender, RoutedEventArgs e)
     {
-        var oldMod = _viewModel.HotkeyModifiers;
-        var oldVk = _viewModel.HotkeyVk;
         var oldStartup = _viewModel.StartWithWindows;
 
         var settingsWindow = new SettingsWindow(_viewModel);
         settingsWindow.Owner = this;
         settingsWindow.ShowDialog();
 
-        _hotkeyController.ReRegisterIfChanged(this, HOTKEY_ID, oldMod, oldVk, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+        // Hotkey changes are re-registered by ViewModel_PropertyChanged as the
+        // recorder updates the view model, which also keeps the raw-input
+        // ownership flag in sync; re-registering here would lose that result.
 
         // Sync startup setting if changed
         if (oldStartup != _viewModel.StartWithWindows)
@@ -702,6 +746,7 @@ public partial class MainWindow : Window
         _viewModel.Dispose();
         DisposeTrayIcon();
         _hotkeyController.Unregister(this, HOTKEY_ID);
+        RawInputInterop.UnregisterKeyboardSink();
         _hwndSource?.RemoveHook(WndProc);
         base.OnClosed(e);
     }

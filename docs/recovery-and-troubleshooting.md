@@ -100,7 +100,7 @@ Actions:
 2. Avoid combinations already claimed by Windows, drivers, or other overlay tools.
 3. Confirm that the app is still running in the tray.
 4. Try opening the overlay from the main window to separate hotkey problems from overlay problems.
-5. If the problem only happens in one game or application, low-level input filtering, exclusive fullscreen mode, or anti-cheat may be the cause.
+5. If the problem only happens in one game or application: the app listens for the hotkey through two independent paths — a normal global hotkey registration and a raw-input fallback that keeps working in games that block global hotkeys (and the Windows key) while focused. If neither path responds inside a game, exclusive fullscreen mode or anti-cheat may still be the cause; try the game's borderless/windowed display mode.
 
 ## Recovery: import succeeds but the profile looks wrong
 

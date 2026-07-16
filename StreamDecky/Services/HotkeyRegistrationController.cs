@@ -5,7 +5,7 @@ namespace StreamDecky.Services;
 
 public interface IHotkeyRegistrationService
 {
-    void Register(object host, int id, uint modifiers, uint vk);
+    bool Register(object host, int id, uint modifiers, uint vk);
 
     void Unregister(object host, int id);
 }
@@ -19,9 +19,9 @@ public sealed class HotkeyRegistrationController
         _service = service ?? new OverlayInteropHotkeyRegistrationService();
     }
 
-    public void Register(object host, int id, uint modifiers, uint vk)
+    public bool Register(object host, int id, uint modifiers, uint vk)
     {
-        _service.Register(host, id, modifiers, vk);
+        return _service.Register(host, id, modifiers, vk);
     }
 
     public void Unregister(object host, int id)
@@ -29,26 +29,18 @@ public sealed class HotkeyRegistrationController
         _service.Unregister(host, id);
     }
 
-    public void ReRegister(object host, int id, uint modifiers, uint vk)
+    public bool ReRegister(object host, int id, uint modifiers, uint vk)
     {
         _service.Unregister(host, id);
-        _service.Register(host, id, modifiers, vk);
-    }
-
-    public void ReRegisterIfChanged(object host, int id, uint oldModifiers, uint oldVk, uint newModifiers, uint newVk)
-    {
-        if (oldModifiers == newModifiers && oldVk == newVk)
-            return;
-
-        ReRegister(host, id, newModifiers, newVk);
+        return _service.Register(host, id, modifiers, vk);
     }
 
     private sealed class OverlayInteropHotkeyRegistrationService : IHotkeyRegistrationService
     {
-        public void Register(object host, int id, uint modifiers, uint vk)
+        public bool Register(object host, int id, uint modifiers, uint vk)
         {
-            if (host is Window window)
-                OverlayInterop.RegisterGlobalHotkey(window, id, modifiers, vk);
+            return host is Window window
+                && OverlayInterop.RegisterGlobalHotkey(window, id, modifiers, vk);
         }
 
         public void Unregister(object host, int id)
