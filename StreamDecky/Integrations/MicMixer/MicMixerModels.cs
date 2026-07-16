@@ -50,7 +50,9 @@ public sealed record MicMixerMusicState(
     double? DownloadPercent,
     string DownloadStatus,
     string StatusText,
-    bool VolumesLinked = false);
+    bool VolumesLinked = false,
+    bool MusicIgnoresPushToTalk = false,
+    bool MusicMonitorOnly = false);
 
 public sealed record MicMixerTrack(
     string Id,

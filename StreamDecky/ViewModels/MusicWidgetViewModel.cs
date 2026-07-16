@@ -147,6 +147,18 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
     private bool _volumesLinked;
 
     [ObservableProperty]
+    private bool _musicIgnoresPushToTalk;
+
+    [ObservableProperty]
+    private bool _musicMonitorOnly;
+
+    /// <summary>Whether the connected MicMixer advertises the musicRouting capability.
+    /// Older versions reject the routing commands as unknown, so the toggles are
+    /// hidden entirely when it is missing.</summary>
+    [ObservableProperty]
+    private bool _supportsMusicRouting;
+
+    [ObservableProperty]
     private bool _hasSelectedTrack;
 
     [ObservableProperty]
@@ -229,6 +241,10 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
     {
         ConnectionState = state;
         IsConnected = state == MicMixerConnectionState.Connected;
+        // The client completes the hello handshake (which carries ServerInfo)
+        // before it reports Connected, so the capability check is safe here.
+        SupportsMusicRouting = IsConnected
+            && _client.ServerInfo?.Capabilities.Contains("musicRouting") == true;
         ShowRetryButton = state == MicMixerConnectionState.Unavailable;
         ConnectionStatusText = state switch
         {
@@ -306,6 +322,8 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
         SingleTrackModeText = state.SingleTrackMode;
         StatusText = state.StatusText;
         VolumesLinked = state.VolumesLinked;
+        MusicIgnoresPushToTalk = state.MusicIgnoresPushToTalk;
+        MusicMonitorOnly = state.MusicMonitorOnly;
 
         if (!string.Equals(_loadedQueueVersion, state.QueueVersion, StringComparison.Ordinal))
         {
@@ -586,6 +604,14 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private Task ToggleVolumesLinkedAsync() =>
         RunAsync(() => _client.SetVolumesLinkedAsync(!VolumesLinked));
+
+    [RelayCommand]
+    private Task ToggleMusicIgnoresPushToTalkAsync() =>
+        RunAsync(() => _client.SetMusicIgnoresPushToTalkAsync(!MusicIgnoresPushToTalk));
+
+    [RelayCommand]
+    private Task ToggleMusicMonitorOnlyAsync() =>
+        RunAsync(() => _client.SetMusicMonitorOnlyAsync(!MusicMonitorOnly));
 
     [RelayCommand]
     private Task SetDelayedStartSecondsAsync(object? parameter)

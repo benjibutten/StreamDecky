@@ -9,6 +9,7 @@ public partial class MainViewModel
 {
     private readonly System.Timers.Timer _autoSaveTimer;
     private readonly SemaphoreSlim _autoSaveSemaphore = new(1, 1);
+    private readonly CancellationTokenSource _autoSaveCancellation = new();
     private long _changeVersion;
 
     [ObservableProperty]
@@ -31,6 +32,9 @@ public partial class MainViewModel
 
     private void ScheduleAutoSave()
     {
+        if (_isDisposed)
+            return;
+
         MarkUnsavedChanges();
         _autoSaveTimer.Stop();
         _autoSaveTimer.Start();
@@ -42,30 +46,40 @@ public partial class MainViewModel
 
         try
         {
-            await _autoSaveSemaphore.WaitAsync().ConfigureAwait(false);
+            CancellationToken cancellationToken = _autoSaveCancellation.Token;
+            await _autoSaveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             hasAutoSaveLock = true;
 
             long versionToSave = Interlocked.Read(ref _changeVersion);
-            await InvokeOnUiThreadAsync(BeginSaveStatus).ConfigureAwait(false);
+            await InvokeOnUiThreadAsync(BeginSaveStatus, cancellationToken).ConfigureAwait(false);
 
             string json;
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
             if (dispatcher != null)
             {
-                json = await dispatcher.InvokeAsync(() => _profileService.SerializeStore(_profileStore));
+                json = await dispatcher.InvokeAsync(
+                    () => _profileService.SerializeStore(_profileStore),
+                    System.Windows.Threading.DispatcherPriority.Normal,
+                    cancellationToken);
             }
             else
             {
                 json = _profileService.SerializeStore(_profileStore);
             }
 
-            await _profileService.SaveStoreSerializedAsync(json).ConfigureAwait(false);
-            await InvokeOnUiThreadAsync(() => CompleteSaveStatus(versionToSave)).ConfigureAwait(false);
+            await _profileService.SaveStoreSerializedAsync(json, cancellationToken).ConfigureAwait(false);
+            await InvokeOnUiThreadAsync(() => CompleteSaveStatus(versionToSave), cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_autoSaveCancellation.IsCancellationRequested)
+        {
+            // Application shutdown cancels queued/in-flight autosaves before the
+            // final synchronous snapshot is written from Dispose().
         }
         catch (Exception ex)
         {
             AppDiagnostics.Warning("Autosave failed.", ex);
-            await InvokeOnUiThreadAsync(() => FailSaveStatus(ex)).ConfigureAwait(false);
+            if (!_autoSaveCancellation.IsCancellationRequested)
+                await InvokeOnUiThreadAsync(() => FailSaveStatus(ex)).ConfigureAwait(false);
         }
         finally
         {
@@ -84,20 +98,41 @@ public partial class MainViewModel
     }
 
     [RelayCommand]
-    private void Save()
+    private async Task SaveAsync()
     {
+        if (_isDisposed)
+            return;
+
+        CancellationToken cancellationToken = _autoSaveCancellation.Token;
         long versionToSave = Interlocked.Read(ref _changeVersion);
         BeginSaveStatus();
+        bool hasSaveLock = false;
 
         try
         {
-            _profileService.SaveStore(_profileStore);
-            CompleteSaveStatus(versionToSave);
+            string json = _profileService.SerializeStore(_profileStore);
+            await _autoSaveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            hasSaveLock = true;
+            await _profileService.SaveStoreSerializedAsync(json, cancellationToken).ConfigureAwait(false);
+            await InvokeOnUiThreadAsync(
+                () => CompleteSaveStatus(versionToSave),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_autoSaveCancellation.IsCancellationRequested)
+        {
+            // Shutdown cancels the manual save before Dispose() writes the final
+            // synchronous snapshot. Do not queue any continuation back to the UI.
         }
         catch (Exception ex)
         {
             AppDiagnostics.Warning("Manual save failed.", ex);
-            FailSaveStatus(ex);
+            if (!_autoSaveCancellation.IsCancellationRequested)
+                await InvokeOnUiThreadAsync(() => FailSaveStatus(ex)).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (hasSaveLock)
+                _autoSaveSemaphore.Release();
         }
     }
 
@@ -157,7 +192,7 @@ public partial class MainViewModel
         SaveStatusColor = "#F38BA8";
     }
 
-    private static Task InvokeOnUiThreadAsync(Action action)
+    private static Task InvokeOnUiThreadAsync(Action action, CancellationToken cancellationToken = default)
     {
         var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher == null || dispatcher.CheckAccess())
@@ -166,6 +201,9 @@ public partial class MainViewModel
             return Task.CompletedTask;
         }
 
-        return dispatcher.InvokeAsync(action).Task;
+        return dispatcher.InvokeAsync(
+            action,
+            System.Windows.Threading.DispatcherPriority.Normal,
+            cancellationToken).Task;
     }
 }

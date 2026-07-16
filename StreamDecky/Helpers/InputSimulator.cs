@@ -18,6 +18,7 @@ public static class InputSimulator
     private static extern uint MapVirtualKey(uint uCode, uint uMapType);
 
     private const uint INPUT_KEYBOARD = 1;
+    private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
     private const uint KEYEVENTF_KEYUP = 0x0002;
     private const uint KEYEVENTF_SCANCODE = 0x0008;
     private const uint KEYEVENTF_UNICODE = 0x0004;
@@ -361,7 +362,7 @@ public static class InputSimulator
     /// </summary>
     private static void SendScanCodeDown(ushort vk)
     {
-        ushort scan = (ushort)MapVirtualKey(vk, MAPVK_VK_TO_VSC);
+        ushort scan = (ushort)(MapVirtualKey(vk, MAPVK_VK_TO_VSC) & 0xFF);
         var input = new INPUT
         {
             type = INPUT_KEYBOARD,
@@ -371,7 +372,7 @@ public static class InputSimulator
                 {
                     wVk = 0,
                     wScan = scan,
-                    dwFlags = KEYEVENTF_SCANCODE,
+                    dwFlags = KEYEVENTF_SCANCODE | (IsExtendedKey(vk) ? KEYEVENTF_EXTENDEDKEY : 0),
                     time = 0,
                     dwExtraInfo = IntPtr.Zero
                 }
@@ -385,7 +386,7 @@ public static class InputSimulator
     /// </summary>
     private static void SendScanCodeUp(ushort vk)
     {
-        ushort scan = (ushort)MapVirtualKey(vk, MAPVK_VK_TO_VSC);
+        ushort scan = (ushort)(MapVirtualKey(vk, MAPVK_VK_TO_VSC) & 0xFF);
         var input = new INPUT
         {
             type = INPUT_KEYBOARD,
@@ -395,7 +396,9 @@ public static class InputSimulator
                 {
                     wVk = 0,
                     wScan = scan,
-                    dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP,
+                    dwFlags = KEYEVENTF_SCANCODE
+                        | KEYEVENTF_KEYUP
+                        | (IsExtendedKey(vk) ? KEYEVENTF_EXTENDEDKEY : 0),
                     time = 0,
                     dwExtraInfo = IntPtr.Zero
                 }
@@ -403,4 +406,12 @@ public static class InputSimulator
         };
         SendInput(1, [input], Marshal.SizeOf<INPUT>());
     }
+
+    private static bool IsExtendedKey(ushort vk) => vk is
+        0x21 or 0x22 or 0x23 or 0x24 // Page Up/Down, End, Home
+        or 0x25 or 0x26 or 0x27 or 0x28 // Arrow keys
+        or 0x2D or 0x2E // Insert, Delete
+        or 0x6F // Numpad Divide
+        or 0x90 // Num Lock
+        or 0xA3 or 0xA5; // Right Ctrl, Right Alt
 }

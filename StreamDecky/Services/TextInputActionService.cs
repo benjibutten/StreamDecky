@@ -27,26 +27,22 @@ public class TextInputActionService
 
     private void ExecutePaste(string text, bool pressEnter)
     {
-        Application.Current.Dispatcher.Invoke(() =>
-        {
-            Clipboard.SetText(text);
-        });
-
-        RunDetached(async () =>
+        RunDetached(() => InputActionGate.RunAsync(async () =>
         {
             await Task.Delay(500);
+            await Application.Current.Dispatcher.InvokeAsync(() => Clipboard.SetText(text));
             await InputSimulator.SendPasteAsync();
             if (pressEnter)
             {
                 await Task.Delay(50);
                 await InputSimulator.SendEnterAsync();
             }
-        });
+        }));
     }
 
     private void ExecuteSimulateTyping(string text, bool pressEnter, bool useNaturalTyping)
     {
-        RunDetached(async () =>
+        RunDetached(() => InputActionGate.RunAsync(async () =>
         {
             await Task.Delay(500);
             await InputSimulator.SendTextAsync(text, useNaturalCadence: useNaturalTyping);
@@ -55,7 +51,7 @@ public class TextInputActionService
                 await Task.Delay(50);
                 await InputSimulator.SendEnterAsync();
             }
-        });
+        }));
     }
 
     private static void RunDetached(Func<Task> operation)

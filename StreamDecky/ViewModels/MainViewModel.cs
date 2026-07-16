@@ -22,6 +22,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private DeckProfile _profile;
     private ButtonConfig? _buttonClipboard;
     private int _currentVirtualLayoutIndex = -1;
+    private bool _isDisposed;
 
     public MainViewModel(
         ProfileService? profileService = null,
@@ -657,8 +658,35 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        if (_isDisposed)
+            return;
+
+        _isDisposed = true;
         _autoSaveTimer.Stop();
         _autoSaveTimer.Dispose();
+        _autoSaveCancellation.Cancel();
+
+        // Every autosave and manual-save wait observes the cancellation token,
+        // and their continuations do not require the UI thread while holding the
+        // semaphore. Once the semaphore is ours, no older snapshot can overwrite
+        // this final one.
+        _autoSaveSemaphore.Wait();
+        try
+        {
+            if (HasUnsavedChanges)
+                _profileService.SaveStore(_profileStore);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Final profile save during shutdown failed.", ex);
+        }
+        finally
+        {
+            _autoSaveSemaphore.Release();
+            _autoSaveCancellation.Dispose();
+            _autoSaveSemaphore.Dispose();
+        }
+
         DetachButtonHandlers();
         _musicWidget?.Dispose();
     }
