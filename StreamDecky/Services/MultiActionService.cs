@@ -20,7 +20,7 @@ public class MultiActionService
 
     public virtual async Task ExecuteAsync(ButtonConfig config, bool useNaturalTyping = false)
     {
-        await ExecuteStepsAsync(config.Steps, itemText: null, useNaturalTyping);
+        await InputActionGate.RunAsync(() => ExecuteStepsAsync(config.Steps, itemText: null, useNaturalTyping));
     }
 
     /// <summary>
@@ -29,15 +29,18 @@ public class MultiActionService
     /// </summary>
     public virtual void ExecuteWithItemText(IEnumerable<ActionStep> steps, string itemText, bool useNaturalTyping = false)
     {
-        RunDetached(() => ExecuteStepsAsync(steps, itemText, useNaturalTyping));
+        RunDetached(() => InputActionGate.RunAsync(() => ExecuteStepsAsync(steps, itemText, useNaturalTyping)));
     }
 
     public virtual async Task ExecuteKeyPressAsync(string keyText)
     {
         if (string.IsNullOrEmpty(keyText)) return;
 
-        await Task.Delay(500);
-        await InputSimulator.SendKeyPressAsync(keyText);
+        await InputActionGate.RunAsync(async () =>
+        {
+            await Task.Delay(500);
+            await InputSimulator.SendKeyPressAsync(keyText);
+        });
     }
 
     /// <summary>
@@ -47,11 +50,11 @@ public class MultiActionService
     {
         if (string.IsNullOrEmpty(keyText)) return;
 
-        RunDetached(async () =>
+        RunDetached(() => InputActionGate.RunAsync(async () =>
         {
             await Task.Delay(500);
             await InputSimulator.SendKeyPressAsync(keyText);
-        });
+        }));
     }
 
     private static async Task ExecuteStepsAsync(IEnumerable<ActionStep> steps, string? itemText, bool useNaturalTyping)
