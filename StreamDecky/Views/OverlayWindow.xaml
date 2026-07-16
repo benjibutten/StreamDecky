@@ -163,6 +163,8 @@
         <Geometry x:Key="MusicIconChevronUp">M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z</Geometry>
         <Geometry x:Key="MusicIconPlus">M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z</Geometry>
         <Geometry x:Key="MusicIconNote">M12,3V13.55A4,4 0 0,0 10,13A4,4 0 0,0 6,17A4,4 0 0,0 10,21A4,4 0 0,0 14,17V7H18V3H12Z</Geometry>
+        <Geometry x:Key="MusicIconHeadphones">M12,1C7,1 3,5 3,10V17A3,3 0 0,0 6,20H9V12H5V10A7,7 0 0,1 12,3A7,7 0 0,1 19,10V12H15V20H18A3,3 0 0,0 21,17V10C21,5 17,1 12,1Z</Geometry>
+        <Geometry x:Key="MusicIconSlash">M3,4.27L4.27,3L21,19.73L19.73,21L3,4.27Z</Geometry>
         <Geometry x:Key="MusicIconMinimize">M20,14H4V10H20V14Z</Geometry>
         <Geometry x:Key="MusicIconRestore">M4,8H8V4H20V16H16V20H4V8M16,8V14H18V6H10V8H16M6,12V18H14V12H6Z</Geometry>
 
@@ -2359,6 +2361,192 @@
                             </Button.Template>
                         </Button>
                     </Grid>
+
+                    <!-- Music routing toggles, mirroring MicMixer's music card. Monitor only
+                         is the quick preview action; Ignore PTT keeps music flowing while
+                         push-to-talk holds the voice silent. Off = outlined chip with a
+                         slashed icon and an explicit "off" state word; on = filled chip in
+                         the same color the MicMixer overlay uses for that mode, so the two
+                         UIs speak the same language. Hidden entirely when the connected
+                         MicMixer does not advertise the musicRouting capability (older
+                         versions reject the commands as unknown). -->
+                    <UniformGrid Rows="1"
+                                 Columns="2"
+                                 Margin="0,8,0,0"
+                                 Visibility="{Binding MusicWidget.SupportsMusicRouting, Converter={StaticResource BoolToVisibility}}">
+                        <Button Command="{Binding MusicWidget.ToggleMusicMonitorOnlyCommand}"
+                                Margin="0,0,3,0"
+                                Cursor="Hand"
+                                ToolTipService.ShowDuration="60000">
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <TextBlock Text="Monitor only — preview: while ON, the music is never sent to the mic channel. You hear it in MicMixer's monitoring (and the secondary output still carries it, so the stream hears what you hear). Matches the amber headphones circle in MicMixer's overlay."
+                                               MaxWidth="260"
+                                               TextWrapping="Wrap"/>
+                                </ToolTip>
+                            </Button.ToolTip>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd"
+                                            Background="Transparent"
+                                            BorderBrush="#3AFFFFFF"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="0,4">
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Center">
+                                            <Grid Width="11"
+                                                  Height="11"
+                                                  VerticalAlignment="Center"
+                                                  Margin="0,0,5,0">
+                                                <Path x:Name="Glyph"
+                                                      Data="{StaticResource MusicIconHeadphones}"
+                                                      Stretch="Uniform"
+                                                      Fill="#8B9FB5"/>
+                                                <Path x:Name="GlyphSlash"
+                                                      Data="{StaticResource MusicIconSlash}"
+                                                      Stretch="Uniform"
+                                                      Fill="#8B9FB5"/>
+                                            </Grid>
+                                            <TextBlock x:Name="Label"
+                                                       Text="Monitor only"
+                                                       FontSize="10.5"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#8B9FB5"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="StateWord"
+                                                       Text="off"
+                                                       FontSize="10.5"
+                                                       Foreground="#6B7C90"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#2AFFFFFF"/>
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding MusicWidget.MusicMonitorOnly}"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#4A3308"/>
+                                            <Setter TargetName="Bd"
+                                                    Property="BorderBrush"
+                                                    Value="#FFC66D"/>
+                                            <Setter TargetName="Glyph"
+                                                    Property="Fill"
+                                                    Value="#FFC66D"/>
+                                            <Setter TargetName="GlyphSlash"
+                                                    Property="Visibility"
+                                                    Value="Collapsed"/>
+                                            <Setter TargetName="Label"
+                                                    Property="Foreground"
+                                                    Value="#FFC66D"/>
+                                            <Setter TargetName="StateWord"
+                                                    Property="Text"
+                                                    Value="on"/>
+                                            <Setter TargetName="StateWord"
+                                                    Property="Foreground"
+                                                    Value="#FFC66D"/>
+                                            <Setter TargetName="StateWord"
+                                                    Property="FontWeight"
+                                                    Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Command="{Binding MusicWidget.ToggleMusicIgnoresPushToTalkCommand}"
+                                Margin="3,0,0,0"
+                                Cursor="Hand"
+                                ToolTipService.ShowDuration="60000">
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <TextBlock Text="Ignore PTT — while ON, the music keeps playing into the mic channel when push-to-talk holds your voice silent. Only relevant while MicMixer's push-to-talk is on."
+                                               MaxWidth="260"
+                                               TextWrapping="Wrap"/>
+                                </ToolTip>
+                            </Button.ToolTip>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd"
+                                            Background="Transparent"
+                                            BorderBrush="#3AFFFFFF"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="0,4">
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Center">
+                                            <Grid Width="11"
+                                                  Height="11"
+                                                  VerticalAlignment="Center"
+                                                  Margin="0,0,5,0">
+                                                <Path x:Name="Glyph"
+                                                      Data="{StaticResource MusicIconNote}"
+                                                      Stretch="Uniform"
+                                                      Fill="#8B9FB5"/>
+                                                <Path x:Name="GlyphSlash"
+                                                      Data="{StaticResource MusicIconSlash}"
+                                                      Stretch="Uniform"
+                                                      Fill="#8B9FB5"/>
+                                            </Grid>
+                                            <TextBlock x:Name="Label"
+                                                       Text="Ignore PTT"
+                                                       FontSize="10.5"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#8B9FB5"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="StateWord"
+                                                       Text="off"
+                                                       FontSize="10.5"
+                                                       Foreground="#6B7C90"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#2AFFFFFF"/>
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding MusicWidget.MusicIgnoresPushToTalk}"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#3A2F63"/>
+                                            <Setter TargetName="Bd"
+                                                    Property="BorderBrush"
+                                                    Value="#C9BEFF"/>
+                                            <Setter TargetName="Glyph"
+                                                    Property="Fill"
+                                                    Value="#C9BEFF"/>
+                                            <Setter TargetName="GlyphSlash"
+                                                    Property="Visibility"
+                                                    Value="Collapsed"/>
+                                            <Setter TargetName="Label"
+                                                    Property="Foreground"
+                                                    Value="#C9BEFF"/>
+                                            <Setter TargetName="StateWord"
+                                                    Property="Text"
+                                                    Value="on"/>
+                                            <Setter TargetName="StateWord"
+                                                    Property="Foreground"
+                                                    Value="#C9BEFF"/>
+                                            <Setter TargetName="StateWord"
+                                                    Property="FontWeight"
+                                                    Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </UniformGrid>
 
                     <TextBlock Text="{Binding MusicWidget.ErrorMessage}"
                                Foreground="#FF9B9B"
