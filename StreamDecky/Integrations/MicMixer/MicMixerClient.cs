@@ -381,6 +381,12 @@ public sealed class MicMixerClient : IMicMixerClient
     public Task SetVolumesLinkedAsync(bool linked, CancellationToken cancellationToken = default) =>
         SendStateCommandAsync("setVolumesLinked", new { linked }, cancellationToken);
 
+    public Task SetMusicIgnoresPushToTalkAsync(bool enabled, CancellationToken cancellationToken = default) =>
+        SendStateCommandAsync("setMusicIgnoresPushToTalk", new { enabled }, cancellationToken);
+
+    public Task SetMusicMonitorOnlyAsync(bool enabled, CancellationToken cancellationToken = default) =>
+        SendStateCommandAsync("setMusicMonitorOnly", new { enabled }, cancellationToken);
+
     public Task EnqueueTrackAsync(string trackId, CancellationToken cancellationToken = default) =>
         SendStateCommandAsync("enqueueTrack", new { trackId }, cancellationToken);
 

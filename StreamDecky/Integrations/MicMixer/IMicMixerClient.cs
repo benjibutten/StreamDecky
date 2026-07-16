@@ -40,6 +40,8 @@ public interface IMicMixerClient : IDisposable, IAsyncDisposable
     Task SetMusicVolumeAsync(double volume, CancellationToken cancellationToken = default);
     Task SetMonitorVolumeAsync(double volume, CancellationToken cancellationToken = default);
     Task SetVolumesLinkedAsync(bool linked, CancellationToken cancellationToken = default);
+    Task SetMusicIgnoresPushToTalkAsync(bool enabled, CancellationToken cancellationToken = default);
+    Task SetMusicMonitorOnlyAsync(bool enabled, CancellationToken cancellationToken = default);
     Task EnqueueTrackAsync(string trackId, CancellationToken cancellationToken = default);
     Task RemoveQueueItemAsync(int index, CancellationToken cancellationToken = default);
     Task MoveQueueItemAsync(int fromIndex, int toIndex, CancellationToken cancellationToken = default);

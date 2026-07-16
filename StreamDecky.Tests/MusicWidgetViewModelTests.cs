@@ -207,6 +207,52 @@ public sealed class MusicWidgetViewModelTests
     }
 
     [Fact]
+    public void MusicRouting_ShouldBeSupported_WhenTheServerAdvertisesTheCapability()
+    {
+        var client = new FakeMicMixerClient();
+        using var viewModel = new MusicWidgetViewModel(client);
+
+        Assert.False(viewModel.SupportsMusicRouting);
+
+        client.RaiseConnected();
+        Assert.True(viewModel.SupportsMusicRouting);
+
+        client.RaiseConnectionState(MicMixerConnectionState.Disconnected);
+        Assert.False(viewModel.SupportsMusicRouting);
+    }
+
+    [Fact]
+    public void MusicRouting_ShouldBeHidden_AgainstAnOlderMicMixer()
+    {
+        var client = new FakeMicMixerClient
+        {
+            ServerInfo = new MicMixerHello("MicMixer", "0.9", 1, new[] { "state", "transport" })
+        };
+        using var viewModel = new MusicWidgetViewModel(client);
+        client.RaiseConnected();
+
+        Assert.False(viewModel.SupportsMusicRouting);
+    }
+
+    [Fact]
+    public void MusicRoutingToggles_ShouldFollowStateAndToggleCommands()
+    {
+        var client = new FakeMicMixerClient();
+        using var viewModel = new MusicWidgetViewModel(client);
+        client.RaiseConnected();
+
+        client.RaiseState(CreateState() with { MusicIgnoresPushToTalk = true, MusicMonitorOnly = true });
+        Assert.True(viewModel.MusicIgnoresPushToTalk);
+        Assert.True(viewModel.MusicMonitorOnly);
+
+        viewModel.ToggleMusicIgnoresPushToTalkCommand.Execute(null);
+        Assert.Contains("setMusicIgnoresPushToTalk:False", client.Commands);
+
+        viewModel.ToggleMusicMonitorOnlyCommand.Execute(null);
+        Assert.Contains("setMusicMonitorOnly:False", client.Commands);
+    }
+
+    [Fact]
     public void CommandsWhileDisconnected_ShouldBeIgnored()
     {
         var client = new FakeMicMixerClient();
@@ -301,7 +347,12 @@ public sealed class MusicWidgetViewModelTests
 
         public MicMixerConnectionState ConnectionState { get; private set; } = MicMixerConnectionState.Stopped;
         public bool IsConnected => ConnectionState == MicMixerConnectionState.Connected;
-        public MicMixerHello? ServerInfo => null;
+
+        /// <summary>Mirrors the real client: populated by the hello handshake before
+        /// Connected is raised. Defaults to a current server advertising musicRouting.</summary>
+        public MicMixerHello? ServerInfo { get; set; } =
+            new("MicMixer", "1.0", 1, new[] { "state", "transport", "musicRouting" });
+
         public MicMixerMusicState? State { get; private set; }
 
         public void RaiseConnected()
@@ -365,6 +416,12 @@ public sealed class MusicWidgetViewModelTests
 
         public Task SetVolumesLinkedAsync(bool linked, CancellationToken cancellationToken = default) =>
             Record($"setVolumesLinked:{linked}");
+
+        public Task SetMusicIgnoresPushToTalkAsync(bool enabled, CancellationToken cancellationToken = default) =>
+            Record($"setMusicIgnoresPushToTalk:{enabled}");
+
+        public Task SetMusicMonitorOnlyAsync(bool enabled, CancellationToken cancellationToken = default) =>
+            Record($"setMusicMonitorOnly:{enabled}");
 
         public Task EnqueueTrackAsync(string trackId, CancellationToken cancellationToken = default) => Record($"enqueueTrack:{trackId}");
         public Task RemoveQueueItemAsync(int index, CancellationToken cancellationToken = default) => Record($"removeQueueItem:{index}");
