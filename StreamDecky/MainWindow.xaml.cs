@@ -49,6 +49,7 @@ public partial class MainWindow : Window
         _startHiddenInTray = startHiddenInTray;
         DataContext = _viewModel;
         InitializeComponent();
+        VersionText.Text = AppVersion.DisplayText;
         Loaded += MainWindow_Loaded;
         StateChanged += MainWindow_StateChanged;
         InitializeTrayIcon();
