@@ -14,6 +14,10 @@ public class DeckProfile
     public const double MaxMusicWidgetWidth = 700;
     public const double MinMusicWidgetHeight = 260;
     public const double MaxMusicWidgetHeight = 3000;
+    public const double MinFormsPanelWidth = 300;
+    public const double MaxFormsPanelWidth = 700;
+    public const double MinFormsPanelHeight = 220;
+    public const double MaxFormsPanelHeight = 3000;
 
     public int SchemaVersion { get; set; }
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
@@ -45,6 +49,14 @@ public class DeckProfile
     public double QuickTextPanelHeight { get; set; } = 380;
     public double QuickTextFontSize { get; set; } = 12;
     public List<ActionStep> QuickTextActionSteps { get; set; } = new();
+    public List<FormTemplate> FormTemplates { get; set; } = new();
+    public string ActiveFormTemplateId { get; set; } = string.Empty;
+    public bool FormsPanelVisible { get; set; }
+    public double FormsPanelX { get; set; } = 30;
+    public double FormsPanelY { get; set; } = 96;
+    public double FormsPanelWidth { get; set; } = 380;
+    public double FormsPanelHeight { get; set; } = 460;
+    public bool FormsHistoryCountsTodayOnly { get; set; } = true;
     public bool MusicWidgetVisible { get; set; }
     public bool MusicWidgetMinimized { get; set; }
     public double MusicWidgetX { get; set; } = 30;
@@ -80,6 +92,7 @@ public class DeckProfile
         QuickTextCollections ??= new List<QuickTextCollection>();
         QuickTextCategories ??= new List<QuickTextCategory>();
         QuickTextItems ??= new List<QuickTextItem>();
+        FormTemplates ??= new List<FormTemplate>();
 
         if (Pages.Count == 0)
             Pages.Add(new DeckPage());
@@ -148,6 +161,21 @@ public class DeckProfile
 
         QuickTextPanelX = Math.Max(0, QuickTextPanelX);
         QuickTextPanelY = Math.Max(0, QuickTextPanelY);
+
+        foreach (var template in FormTemplates)
+            template.EnsureInitialized();
+
+        ActiveFormTemplateId ??= string.Empty;
+        if (!string.IsNullOrWhiteSpace(ActiveFormTemplateId)
+            && !FormTemplates.Any(template => string.Equals(template.Id, ActiveFormTemplateId, StringComparison.Ordinal)))
+        {
+            ActiveFormTemplateId = FormTemplates.FirstOrDefault()?.Id ?? string.Empty;
+        }
+
+        FormsPanelWidth = Math.Clamp(FormsPanelWidth == 0 ? 380 : FormsPanelWidth, MinFormsPanelWidth, MaxFormsPanelWidth);
+        FormsPanelHeight = Math.Clamp(FormsPanelHeight == 0 ? 460 : FormsPanelHeight, MinFormsPanelHeight, MaxFormsPanelHeight);
+        FormsPanelX = Math.Max(0, FormsPanelX);
+        FormsPanelY = Math.Max(0, FormsPanelY);
 
         MusicWidgetWidth = Math.Clamp(MusicWidgetWidth == 0 ? 380 : MusicWidgetWidth, MinMusicWidgetWidth, MaxMusicWidgetWidth);
         MusicWidgetHeight = Math.Clamp(MusicWidgetHeight == 0 ? 540 : MusicWidgetHeight, MinMusicWidgetHeight, MaxMusicWidgetHeight);
