@@ -167,6 +167,22 @@
         <Geometry x:Key="MusicIconSlash">M3,4.27L4.27,3L21,19.73L19.73,21L3,4.27Z</Geometry>
         <Geometry x:Key="MusicIconMinimize">M20,14H4V10H20V14Z</Geometry>
         <Geometry x:Key="MusicIconRestore">M4,8H8V4H20V16H16V20H4V8M16,8V14H18V6H10V8H16M6,12V18H14V12H6Z</Geometry>
+        <Geometry x:Key="FormsIconClipboard">M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V9H7V7M7,11H17V13H7V11M7,15H13V17H7V15Z</Geometry>
+        <Geometry x:Key="FormsIconCopy">M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z</Geometry>
+        <Geometry x:Key="FormsIconCheck">M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z</Geometry>
+
+        <Style x:Key="FormsKeyboardFocusVisual" TargetType="Control">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Control">
+                        <Border BorderBrush="#C9E5FF"
+                                BorderThickness="2"
+                                CornerRadius="7"
+                                Margin="-3"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <Style x:Key="MusicTransportButton"
                 TargetType="Button">
@@ -456,6 +472,61 @@
                             Style="{StaticResource TopMiniButton}"/>
                 </StackPanel>
             </Border>
+
+            <Button DockPanel.Dock="Right"
+                    Command="{Binding ToggleFormsPanelCommand}"
+                    ToolTip="Show or hide the forms panel"
+                    Foreground="#EEEEEE"
+                    BorderThickness="0"
+                    Padding="12,8"
+                    Margin="0,0,8,0"
+                    FontSize="13"
+                    Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background"
+                                Value="#2F000000"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd"
+                                            Background="{TemplateBinding Background}"
+                                            CornerRadius="6"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding FormsPanelVisible}"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#4A6EA0"/>
+                                        </DataTrigger>
+                                        <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                            <Setter TargetName="Bd"
+                                                    Property="Background"
+                                                    Value="#4A000000"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource FormsIconClipboard}"
+                          Width="11"
+                          Height="11"
+                          Stretch="Uniform"
+                          Fill="#EEEEEE"
+                          VerticalAlignment="Center"
+                          Margin="0,0,6,0"/>
+                    <TextBlock Text="Forms"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
 
             <Button DockPanel.Dock="Right"
                     Command="{Binding ToggleMusicWidgetCommand}"
@@ -1710,6 +1781,685 @@
                         MouseLeftButtonDown="QuickTextPanelResizeHandle_MouseLeftButtonDown"
                         MouseMove="QuickTextPanelResizeHandle_MouseMove"
                         MouseLeftButtonUp="QuickTextPanelResizeHandle_MouseLeftButtonUp">
+                    <Grid>
+                        <Line X1="4" Y1="10" X2="10" Y2="4"
+                              Stroke="#264C4C4C" StrokeThickness="1" SnapsToDevicePixels="True"/>
+                        <Line X1="6" Y1="10" X2="10" Y2="6"
+                              Stroke="#264C4C4C" StrokeThickness="1" SnapsToDevicePixels="True"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Forms fill-in panel -->
+        <Border x:Name="FormsPanel"
+                Width="{Binding FormsPanelWidth, Mode=TwoWay}"
+                Height="{Binding FormsPanelHeight, Mode=TwoWay}"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="0"
+                Panel.ZIndex="9"
+                Visibility="{Binding FormsPanelVisible, Converter={StaticResource BoolToVisibility}}"
+                Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
+                Opacity="{Binding ButtonOverlayOpacity}"
+                BorderBrush="#44FFFFFF"
+                BorderThickness="1"
+                CornerRadius="10">
+            <Border.RenderTransform>
+                <TranslateTransform X="{Binding FormsPanelX, Mode=TwoWay}"
+                                    Y="{Binding FormsPanelY, Mode=TwoWay}"/>
+            </Border.RenderTransform>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.RowSpan="3"
+                        Background="#A810141D"
+                        CornerRadius="10"/>
+
+                <!-- Header: drag handle + form chips -->
+                <Border Grid.Row="0"
+                        Background="#28000000"
+                        CornerRadius="10,10,0,0">
+                    <StackPanel Margin="10,8,10,6">
+                        <Border Background="Transparent"
+                                Cursor="SizeAll"
+                                Padding="0,0,0,7"
+                                MouseLeftButtonDown="FormsPanelHandle_MouseLeftButtonDown"
+                                MouseMove="FormsPanelHandle_MouseMove"
+                                MouseLeftButtonUp="FormsPanelHandle_MouseLeftButtonUp">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right"
+                                        Content="✕"
+                                        Command="{Binding HideFormsPanelCommand}"
+                                        Style="{StaticResource TopMiniButton}"
+                                        FontSize="11"
+                                        ToolTip="Hide the forms panel"/>
+                                <Button DockPanel.Dock="Right"
+                                        Command="{Binding ToggleFormHistoryCommand}"
+                                        ToolTip="Open history. Orange shows open submissions; green shows completed submissions."
+                                        Foreground="#D8E5F1"
+                                        BorderThickness="0"
+                                        FontSize="10"
+                                        Padding="8,3"
+                                        Margin="0,0,6,0"
+                                        Cursor="Hand"
+                                        FocusVisualStyle="{StaticResource FormsKeyboardFocusVisual}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="History" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding OverlayFormSubmissionCountScopeText}"
+                                                   Foreground="#7890A7"
+                                                   FontSize="8"
+                                                   FontWeight="SemiBold"
+                                                   VerticalAlignment="Center"
+                                                   Margin="5,0,0,0"/>
+                                        <Border Background="#493B24"
+                                                CornerRadius="7"
+                                                Padding="5,1"
+                                                Margin="7,0,0,0"
+                                                ToolTip="Open submissions">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="5" Height="5" Fill="#F2B84B"
+                                                         VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                <TextBlock Text="{Binding OpenOverlayFormSubmissionCount}"
+                                                           Foreground="#FFD784" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Background="#203D2B"
+                                                CornerRadius="7"
+                                                Padding="5,1"
+                                                Margin="4,0,0,0"
+                                                ToolTip="Completed submissions">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Data="{StaticResource FormsIconCheck}"
+                                                      Width="6" Height="6" Stretch="Uniform"
+                                                      Fill="#A6E3A1" VerticalAlignment="Center"
+                                                      Margin="0,0,4,0"/>
+                                                <TextBlock Text="{Binding CompletedOverlayFormSubmissionCount}"
+                                                           Foreground="#A6E3A1" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Background" Value="#26394B"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bd"
+                                                                Background="{TemplateBinding Background}"
+                                                                CornerRadius="5"
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsFormHistoryVisible}" Value="True">
+                                                    <Setter Property="Background" Value="#3C6387"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <TextBlock Text="Forms"
+                                           Foreground="#EAF2FA"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+                            </DockPanel>
+                        </Border>
+
+                        <ItemsControl ItemsSource="{Binding FormTemplates}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Name}"
+                                            Command="{Binding DataContext.SetFormTemplateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
+                                            BorderThickness="0"
+                                            Padding="10,4"
+                                            Margin="0,0,6,6"
+                                            Cursor="Hand"
+                                            FocusVisualStyle="{StaticResource FormsKeyboardFocusVisual}">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Background" Value="#26394B"/>
+                                                <Setter Property="Foreground" Value="#D8E5F1"/>
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
+                                                                    CornerRadius="6"
+                                                                    Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource StringEquals}">
+                                                                <Binding Path="Id"/>
+                                                                <Binding Path="DataContext.OverlayFormTemplate.Id" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Background" Value="#3C6387"/>
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Fields -->
+                <TextBlock Grid.Row="1"
+                           Text="No forms configured yet. Create one in the editor under Forms."
+                           Foreground="#8FA3B8"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Margin="12"
+                           Visibility="{Binding HasFormTemplates, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
+
+                <ScrollViewer Grid.Row="1"
+                              Margin="10,6,10,0"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Visibility="{Binding IsFormFillViewVisible, Converter={StaticResource BoolToVisibility}}">
+                    <ScrollViewer.Resources>
+                        <Style TargetType="ScrollBar" BasedOn="{StaticResource MusicScrollBar}"/>
+                    </ScrollViewer.Resources>
+                    <ItemsControl ItemsSource="{Binding FormSessionFields}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,10">
+                                    <TextBlock Text="{Binding Label}"
+                                               Foreground="#AFC3D6"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Focusable="False"
+                                               IsHitTestVisible="False"
+                                               Margin="0,0,0,3"/>
+
+                                    <!-- Choice options as chips: click prefills the editable text below -->
+                                    <ItemsControl ItemsSource="{Binding Options}"
+                                                  Visibility="{Binding IsChoice, Converter={StaticResource BoolToVisibility}}"
+                                                  Margin="0,0,0,2">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Content="{Binding Label}"
+                                                        Command="{Binding DataContext.ApplyOptionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        BorderThickness="0"
+                                                        Padding="8,3"
+                                                        Margin="0,0,5,5"
+                                                        Cursor="Hand"
+                                                        ToolTip="Choice option — press Enter or Space to apply"
+                                                        FocusVisualStyle="{StaticResource FormsKeyboardFocusVisual}">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button">
+                                                            <Setter Property="Background" Value="#26394B"/>
+                                                            <Setter Property="Foreground" Value="#D8E5F1"/>
+                                                            <Setter Property="Template">
+                                                                <Setter.Value>
+                                                                    <ControlTemplate TargetType="Button">
+                                                                        <Border Background="{TemplateBinding Background}"
+                                                                                CornerRadius="5"
+                                                                                Padding="{TemplateBinding Padding}">
+                                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                        </Border>
+                                                                    </ControlTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                            <Style.Triggers>
+                                                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                                                    <Setter Property="Background" Value="#527FA8"/>
+                                                                    <Setter Property="Foreground" Value="White"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </Trigger>
+                                                                <DataTrigger Value="True">
+                                                                    <DataTrigger.Binding>
+                                                                        <MultiBinding Converter="{StaticResource StringEquals}">
+                                                                            <Binding Path="Id"/>
+                                                                            <Binding Path="DataContext.SelectedOption.Id" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                                                                        </MultiBinding>
+                                                                    </DataTrigger.Binding>
+                                                                    <Setter Property="Background" Value="#3C6387"/>
+                                                                    <Setter Property="Foreground" Value="White"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <TextBox x:Name="FormFieldValueBox"
+                                             Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Foreground="#EAF2FA"
+                                             CaretBrush="#EAF2FA"
+                                             FontSize="12"
+                                             Padding="7,5"
+                                             FocusVisualStyle="{StaticResource FormsKeyboardFocusVisual}">
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="Background" Value="#232F3D"/>
+                                                <Setter Property="BorderBrush" Value="#3A4C5E"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsKeyboardFocused" Value="True">
+                                                        <Setter Property="Background" Value="#2B3D50"/>
+                                                        <Setter Property="BorderBrush" Value="#9CCAF2"/>
+                                                        <Setter Property="BorderThickness" Value="2"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+
+                                    <!-- Autocomplete suggestions from previous submissions -->
+                                    <ItemsControl ItemsSource="{Binding Suggestions}"
+                                                  Visibility="{Binding HasSuggestions, Converter={StaticResource BoolToVisibility}}"
+                                                  Margin="0,4,0,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Content="{Binding}"
+                                                        Command="{Binding DataContext.ApplySuggestionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Background="#1E2E3E"
+                                                        Foreground="#9FB8CE"
+                                                        BorderThickness="0"
+                                                        FontSize="10"
+                                                        Padding="7,2"
+                                                        Margin="0,0,5,4"
+                                                        Cursor="Hand"
+                                                        FocusVisualStyle="{StaticResource FormsKeyboardFocusVisual}">
+                                                    <Button.Template>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border x:Name="Bd"
+                                                                    Background="{TemplateBinding Background}"
+                                                                    BorderBrush="#2C4257"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="9"
+                                                                    Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter TargetName="Bd" Property="Background" Value="#2C4257"/>
+                                                                </Trigger>
+                                                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                                                    <Setter TargetName="Bd" Property="Background" Value="#3C6387"/>
+                                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="#9CCAF2"/>
+                                                                    <Setter Property="Foreground" Value="White"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Button.Template>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsMultiline}" Value="True">
+                                        <Setter TargetName="FormFieldValueBox" Property="AcceptsReturn" Value="True"/>
+                                        <Setter TargetName="FormFieldValueBox" Property="TextWrapping" Value="Wrap"/>
+                                        <Setter TargetName="FormFieldValueBox" Property="MinHeight" Value="56"/>
+                                        <Setter TargetName="FormFieldValueBox" Property="MaxHeight" Value="120"/>
+                                        <Setter TargetName="FormFieldValueBox" Property="VerticalScrollBarVisibility" Value="Auto"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Preview + actions -->
+                <StackPanel Grid.Row="2"
+                            Margin="10,6,10,10"
+                            Visibility="{Binding IsFormFillViewVisible, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="PREVIEW"
+                               Foreground="#70859A"
+                               FontSize="9"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,3"/>
+                    <Border Background="#1A2430"
+                            BorderBrush="#2C4257"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="8"
+                            MaxHeight="110"
+                            Margin="0,0,0,8">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <ScrollViewer.Resources>
+                                <Style TargetType="ScrollBar" BasedOn="{StaticResource MusicScrollBar}"/>
+                            </ScrollViewer.Resources>
+                            <TextBlock Text="{Binding FormPreviewText}"
+                                       Foreground="#C6D4E4"
+                                       FontSize="11"
+                                       FontFamily="Consolas"
+                                       TextWrapping="Wrap"/>
+                        </ScrollViewer>
+                    </Border>
+                    <TextBlock Text="{Binding FormSessionValidationText}"
+                               Foreground="#F38BA8"
+                               FontSize="10"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8"
+                               Visibility="{Binding HasFormSessionValidationError, Converter={StaticResource BoolToVisibility}}"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Save"
+                                Command="{Binding SaveFormResultCommand}"
+                                ToolTip="Save to the history, advance counters, and reset the form"
+                                Background="#2D5A27"
+                                Foreground="White"
+                                BorderThickness="0"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Padding="16,6"
+                                Margin="0,0,8,0"
+                                Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd"
+                                            Background="{TemplateBinding Background}"
+                                            CornerRadius="6"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#3D7A37"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Content="Copy"
+                                Command="{Binding CopyFormResultCommand}"
+                                ToolTip="Copy the result to the clipboard and record the submission"
+                                Visibility="{Binding OverlayFormTemplate.ShowCopyButton, Converter={StaticResource BoolToVisibility}}"
+                                Background="#2A4D7A"
+                                Foreground="White"
+                                BorderThickness="0"
+                                FontSize="12"
+                                Padding="14,6"
+                                Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd"
+                                            Background="{TemplateBinding Background}"
+                                            CornerRadius="6"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#3A6099"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Content="Send"
+                                Click="FormSend_Click"
+                                ToolTip="Close the overlay and run the form's send action in the previous window"
+                                Background="#6B4E1F"
+                                Foreground="White"
+                                BorderThickness="0"
+                                FontSize="12"
+                                Padding="14,6"
+                                Margin="8,0,0,0"
+                                Cursor="Hand"
+                                Visibility="{Binding HasFormSendAction, Converter={StaticResource BoolToVisibility}}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd"
+                                            Background="{TemplateBinding Background}"
+                                            CornerRadius="6"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#8A6528"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Submission history: per-field copy with done-checkmarks -->
+                <ScrollViewer Grid.Row="1"
+                              Grid.RowSpan="2"
+                              Margin="10,6,10,10"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Visibility="{Binding IsFormHistoryVisible, Converter={StaticResource BoolToVisibility}}">
+                    <ScrollViewer.Resources>
+                        <Style TargetType="ScrollBar" BasedOn="{StaticResource MusicScrollBar}"/>
+                    </ScrollViewer.Resources>
+                    <StackPanel>
+                        <TextBlock Text="Nothing saved yet. Fill in a form and press Save."
+                                   Foreground="#8FA3B8"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Visibility="{Binding HasOverlayFormSubmissions, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
+                        <ItemsControl ItemsSource="{Binding OverlayFormSubmissions}"
+                                      Grid.IsSharedSizeScope="True">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="8"
+                                            BorderThickness="1"
+                                            Padding="10,8"
+                                            Margin="0,0,0,8">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#1C2836"/>
+                                                <Setter Property="BorderBrush" Value="#2C4257"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                        <Setter Property="Opacity" Value="0.5"/>
+                                                        <Setter Property="Background" Value="#16202B"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel>
+                                            <!-- Card header -->
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right"
+                                                        Command="{Binding CopyAllCommand}"
+                                                        Style="{StaticResource TopMiniButton}"
+                                                        Padding="6,3"
+                                                        ToolTip="Copy the full text">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Path Data="{StaticResource FormsIconCopy}"
+                                                              Width="10" Height="10" Stretch="Uniform"
+                                                              Fill="#9FB8CE" VerticalAlignment="Center"
+                                                              Margin="0,0,5,0"/>
+                                                        <TextBlock Text="All" Foreground="#9FB8CE" FontSize="10"
+                                                                   VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                                <Border DockPanel.Dock="Right"
+                                                        Background="#1F3B2A"
+                                                        CornerRadius="8"
+                                                        Padding="7,2"
+                                                        Margin="0,0,6,0"
+                                                        VerticalAlignment="Center"
+                                                        Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVisibility}}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Path Data="{StaticResource FormsIconCheck}"
+                                                              Width="8" Height="8" Stretch="Uniform"
+                                                              Fill="#A6E3A1" VerticalAlignment="Center"
+                                                              Margin="0,0,4,0"/>
+                                                        <TextBlock Text="Done" Foreground="#A6E3A1" FontSize="9"
+                                                                   FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Border>
+                                                <CheckBox IsChecked="{Binding IsCompleted, Mode=TwoWay}"
+                                                          ToolTip="Mark as done — checked automatically when every field has been copied"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,8,0"
+                                                          Cursor="Hand"/>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding TemplateName}"
+                                                               Foreground="#EAF2FA"
+                                                               FontSize="12"
+                                                               FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding CreatedText}"
+                                                               Foreground="#5F7489"
+                                                               FontSize="10"
+                                                               VerticalAlignment="Bottom"
+                                                               Margin="8,0,0,1"/>
+                                                </StackPanel>
+                                            </DockPanel>
+
+                                            <!-- Field rows: hidden once the card is done -->
+                                            <StackPanel Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                                                <Border Height="1"
+                                                        Background="#22334A"
+                                                        Margin="0,7,0,7"
+                                                        Visibility="{Binding HasFieldValues, Converter={StaticResource BoolToVisibility}}"/>
+                                                <ItemsControl ItemsSource="{Binding FieldValues}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="0,0,0,4">
+                                                                <Grid.Style>
+                                                                    <Style TargetType="Grid">
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsCopied}" Value="True">
+                                                                                <Setter Property="Opacity" Value="0.55"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Grid.Style>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto" SharedSizeGroup="FormHistoryLabel"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Grid.Column="0"
+                                                                           Text="{Binding LabelText}"
+                                                                           Foreground="#70859A"
+                                                                           FontSize="10"
+                                                                           MaxWidth="120"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           VerticalAlignment="Center"
+                                                                           Margin="0,0,8,0"/>
+                                                                <Grid Grid.Column="1" Margin="0,0,8,0">
+                                                                    <DockPanel MouseLeftButtonDown="FormHistoryFieldValue_MouseLeftButtonDown"
+                                                                               Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                                                                        <TextBlock DockPanel.Dock="Right"
+                                                                                   Text="✎"
+                                                                                   Foreground="#7890A7"
+                                                                                   FontSize="10"
+                                                                                   Margin="6,0,0,0"
+                                                                                   VerticalAlignment="Center"
+                                                                                   IsHitTestVisible="False"
+                                                                                   ToolTip="Double-click the value to make a quick correction"
+                                                                                   Visibility="{Binding CanEdit, Converter={StaticResource BoolToVisibility}}"/>
+                                                                        <TextBlock Text="{Binding Value}"
+                                                                                   Foreground="#D5E2EF"
+                                                                                   FontSize="11"
+                                                                                   TextWrapping="Wrap"
+                                                                                   VerticalAlignment="Center"/>
+                                                                    </DockPanel>
+                                                                    <TextBox Text="{Binding EditValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#26394B"
+                                                                             Foreground="#F4F8FC"
+                                                                             CaretBrush="#F4F8FC"
+                                                                             BorderBrush="#9CCAF2"
+                                                                             BorderThickness="1"
+                                                                             FontSize="11"
+                                                                             Padding="5,3"
+                                                                             Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}"
+                                                                             IsVisibleChanged="FormHistoryFieldEditBox_IsVisibleChanged"
+                                                                             LostKeyboardFocus="FormHistoryFieldEditBox_LostKeyboardFocus"
+                                                                             KeyDown="FormHistoryFieldEditBox_KeyDown"/>
+                                                                </Grid>
+                                                                <Button Grid.Column="2"
+                                                                        Command="{Binding CopyCommand}"
+                                                                        Style="{StaticResource TopMiniButton}"
+                                                                        Padding="6,3"
+                                                                        VerticalAlignment="Center"
+                                                                        ToolTip="Copy this value — checks it off automatically">
+                                                                    <Path Width="11" Height="11" Stretch="Uniform"
+                                                                          VerticalAlignment="Center">
+                                                                        <Path.Style>
+                                                                            <Style TargetType="Path">
+                                                                                <Setter Property="Data" Value="{StaticResource FormsIconCopy}"/>
+                                                                                <Setter Property="Fill" Value="#9FB8CE"/>
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsCopied}" Value="True">
+                                                                                        <Setter Property="Data" Value="{StaticResource FormsIconCheck}"/>
+                                                                                        <Setter Property="Fill" Value="#A6E3A1"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </Path.Style>
+                                                                    </Path>
+                                                                </Button>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Bottom-left resize handle -->
+                <Border Grid.RowSpan="3"
+                        Width="14"
+                        Height="14"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom"
+                        Margin="-7,0,0,-7"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Cursor="SizeNESW"
+                        Panel.ZIndex="20"
+                        MouseLeftButtonDown="FormsPanelResizeHandle_MouseLeftButtonDown"
+                        MouseMove="FormsPanelResizeHandle_MouseMove"
+                        MouseLeftButtonUp="FormsPanelResizeHandle_MouseLeftButtonUp">
                     <Grid>
                         <Line X1="4" Y1="10" X2="10" Y2="4"
                               Stroke="#264C4C4C" StrokeThickness="1" SnapsToDevicePixels="True"/>

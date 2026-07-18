@@ -385,6 +385,22 @@ public partial class MainWindow : Window
             popup.IsOpen = !popup.IsOpen;
     }
 
+    private void InsertFormToken_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: string token } || string.IsNullOrWhiteSpace(token))
+            return;
+
+        var box = FormOutputTemplateBox;
+        if (box == null)
+            return;
+
+        string insert = "{" + token + "}";
+        int caret = box.CaretIndex;
+        box.Text = box.Text.Insert(caret, insert);
+        box.CaretIndex = caret + insert.Length;
+        box.Focus();
+    }
+
     private void SetTextInput_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.NewButtonCommand.Execute(null);

@@ -16,6 +16,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly ProfileService _profileService;
     private readonly TextInputActionService _textInputService;
     private readonly MultiActionService _multiActionService;
+    private readonly FormDataService _formDataService;
     private readonly List<ButtonViewModel> _trackedButtons = new();
 
     private DeckProfileStore _profileStore;
@@ -27,11 +28,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public MainViewModel(
         ProfileService? profileService = null,
         TextInputActionService? textInputService = null,
-        MultiActionService? multiActionService = null)
+        MultiActionService? multiActionService = null,
+        FormDataService? formDataService = null)
     {
         _profileService = profileService ?? new ProfileService();
         _textInputService = textInputService ?? new TextInputActionService();
         _multiActionService = multiActionService ?? new MultiActionService();
+        _formDataService = formDataService ?? new FormDataService();
 
         // Auto-save: debounce 1 second after last change
         _autoSaveTimer = new System.Timers.Timer(1000) { AutoReset = false };
@@ -46,6 +49,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         StickyNotesVisible = true;
         LoadQuickTextCollections();
         LoadQuickTextActionSteps();
+        LoadFormTemplates();
 
         RebuildProfileOptions();
         RebuildLayoutTargets();
@@ -74,13 +78,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isClipboardEditorMode;
 
+    [ObservableProperty]
+    private bool _isFormsEditorMode;
+
     partial void OnIsClipboardEditorModeChanged(bool value)
     {
         OnPropertyChanged(nameof(IsButtonEditorMode));
     }
 
+    partial void OnIsFormsEditorModeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsButtonEditorMode));
+    }
+
     public bool IsButtonSelected => SelectedButton != null;
-    public bool IsButtonEditorMode => !IsClipboardEditorMode;
+    public bool IsButtonEditorMode => !IsClipboardEditorMode && !IsFormsEditorMode;
 
     public string OverlayBackgroundColor
     {
@@ -445,12 +457,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void ShowButtonEditor()
     {
         IsClipboardEditorMode = false;
+        IsFormsEditorMode = false;
     }
 
     [RelayCommand]
     private void ShowClipboardEditor()
     {
+        IsFormsEditorMode = false;
         IsClipboardEditorMode = true;
+    }
+
+    [RelayCommand]
+    private void ShowFormsEditor()
+    {
+        IsClipboardEditorMode = false;
+        IsFormsEditorMode = true;
     }
 
     [RelayCommand]
@@ -688,6 +709,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         DetachButtonHandlers();
+        DetachFormTemplateHandlers();
         _musicWidget?.Dispose();
     }
 }

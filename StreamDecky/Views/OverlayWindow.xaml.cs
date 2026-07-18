@@ -110,6 +110,15 @@ public partial class OverlayWindow : Window
     private double _quickTextPanelResizeStartX;
     private double _quickTextPanelResizeStartWidth;
     private double _quickTextPanelResizeStartHeight;
+    private bool _isDraggingFormsPanel;
+    private System.Windows.Point _formsPanelDragStart;
+    private double _formsPanelStartX;
+    private double _formsPanelStartY;
+    private bool _isResizingFormsPanel;
+    private System.Windows.Point _formsPanelResizeStart;
+    private double _formsPanelResizeStartX;
+    private double _formsPanelResizeStartWidth;
+    private double _formsPanelResizeStartHeight;
     private bool _isDraggingMusicWidget;
     private System.Windows.Point _musicWidgetDragStart;
     private double _musicWidgetStartX;
@@ -161,6 +170,7 @@ public partial class OverlayWindow : Window
         OverlayInterop.ForceFocus(this);
         EnsureOverlaySelection();
         Dispatcher.BeginInvoke(new Action(ClampQuickTextPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
+        Dispatcher.BeginInvoke(new Action(ClampFormsPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         Dispatcher.BeginInvoke(new Action(ClampMusicWidgetToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         UpdateGamepadPolling();
     }
@@ -190,6 +200,54 @@ public partial class OverlayWindow : Window
         if (e.Key == Key.Escape)
         {
             CloseOverlay();
+            e.Handled = true;
+        }
+    }
+
+    private void FormHistoryFieldValue_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 2
+            || sender is not FrameworkElement { DataContext: OverlayFormSubmissionFieldViewModel field }
+            || !field.CanEdit)
+        {
+            return;
+        }
+
+        field.BeginEdit();
+        e.Handled = true;
+    }
+
+    private void FormHistoryFieldEditBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox textBox || !textBox.IsVisible)
+            return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            textBox.Focus();
+            textBox.SelectAll();
+        }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void FormHistoryFieldEditBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: OverlayFormSubmissionFieldViewModel field })
+            field.CommitEdit();
+    }
+
+    private void FormHistoryFieldEditBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: OverlayFormSubmissionFieldViewModel field })
+            return;
+
+        if (e.Key == Key.Escape)
+        {
+            field.CancelEdit();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter)
+        {
+            field.CommitEdit();
             e.Handled = true;
         }
     }
@@ -930,6 +988,140 @@ public partial class OverlayWindow : Window
             element.ReleaseMouseCapture();
 
         _isResizingQuickTextPanel = false;
+    }
+
+    private void FormsPanelHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isDraggingFormsPanel = true;
+        _formsPanelDragStart = e.GetPosition(this);
+        _formsPanelStartX = _viewModel.FormsPanelX;
+        _formsPanelStartY = _viewModel.FormsPanelY;
+
+        if (sender is UIElement element)
+            element.CaptureMouse();
+
+        e.Handled = true;
+    }
+
+    private void FormsPanelHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isDraggingFormsPanel)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _formsPanelDragStart.X;
+        double dy = pos.Y - _formsPanelDragStart.Y;
+
+        UpdateFormsPanelPosition(_formsPanelStartX + dx, _formsPanelStartY + dy);
+        e.Handled = true;
+    }
+
+    private void FormsPanelHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _isDraggingFormsPanel = false;
+    }
+
+    private void UpdateFormsPanelPosition(double desiredX, double desiredY)
+    {
+        double panelWidth = FormsPanel.ActualWidth > 1 ? FormsPanel.ActualWidth : _viewModel.FormsPanelWidth;
+        double panelHeight = FormsPanel.ActualHeight > 1 ? FormsPanel.ActualHeight : _viewModel.FormsPanelHeight;
+
+        double maxX = Math.Max(0, ActualWidth - panelWidth - 12);
+        double maxY = Math.Max(0, ActualHeight - panelHeight - 12);
+        double minY = Math.Min(42, maxY);
+
+        _viewModel.FormsPanelX = Math.Clamp(desiredX, 0, maxX);
+        _viewModel.FormsPanelY = Math.Clamp(desiredY, minY, maxY);
+    }
+
+    private void ClampFormsPanelToBounds()
+    {
+        UpdateFormsPanelPosition(_viewModel.FormsPanelX, _viewModel.FormsPanelY);
+    }
+
+    private void FormsPanelResizeHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isResizingFormsPanel = true;
+        _formsPanelResizeStart = e.GetPosition(this);
+        _formsPanelResizeStartX = _viewModel.FormsPanelX;
+        _formsPanelResizeStartWidth = _viewModel.FormsPanelWidth;
+        _formsPanelResizeStartHeight = _viewModel.FormsPanelHeight;
+
+        if (sender is UIElement element)
+            element.CaptureMouse();
+
+        e.Handled = true;
+    }
+
+    private void FormsPanelResizeHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isResizingFormsPanel)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _formsPanelResizeStart.X;
+        double dy = pos.Y - _formsPanelResizeStart.Y;
+
+        // Match quick-text resize behavior: bottom-left handle moves the left edge while keeping the right edge anchored.
+        double rightEdge = Math.Min(_formsPanelResizeStartX + _formsPanelResizeStartWidth, ActualWidth - 12);
+        double desiredWidth = _formsPanelResizeStartWidth - dx;
+        double maxWidthByRightEdge = Math.Max(
+            Models.DeckProfile.MinFormsPanelWidth,
+            Math.Min(Models.DeckProfile.MaxFormsPanelWidth, rightEdge));
+        double clampedWidth = Math.Clamp(desiredWidth, Models.DeckProfile.MinFormsPanelWidth, maxWidthByRightEdge);
+
+        double desiredHeight = _formsPanelResizeStartHeight + dy;
+        double maxHeightByBounds = Math.Min(
+            Models.DeckProfile.MaxFormsPanelHeight,
+            Math.Max(Models.DeckProfile.MinFormsPanelHeight, ActualHeight - _viewModel.FormsPanelY - 12));
+        double clampedHeight = Math.Clamp(desiredHeight, Models.DeckProfile.MinFormsPanelHeight, maxHeightByBounds);
+
+        double desiredX = rightEdge - clampedWidth;
+        double maxX = Math.Max(0, ActualWidth - clampedWidth - 12);
+        _viewModel.FormsPanelX = Math.Clamp(desiredX, 0, maxX);
+        _viewModel.FormsPanelWidth = clampedWidth;
+        _viewModel.FormsPanelHeight = clampedHeight;
+        ClampFormsPanelToBounds();
+
+        e.Handled = true;
+    }
+
+    private void FormsPanelResizeHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _isResizingFormsPanel = false;
+    }
+
+    private async void FormSend_Click(object sender, RoutedEventArgs e)
+    {
+        string renderedText = _viewModel.GetRenderedFormText();
+        if (string.IsNullOrWhiteSpace(renderedText))
+            return;
+
+        if (!await _viewModel.RecordFormSubmissionAsync(renderedText))
+            return;
+
+        var prevHwnd = _previousForegroundWindow;
+        _viewModel.CloseOverlayCommand.Execute(null);
+        HideOverlay();
+
+        var mainWindow = System.Windows.Application.Current.MainWindow;
+        if (mainWindow != null)
+            mainWindow.WindowState = WindowState.Minimized;
+
+        OverlayInterop.ForceSetForegroundWindow(prevHwnd);
+        _viewModel.ExecuteFormSendAction(renderedText);
     }
 
     private void MusicWidgetHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
