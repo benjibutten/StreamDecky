@@ -95,6 +95,7 @@ Published releases are self-contained `win-x64` builds, so end users do not need
 In the main window, when a text field is not focused:
 
 - `Delete`: clear the selected button
+- Drag a configured button onto another slot to move it, or hold `Ctrl` while dragging to copy it; occupied slots ask before replacement
 - `Ctrl+C`: copy the selected button configuration
 - `Ctrl+V`: paste onto the selected button
 

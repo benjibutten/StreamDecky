@@ -12,6 +12,9 @@ using Popup = System.Windows.Controls.Primitives.Popup;
 
 public partial class MainWindow : Window
 {
+    private const string EditorButtonDragFormat = "StreamDecky.EditorButton";
+    private System.Windows.Point _buttonDragStart;
+    private ButtonViewModel? _buttonDragSource;
     private readonly MainViewModel _viewModel = new();
     private readonly bool _startHiddenInTray;
     private const int HOTKEY_ID = 9000;
@@ -702,6 +705,74 @@ public partial class MainWindow : Window
     {
         if (sender is System.Windows.Controls.Button { DataContext: ButtonViewModel buttonVm })
             _viewModel.SelectButtonAndShowEditorCommand.Execute(buttonVm);
+    }
+
+    private void DeckEditorButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _buttonDragStart = e.GetPosition(this);
+        _buttonDragSource = (sender as FrameworkElement)?.DataContext as ButtonViewModel;
+    }
+
+    private void DeckEditorButton_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _buttonDragSource is not { IsConfigured: true } source)
+            return;
+
+        var current = e.GetPosition(this);
+        if (Math.Abs(current.X - _buttonDragStart.X) < SystemParameters.MinimumHorizontalDragDistance
+            && Math.Abs(current.Y - _buttonDragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        _buttonDragSource = null;
+        var data = new System.Windows.DataObject(EditorButtonDragFormat, source);
+        System.Windows.DragDrop.DoDragDrop(
+            (DependencyObject)sender,
+            data,
+            System.Windows.DragDropEffects.Move | System.Windows.DragDropEffects.Copy);
+    }
+
+    private void DeckEditorButton_DragOver(object sender, System.Windows.DragEventArgs e)
+    {
+        var source = e.Data.GetData(EditorButtonDragFormat) as ButtonViewModel;
+        var target = (sender as FrameworkElement)?.DataContext as ButtonViewModel;
+        bool copy = (e.KeyStates & DragDropKeyStates.ControlKey) != 0;
+        e.Effects = source != null && target != null && source.Index != target.Index
+            ? copy ? System.Windows.DragDropEffects.Copy : System.Windows.DragDropEffects.Move
+            : System.Windows.DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void DeckEditorButton_Drop(object sender, System.Windows.DragEventArgs e)
+    {
+        var source = e.Data.GetData(EditorButtonDragFormat) as ButtonViewModel;
+        var target = (sender as FrameworkElement)?.DataContext as ButtonViewModel;
+        if (source == null || target == null || source.Index == target.Index)
+            return;
+
+        bool copy = (e.KeyStates & DragDropKeyStates.ControlKey) != 0;
+
+        if (target.IsConfigured)
+        {
+            string targetName = string.IsNullOrWhiteSpace(target.DisplayTitle)
+                ? target.SlotLabel
+                : $"{target.DisplayTitle} ({target.SlotLabel})";
+            bool confirmed = ConfirmDialog.Show(
+                this,
+                "Replace button?",
+                $"{(copy ? "Copying" : "Moving")} this button here will replace “{targetName}”. Continue?",
+                confirmText: "Replace",
+                danger: true);
+            if (!confirmed)
+                return;
+        }
+
+        if (copy)
+            _viewModel.CopyButtonTo(source, target);
+        else
+            _viewModel.MoveButton(source, target);
+        e.Handled = true;
     }
 
     private void DeckEditorButton_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)

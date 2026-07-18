@@ -577,6 +577,29 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return clone;
     }
 
+    public bool MoveButton(ButtonViewModel? source, ButtonViewModel? target)
+    {
+        if (source == null || target == null || source.Index == target.Index || !source.IsConfigured)
+            return false;
+
+        CurrentLayout.Buttons[target.Index] = source.Config;
+        CurrentLayout.Buttons[source.Index] = new ButtonConfig();
+        LoadCurrentLayout(target.Index);
+        ScheduleAutoSave();
+        return true;
+    }
+
+    public bool CopyButtonTo(ButtonViewModel? source, ButtonViewModel? target)
+    {
+        if (source == null || target == null || source.Index == target.Index || !source.IsConfigured)
+            return false;
+
+        CurrentLayout.Buttons[target.Index] = CloneButtonConfig(source.Config);
+        LoadCurrentLayout(target.Index);
+        ScheduleAutoSave();
+        return true;
+    }
+
     [RelayCommand]
     private void NewButton()
     {

@@ -977,6 +977,11 @@
                                     Command="{Binding DataContext.SelectButtonAndShowEditorCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"
                                     MouseDoubleClick="DeckEditorButton_MouseDoubleClick"
+                                    PreviewMouseLeftButtonDown="DeckEditorButton_PreviewMouseLeftButtonDown"
+                                    PreviewMouseMove="DeckEditorButton_PreviewMouseMove"
+                                    AllowDrop="True"
+                                    DragOver="DeckEditorButton_DragOver"
+                                    Drop="DeckEditorButton_Drop"
                                     PreviewMouseRightButtonDown="DeckEditorButton_PreviewMouseRightButtonDown"
                                     Cursor="Hand">
                                 <Button.ContextMenu>
