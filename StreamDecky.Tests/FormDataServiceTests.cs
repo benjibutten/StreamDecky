@@ -176,6 +176,39 @@ public sealed class FormDataServiceTests
     }
 
     [Fact]
+    public void UpdateSubmissionField_WhenPersistenceFails_RestoresRemovedHistory()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var submission = CreateSubmission();
+        submission.FieldIds["Who"] = "field-who";
+        var store = new FormDataStore
+        {
+            SchemaVersion = FormDataStore.CurrentSchemaVersion + 1,
+            Profiles = new List<FormProfileData>
+            {
+                new()
+                {
+                    ProfileId = "profile1",
+                    Submissions = new List<FormSubmission> { submission },
+                    FieldHistory = new Dictionary<string, List<string>>
+                    {
+                        ["field-who"] = new() { "John" }
+                    }
+                }
+            }
+        };
+        System.IO.File.WriteAllText(
+            System.IO.Path.Combine(tempDirectory.Path, "form-data.json"),
+            System.Text.Json.JsonSerializer.Serialize(store));
+        var service = new FormDataService(tempDirectory.Path);
+
+        Assert.False(service.UpdateSubmissionField("profile1", submission.Id, "Who", string.Empty));
+
+        Assert.Equal("John", Assert.Single(service.GetSubmissions("profile1")).Values["Who"]);
+        Assert.Equal(new[] { "John" }, service.GetFieldHistory("profile1", "field-who"));
+    }
+
+    [Fact]
     public void RecordSubmission_WhenPersistenceFails_RollsBackInMemory()
     {
         using var tempDirectory = new TemporaryDirectory();
@@ -227,17 +260,168 @@ public sealed class FormDataServiceTests
     }
 
     [Fact]
+    public void DeleteSubmission_RemovesSuggestionWhenNoMatchingSubmissionRemains()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var service = new FormDataService(tempDirectory.Path);
+        var first = CreateSubmission("first");
+        first.FieldIds["Who"] = "fieldWho";
+        var second = CreateSubmission("second");
+        second.Values["Who"] = "Jane";
+        second.FieldIds["Who"] = "fieldWho";
+        service.RecordSubmission("profile1", first, new[]
+        {
+            new KeyValuePair<string, string>("fieldWho", "John")
+        });
+        service.RecordSubmission("profile1", second, new[]
+        {
+            new KeyValuePair<string, string>("fieldWho", "Jane")
+        });
+
+        Assert.True(service.DeleteSubmission("profile1", second.Id));
+
+        Assert.Equal(new[] { "John" }, service.GetFieldHistory("profile1", "fieldWho"));
+    }
+
+    [Fact]
     public void ClearSubmissions_RemovesAllForProfileButKeepsOthers()
     {
         using var tempDirectory = new TemporaryDirectory();
         var service = new FormDataService(tempDirectory.Path);
 
-        service.RecordSubmission("profile1", CreateSubmission());
+        service.RecordSubmission("profile1", CreateSubmission(), new[]
+        {
+            new KeyValuePair<string, string>("field1", "suggestion")
+        });
         service.RecordSubmission("profile2", CreateSubmission());
 
         Assert.Equal(1, service.ClearSubmissions("profile1"));
         Assert.Empty(service.GetSubmissions("profile1"));
+        Assert.Empty(service.GetFieldHistory("profile1", "field1"));
         Assert.Single(service.GetSubmissions("profile2"));
+    }
+
+    [Fact]
+    public void ClearSubmissions_RemovesOrphanedSuggestionHistory()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var store = new FormDataStore
+        {
+            Profiles = new List<FormProfileData>
+            {
+                new()
+                {
+                    ProfileId = "profile1",
+                    FieldHistory = new Dictionary<string, List<string>>
+                    {
+                        ["field1"] = new() { "suggestion" }
+                    }
+                }
+            }
+        };
+        System.IO.File.WriteAllText(
+            System.IO.Path.Combine(tempDirectory.Path, "form-data.json"),
+            System.Text.Json.JsonSerializer.Serialize(store));
+        var service = new FormDataService(tempDirectory.Path);
+        Assert.True(service.HasFieldHistory("profile1"));
+
+        Assert.Equal(0, service.ClearSubmissions("profile1"));
+
+        Assert.False(service.HasFieldHistory("profile1"));
+        Assert.Empty(service.GetFieldHistory("profile1", "field1"));
+    }
+
+    [Fact]
+    public void ClearSubmissions_ForTemplateKeepsOtherTemplateHistory()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var service = new FormDataService(tempDirectory.Path);
+        var first = CreateSubmission("first");
+        first.TemplateId = "template1";
+        first.FieldIds["Who"] = "field1";
+        var second = CreateSubmission("second");
+        second.TemplateId = "template2";
+        second.FieldIds["Who"] = "field2";
+        service.RecordSubmission("profile1", first, new[]
+        {
+            new KeyValuePair<string, string>("field1", "John")
+        });
+        service.RecordSubmission("profile1", second, new[]
+        {
+            new KeyValuePair<string, string>("field2", "Jane")
+        });
+
+        Assert.Equal(1, service.ClearSubmissions("profile1", "template1", new[] { "field1" }));
+
+        var remaining = Assert.Single(service.GetSubmissions("profile1"));
+        Assert.Equal("template2", remaining.TemplateId);
+        Assert.Empty(service.GetFieldHistory("profile1", "field1"));
+        Assert.Equal(new[] { "Jane" }, service.GetFieldHistory("profile1", "field2"));
+        Assert.False(service.HasFieldHistory("profile1", new[] { "field1" }));
+        Assert.True(service.HasFieldHistory("profile1", new[] { "field2" }));
+    }
+
+    [Fact]
+    public void ClearSubmissions_ForTemplatePreservesSharedSuggestionsFromOtherTemplate()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var service = new FormDataService(tempDirectory.Path);
+        const string sharedKey = "shared:person-name";
+        var first = CreateSubmission("first");
+        first.TemplateId = "template1";
+        first.Values["Who"] = "John";
+        first.FieldIds["Who"] = "field1";
+        first.FieldHistoryKeys["Who"] = sharedKey;
+        var second = CreateSubmission("second");
+        second.TemplateId = "template2";
+        second.Values["Who"] = "Jane";
+        second.FieldIds["Who"] = "field2";
+        second.FieldHistoryKeys["Who"] = sharedKey;
+        service.RecordSubmission("profile1", first, new[]
+        {
+            new KeyValuePair<string, string>(sharedKey, "John")
+        });
+        service.RecordSubmission("profile1", second, new[]
+        {
+            new KeyValuePair<string, string>(sharedKey, "Jane")
+        });
+
+        Assert.Equal(1, service.ClearSubmissions(
+            "profile1",
+            "template1",
+            new[] { "field1", sharedKey }));
+
+        Assert.Equal(new[] { "Jane" }, service.GetFieldHistory("profile1", sharedKey));
+        Assert.Equal("template2", Assert.Single(service.GetSubmissions("profile1")).TemplateId);
+    }
+
+    [Fact]
+    public void UpdateSubmissionField_SharedSuggestionsKeepValuesFromOtherFields()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var service = new FormDataService(tempDirectory.Path);
+        const string sharedKey = "shared:person-name";
+        var first = CreateSubmission("first");
+        first.TemplateId = "template1";
+        first.FieldIds["Who"] = "field1";
+        first.FieldHistoryKeys["Who"] = sharedKey;
+        var second = CreateSubmission("second");
+        second.TemplateId = "template2";
+        second.FieldIds["Who"] = "field2";
+        second.FieldHistoryKeys["Who"] = sharedKey;
+        service.RecordSubmission("profile1", first, new[]
+        {
+            new KeyValuePair<string, string>(sharedKey, "John")
+        });
+        service.RecordSubmission("profile1", second, new[]
+        {
+            new KeyValuePair<string, string>(sharedKey, "John")
+        });
+
+        Assert.True(service.UpdateSubmissionField(
+            "profile1", first.Id, "Who", "Jon", "field1", sharedKey));
+
+        Assert.Equal(new[] { "John", "Jon" }, service.GetFieldHistory("profile1", sharedKey));
     }
 
     [Fact]

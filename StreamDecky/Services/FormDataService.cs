@@ -86,6 +86,30 @@ public class FormDataService
         return history;
     }
 
+    public bool HasFieldHistory(string profileId)
+    {
+        if (string.IsNullOrWhiteSpace(profileId))
+            return false;
+
+        return Store.Profiles
+            .FirstOrDefault(profile => string.Equals(profile.ProfileId, profileId, StringComparison.Ordinal))
+            ?.FieldHistory.Values.Any(values => values.Count > 0) == true;
+    }
+
+    public bool HasFieldHistory(string profileId, IEnumerable<string> fieldIds)
+    {
+        if (string.IsNullOrWhiteSpace(profileId))
+            return false;
+
+        var ids = fieldIds.Where(id => !string.IsNullOrWhiteSpace(id)).ToHashSet(StringComparer.Ordinal);
+        if (ids.Count == 0)
+            return false;
+
+        var profileData = Store.Profiles.FirstOrDefault(profile =>
+            string.Equals(profile.ProfileId, profileId, StringComparison.Ordinal));
+        return profileData?.FieldHistory.Any(pair => ids.Contains(pair.Key) && pair.Value.Count > 0) == true;
+    }
+
     public bool RecordSubmission(
         string profileId,
         FormSubmission submission,
@@ -160,7 +184,8 @@ public class FormDataService
         string submissionId,
         string fieldLabel,
         string value,
-        string? stableFieldId = null)
+        string? stableFieldId = null,
+        string? suggestionHistoryKey = null)
     {
         if (string.IsNullOrWhiteSpace(profileId)
             || string.IsNullOrWhiteSpace(submissionId)
@@ -184,6 +209,10 @@ public class FormDataService
             string.Equals(profile.ProfileId, profileId, StringComparison.Ordinal));
         submission.FieldIds.TryGetValue(fieldLabel, out string? storedFieldId);
         string? fieldId = !string.IsNullOrWhiteSpace(storedFieldId) ? storedFieldId : stableFieldId;
+        submission.FieldHistoryKeys.TryGetValue(fieldLabel, out string? storedHistoryKey);
+        string? historyKey = !string.IsNullOrWhiteSpace(storedHistoryKey)
+            ? storedHistoryKey
+            : !string.IsNullOrWhiteSpace(suggestionHistoryKey) ? suggestionHistoryKey : fieldId;
 
         var targets = new List<(FormSubmission Submission, string Label)>();
         if (!string.IsNullOrWhiteSpace(fieldId))
@@ -228,15 +257,11 @@ public class FormDataService
         }
 
         List<string>? previousHistory = null;
-        if (!string.IsNullOrWhiteSpace(fieldId)
-            && profileData.FieldHistory.TryGetValue(fieldId, out var history))
+        if (!string.IsNullOrWhiteSpace(historyKey)
+            && profileData.FieldHistory.TryGetValue(historyKey, out var history))
         {
             previousHistory = history.ToList();
-            history.RemoveAll(entry =>
-                string.Equals(entry, previousValue, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(entry, value, StringComparison.OrdinalIgnoreCase));
-            if (!string.IsNullOrWhiteSpace(value))
-                history.Insert(0, value);
+            RebuildFieldHistory(profileData, new[] { historyKey });
         }
 
         if (Save())
@@ -260,11 +285,7 @@ public class FormDataService
         }
 
         if (previousHistory != null)
-        {
-            var restoredHistory = profileData.FieldHistory[fieldId!];
-            restoredHistory.Clear();
-            restoredHistory.AddRange(previousHistory);
-        }
+            profileData.FieldHistory[historyKey!] = previousHistory;
 
         return false;
     }
@@ -327,17 +348,74 @@ public class FormDataService
             return false;
 
         var previousSubmissions = profileData.Submissions.ToList();
+        var previousHistory = profileData.FieldHistory.ToDictionary(
+            pair => pair.Key,
+            pair => pair.Value.ToList());
+        var removedSubmission = profileData.Submissions.FirstOrDefault(submission =>
+            string.Equals(submission.Id, submissionId, StringComparison.Ordinal));
+        var affectedHistoryKeys = removedSubmission?.FieldIds.Select(pair =>
+                removedSubmission.FieldHistoryKeys.TryGetValue(pair.Key, out string? key)
+                    && !string.IsNullOrWhiteSpace(key)
+                    ? key
+                    : pair.Value)
+            .Distinct(StringComparer.Ordinal)
+            .ToList() ?? new List<string>();
         int removed = profileData.Submissions.RemoveAll(submission =>
             string.Equals(submission.Id, submissionId, StringComparison.Ordinal));
         if (removed == 0)
             return false;
+
+        RebuildFieldHistory(profileData, affectedHistoryKeys);
 
         if (Save())
             return true;
 
         profileData.Submissions.Clear();
         profileData.Submissions.AddRange(previousSubmissions);
+        profileData.FieldHistory.Clear();
+        foreach (var (fieldId, values) in previousHistory)
+            profileData.FieldHistory[fieldId] = values;
         return false;
+    }
+
+    private static void RebuildFieldHistory(FormProfileData profileData, IEnumerable<string> historyKeys)
+    {
+        foreach (string historyKey in historyKeys.Distinct(StringComparer.Ordinal).ToList())
+        {
+            var values = new List<string>();
+            foreach (var submission in profileData.Submissions)
+            {
+                foreach (var (label, submissionFieldId) in submission.FieldIds)
+                {
+                    string submissionHistoryKey = submission.FieldHistoryKeys.TryGetValue(label, out string? storedKey)
+                        && !string.IsNullOrWhiteSpace(storedKey)
+                        ? storedKey
+                        : submissionFieldId;
+                    if (!string.Equals(submissionHistoryKey, historyKey, StringComparison.Ordinal)
+                        || !submission.Values.TryGetValue(label, out string? value)
+                        || string.IsNullOrWhiteSpace(value))
+                    {
+                        continue;
+                    }
+
+                    string trimmed = value.Trim();
+                    if (values.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+                        continue;
+
+                    values.Add(trimmed);
+                    if (values.Count == MaxHistoryPerField)
+                        break;
+                }
+
+                if (values.Count == MaxHistoryPerField)
+                    break;
+            }
+
+            if (values.Count == 0)
+                profileData.FieldHistory.Remove(historyKey);
+            else
+                profileData.FieldHistory[historyKey] = values;
+        }
     }
 
     public int ClearSubmissions(string profileId)
@@ -347,16 +425,59 @@ public class FormDataService
 
         var profileData = Store.Profiles.FirstOrDefault(profile =>
             string.Equals(profile.ProfileId, profileId, StringComparison.Ordinal));
-        if (profileData == null || profileData.Submissions.Count == 0)
+        if (profileData == null
+            || (profileData.Submissions.Count == 0 && profileData.FieldHistory.Count == 0))
             return 0;
 
         var previousSubmissions = profileData.Submissions.ToList();
+        var previousHistory = profileData.FieldHistory.ToDictionary(
+            pair => pair.Key,
+            pair => pair.Value.ToList());
         int removed = profileData.Submissions.Count;
         profileData.Submissions.Clear();
+        profileData.FieldHistory.Clear();
         if (Save())
             return removed;
 
         profileData.Submissions.AddRange(previousSubmissions);
+        foreach (var (fieldId, values) in previousHistory)
+            profileData.FieldHistory[fieldId] = values;
+        return 0;
+    }
+
+    public int ClearSubmissions(string profileId, string templateId, IEnumerable<string> fieldIds)
+    {
+        if (string.IsNullOrWhiteSpace(profileId) || string.IsNullOrWhiteSpace(templateId))
+            return 0;
+
+        var profileData = Store.Profiles.FirstOrDefault(profile =>
+            string.Equals(profile.ProfileId, profileId, StringComparison.Ordinal));
+        if (profileData == null)
+            return 0;
+
+        var ids = fieldIds.Where(id => !string.IsNullOrWhiteSpace(id)).ToHashSet(StringComparer.Ordinal);
+        bool hasSubmissions = profileData.Submissions.Any(submission =>
+            string.Equals(submission.TemplateId, templateId, StringComparison.Ordinal));
+        bool hasHistory = profileData.FieldHistory.Keys.Any(ids.Contains);
+        if (!hasSubmissions && !hasHistory)
+            return 0;
+
+        var previousSubmissions = profileData.Submissions.ToList();
+        var previousHistory = profileData.FieldHistory.ToDictionary(
+            pair => pair.Key,
+            pair => pair.Value.ToList());
+        int removed = profileData.Submissions.RemoveAll(submission =>
+            string.Equals(submission.TemplateId, templateId, StringComparison.Ordinal));
+        RebuildFieldHistory(profileData, ids);
+
+        if (Save())
+            return removed;
+
+        profileData.Submissions.Clear();
+        profileData.Submissions.AddRange(previousSubmissions);
+        profileData.FieldHistory.Clear();
+        foreach (var (fieldId, values) in previousHistory)
+            profileData.FieldHistory[fieldId] = values;
         return 0;
     }
 

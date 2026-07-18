@@ -5,6 +5,7 @@ namespace StreamDecky.Models;
 
 public partial class FormField : ObservableObject
 {
+    public const string SharedHistoryPrefix = "shared:";
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
 
     /// <summary>Token name used as {Key} in the output template. Shares one
@@ -26,10 +27,19 @@ public partial class FormField : ObservableObject
     [ObservableProperty]
     private bool _isMultiline;
 
+    /// <summary>Prevents the form from being submitted while this field is empty.</summary>
+    [ObservableProperty]
+    private bool _isRequired;
+
     /// <summary>When enabled, previously submitted values for this field are
     /// stored and offered as suggestions in the overlay.</summary>
     [ObservableProperty]
     private bool _rememberHistory;
+
+    /// <summary>Optional opt-in namespace used to share only autocomplete values
+    /// with fields in other form templates that use the same key.</summary>
+    [ObservableProperty]
+    private string _sharedSuggestionKey = string.Empty;
 
     /// <summary>Allows this field's stored value to be corrected directly from
     /// the overlay history. The current template controls editability; the
@@ -49,6 +59,7 @@ public partial class FormField : ObservableObject
         Key = NormalizeKey(Key);
         Label ??= string.Empty;
         DefaultValue ??= string.Empty;
+        SharedSuggestionKey = NormalizeKey(SharedSuggestionKey);
         Options ??= new ObservableCollection<FormFieldOption>();
 
         foreach (var option in Options)
@@ -64,5 +75,13 @@ public partial class FormField : ObservableObject
             .Where(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-')
             .ToArray();
         return new string(kept);
+    }
+
+    public string GetSuggestionHistoryKey()
+    {
+        string sharedKey = NormalizeKey(SharedSuggestionKey);
+        return string.IsNullOrWhiteSpace(sharedKey)
+            ? Id
+            : SharedHistoryPrefix + sharedKey.ToLowerInvariant();
     }
 }

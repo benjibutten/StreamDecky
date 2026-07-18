@@ -62,8 +62,14 @@ public partial class MainViewModel
     public bool HasFormTemplates => FormTemplates.Count > 0;
     public bool HasFormTemplateWarning => !string.IsNullOrWhiteSpace(FormTemplateWarningText);
     public bool HasFormSessionValidationError => !string.IsNullOrWhiteSpace(FormSessionValidationText);
+    public bool CanSubmitFormResult => CanSubmitCurrentForm();
     public bool HasFormSendAction => OverlayFormTemplate is { ActionSteps.Count: > 0 };
     public bool HasFormSubmissions => FormSubmissions.Count > 0;
+    public bool HasStoredFormHistory => HasFormSubmissions
+        || (SelectedFormTemplate != null
+            && _formDataService.HasFieldHistory(
+                _profile.Id,
+                GetTemplateSuggestionHistoryKeys(SelectedFormTemplate)));
     public bool HasOverlayFormSubmissions => OverlayFormSubmissions.Count > 0;
     public int OpenOverlayFormSubmissionCount => GetOverlayFormSubmissionsForCount().Count(submission => !submission.IsCompleted);
     public int CompletedOverlayFormSubmissionCount => GetOverlayFormSubmissionsForCount().Count(submission => submission.IsCompleted);
@@ -190,6 +196,8 @@ public partial class MainViewModel
     partial void OnSelectedFormTemplateChanged(FormTemplate? value)
     {
         RefreshFormEditorDerivedState();
+        if (!_isLoadingFormTemplates)
+            LoadFormSubmissions();
     }
 
     partial void OnOverlayFormTemplateChanged(FormTemplate? value)
@@ -633,6 +641,16 @@ public partial class MainViewModel
             }
         }
 
+        if (sender is FormField suggestionField && e.PropertyName == nameof(FormField.SharedSuggestionKey))
+        {
+            string normalized = FormField.NormalizeKey(suggestionField.SharedSuggestionKey);
+            if (!string.Equals(suggestionField.SharedSuggestionKey, normalized, StringComparison.Ordinal))
+            {
+                suggestionField.SharedSuggestionKey = normalized;
+                return;
+            }
+        }
+
         // Follow the label with an auto-derived key as long as the user has not
         // set a key of their own (empty or still the generated "fieldN" one).
         if (sender is FormField labeledField && e.PropertyName == nameof(FormField.Label))
@@ -776,14 +794,15 @@ public partial class MainViewModel
             FormSessionFields = new ObservableCollection<FormFieldSessionViewModel>();
             FormPreviewText = string.Empty;
             FormSessionValidationText = string.Empty;
+            NotifyFormSubmissionAvailabilityChanged();
             return;
         }
 
         FormSessionValidationText = string.Join(Environment.NewLine, FormRenderService.GetValidationErrors(template));
 
-        var sessionFields = template.Fields.Select(field => new FormFieldSessionViewModel(
-            field,
-            _formDataService.GetFieldHistory(_profile.Id, field.Id).ToList(),
+        var sessionFields = template.Fields.Select(formField => new FormFieldSessionViewModel(
+            formField,
+            GetSuggestionHistory(formField),
             ExpandFormSessionPattern,
             OnFormSessionFieldChanged)).ToList();
 
@@ -795,6 +814,7 @@ public partial class MainViewModel
             sessionField.RefreshFromPattern();
 
         UpdateFormPreview();
+        UpdateFormSessionValidation();
     }
 
     /// <summary>Expands a session field's pattern against the live values of the
@@ -832,6 +852,37 @@ public partial class MainViewModel
         });
     }
 
+    private IReadOnlyList<string> GetSuggestionHistory(FormField formField)
+    {
+        var keys = new List<string> { formField.GetSuggestionHistoryKey() };
+        if (!string.IsNullOrWhiteSpace(formField.SharedSuggestionKey))
+        {
+            // Include each matching field's legacy isolated history so enabling
+            // sharing also exposes values submitted before the shared key existed.
+            keys.AddRange(FormTemplates
+                .SelectMany(template => template.Fields)
+                .Where(candidate => string.Equals(
+                    candidate.SharedSuggestionKey,
+                    formField.SharedSuggestionKey,
+                    StringComparison.OrdinalIgnoreCase))
+                .Select(candidate => candidate.Id));
+        }
+
+        return keys.Distinct(StringComparer.Ordinal)
+            .SelectMany(key => _formDataService.GetFieldHistory(_profile.Id, key))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static IEnumerable<string> GetTemplateSuggestionHistoryKeys(FormTemplate template)
+    {
+        return template.Fields
+            .SelectMany(formField => formField.RememberHistory
+                ? new[] { formField.Id, formField.GetSuggestionHistoryKey() }
+                : new[] { formField.Id })
+            .Distinct(StringComparer.Ordinal);
+    }
+
     private bool _isPropagatingFormSessionChange;
 
     private void OnFormSessionFieldChanged()
@@ -851,6 +902,39 @@ public partial class MainViewModel
         }
 
         UpdateFormPreview();
+        UpdateFormSessionValidation();
+    }
+
+    private IReadOnlyList<string> GetFormSessionValidationErrors(FormTemplate template)
+    {
+        var errors = FormRenderService.GetValidationErrors(template).ToList();
+        errors.AddRange(FormSessionFields
+            .Where(session => session.Field.IsRequired && string.IsNullOrWhiteSpace(session.Value))
+            .Select(session => $"{session.Label} is required."));
+        return errors;
+    }
+
+    private void UpdateFormSessionValidation()
+    {
+        FormSessionValidationText = OverlayFormTemplate is { } template
+            ? string.Join(Environment.NewLine, GetFormSessionValidationErrors(template))
+            : string.Empty;
+        NotifyFormSubmissionAvailabilityChanged();
+    }
+
+    private bool CanSubmitCurrentForm()
+    {
+        var template = OverlayFormTemplate;
+        return template != null
+            && GetFormSessionValidationErrors(template).Count == 0
+            && !string.IsNullOrWhiteSpace(FormPreviewText);
+    }
+
+    private void NotifyFormSubmissionAvailabilityChanged()
+    {
+        OnPropertyChanged(nameof(CanSubmitFormResult));
+        SaveFormResultCommand.NotifyCanExecuteChanged();
+        CopyFormResultCommand.NotifyCanExecuteChanged();
     }
 
     private void UpdateFormPreview()
@@ -894,23 +978,17 @@ public partial class MainViewModel
 
     /// <summary>The overlay's primary submit: records the submission, ticks the
     /// counters, and resets the form for the next entry.</summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanSubmitCurrentForm))]
     private async Task SaveFormResult()
     {
         string text = GetRenderedFormText();
-        if (string.IsNullOrWhiteSpace(text))
-            return;
-
         await CompleteFormSubmissionAsync(text);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanSubmitCurrentForm))]
     private async Task CopyFormResult()
     {
         string text = GetRenderedFormText();
-        if (string.IsNullOrWhiteSpace(text))
-            return;
-
         if (!await CompleteFormSubmissionAsync(text))
             return;
 
@@ -920,7 +998,7 @@ public partial class MainViewModel
     public Task<bool> RecordFormSubmissionAsync(string renderedText)
     {
         var template = OverlayFormTemplate;
-        if (template == null || string.IsNullOrWhiteSpace(renderedText))
+        if (template == null)
             return Task.FromResult(false);
 
         return CompleteFormSubmissionAsync(renderedText);
@@ -943,7 +1021,9 @@ public partial class MainViewModel
         if (template == null)
             return false;
 
-        var validationErrors = FormRenderService.GetValidationErrors(template);
+        var validationErrors = GetFormSessionValidationErrors(template).ToList();
+        if (validationErrors.Count == 0 && string.IsNullOrWhiteSpace(renderedText))
+            validationErrors.Add("The rendered form output is empty.");
         FormSessionValidationText = string.Join(Environment.NewLine, validationErrors);
         if (validationErrors.Count > 0)
             return false;
@@ -982,7 +1062,10 @@ public partial class MainViewModel
                 }
             }
             if (session.Field.RememberHistory && !string.IsNullOrWhiteSpace(value))
-                historyEntries.Add(new KeyValuePair<string, string>(session.Field.Id, value));
+            {
+                submission.FieldHistoryKeys[session.Label] = session.Field.GetSuggestionHistoryKey();
+                historyEntries.Add(new KeyValuePair<string, string>(session.Field.GetSuggestionHistoryKey(), value));
+            }
         }
 
         submission.RenderedText = FormRenderService.RenderTemplate(
@@ -1003,12 +1086,16 @@ public partial class MainViewModel
             {
                 foreach (var (counter, previousValue) in previousCounterValues)
                     counter.NextValue = previousValue;
+                FormSessionValidationText = "Save failed. The form was not submitted. Please try again.";
                 return false;
             }
         }
 
         if (!_formDataService.RecordSubmission(_profile.Id, submission, historyEntries))
+        {
+            FormSessionValidationText = "Save failed. The form was not submitted. Please try again.";
             return false;
+        }
 
         // Fresh session: new counter values in defaults, updated history chips.
         RefreshFormSession();
@@ -1023,8 +1110,14 @@ public partial class MainViewModel
     private void LoadFormSubmissions()
     {
         var submissions = _formDataService.GetSubmissions(_profile.Id);
+        string? selectedTemplateId = SelectedFormTemplate?.Id;
         FormSubmissions = new ObservableCollection<FormSubmissionViewModel>(
-            submissions.Select(submission => new FormSubmissionViewModel(submission)));
+            submissions
+                .Where(submission => string.Equals(
+                    submission.TemplateId,
+                    selectedTemplateId,
+                    StringComparison.Ordinal))
+                .Select(submission => new FormSubmissionViewModel(submission)));
         OverlayFormSubmissions = new ObservableCollection<OverlayFormSubmissionViewModel>(
             submissions.Select(submission => new OverlayFormSubmissionViewModel(
                 submission,
@@ -1038,12 +1131,14 @@ public partial class MainViewModel
                 (vm, label, value) =>
                 {
                     string? fieldId = GetOverlaySubmissionFieldId(vm.Model, label);
+                    string? historyKey = GetOverlaySubmissionHistoryKey(vm.Model, label);
                     bool saved = _formDataService.UpdateSubmissionField(
                         _profile.Id,
                         vm.Id,
                         label,
                         value,
-                        fieldId);
+                        fieldId,
+                        historyKey);
                     if (saved)
                     {
                         RefreshFormSession();
@@ -1053,6 +1148,7 @@ public partial class MainViewModel
                 },
                 label => CanEditOverlaySubmissionField(submission, label))));
         OnPropertyChanged(nameof(HasFormSubmissions));
+        OnPropertyChanged(nameof(HasStoredFormHistory));
         OnPropertyChanged(nameof(HasOverlayFormSubmissions));
     }
 
@@ -1100,6 +1196,23 @@ public partial class MainViewModel
             string.Equals(field.DisplayLabel, label, StringComparison.Ordinal))?.Id;
     }
 
+    private string? GetOverlaySubmissionHistoryKey(FormSubmission submission, string label)
+    {
+        if (submission.FieldHistoryKeys.TryGetValue(label, out string? storedKey)
+            && !string.IsNullOrWhiteSpace(storedKey))
+        {
+            return storedKey;
+        }
+
+        var template = FormTemplates.FirstOrDefault(candidate =>
+            string.Equals(candidate.Id, submission.TemplateId, StringComparison.Ordinal));
+        var formField = template?.Fields.FirstOrDefault(candidate =>
+            string.Equals(candidate.DisplayLabel, label, StringComparison.Ordinal));
+        return formField?.RememberHistory == true
+            ? formField.GetSuggestionHistoryKey()
+            : formField?.Id;
+    }
+
     [RelayCommand]
     private void CopyFormSubmission(FormSubmissionViewModel? submission)
     {
@@ -1129,19 +1242,25 @@ public partial class MainViewModel
     [RelayCommand]
     private void ClearFormSubmissions()
     {
-        if (FormSubmissions.Count == 0)
+        if (!HasStoredFormHistory)
             return;
 
         bool confirmed = Helpers.ConfirmDialog.Show(
             System.Windows.Application.Current?.MainWindow,
             "Clear form history",
-            $"Delete all {FormSubmissions.Count} stored submission(s) for this profile?",
+            $"Delete all {FormSubmissions.Count} stored submission(s) and autocomplete suggestions for “{SelectedFormTemplate?.Name}”?",
             confirmText: "Delete all",
             danger: true);
         if (!confirmed)
             return;
 
-        _formDataService.ClearSubmissions(_profile.Id);
+        if (SelectedFormTemplate is { } template)
+        {
+            _formDataService.ClearSubmissions(
+                _profile.Id,
+                template.Id,
+                GetTemplateSuggestionHistoryKeys(template));
+        }
         LoadFormSubmissions();
     }
 

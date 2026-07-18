@@ -8,6 +8,135 @@ namespace StreamDecky.Tests;
 public sealed class FormTemplateProfileTests
 {
     [Fact]
+    public async Task SharedSuggestionKey_SharesValuesAcrossFormsOnlyWhenOptedIn()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var profileService = new ProfileService(tempDirectory.Path);
+        var firstTemplate = new FormTemplate { Name = "First", OutputTemplate = "{name}" };
+        firstTemplate.Fields.Add(new FormField
+        {
+            Key = "name",
+            Label = "Name",
+            RememberHistory = true,
+            SharedSuggestionKey = "PERSON-NAME"
+        });
+        var secondTemplate = new FormTemplate { Name = "Second", OutputTemplate = "{customer}" };
+        secondTemplate.Fields.Add(new FormField
+        {
+            Key = "customer",
+            Label = "Customer",
+            RememberHistory = true,
+            SharedSuggestionKey = "person-name"
+        });
+        var isolatedTemplate = new FormTemplate { Name = "Isolated", OutputTemplate = "{name}" };
+        isolatedTemplate.Fields.Add(new FormField
+        {
+            Key = "name",
+            Label = "Name",
+            RememberHistory = true
+        });
+        var profile = new DeckProfile
+        {
+            FormTemplates = new List<FormTemplate> { firstTemplate, secondTemplate, isolatedTemplate },
+            ActiveFormTemplateId = firstTemplate.Id
+        };
+        var store = new DeckProfileStore
+        {
+            ActiveProfileId = profile.Id,
+            Profiles = new List<DeckProfile> { profile }
+        };
+        store.Initialize();
+        profileService.SaveStore(store);
+        using var viewModel = new MainViewModel(
+            profileService,
+            formDataService: new FormDataService(tempDirectory.Path));
+        Assert.Single(viewModel.FormSessionFields).Value = "Ada";
+        Assert.True(await viewModel.RecordFormSubmissionAsync(viewModel.GetRenderedFormText()));
+
+        viewModel.OverlayFormTemplate = viewModel.FormTemplates.Single(template => template.Id == secondTemplate.Id);
+        Assert.Contains("Ada", Assert.Single(viewModel.FormSessionFields).Suggestions);
+
+        viewModel.OverlayFormTemplate = viewModel.FormTemplates.Single(template => template.Id == isolatedTemplate.Id);
+        Assert.DoesNotContain("Ada", Assert.Single(viewModel.FormSessionFields).Suggestions);
+    }
+
+    [Fact]
+    public void EditorHistory_ShowsOnlySelectedFormTemplate()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var profileService = new ProfileService(tempDirectory.Path);
+        var firstTemplate = new FormTemplate { Name = "First" };
+        var secondTemplate = new FormTemplate { Name = "Second" };
+        var profile = new DeckProfile
+        {
+            FormTemplates = new List<FormTemplate> { firstTemplate, secondTemplate },
+            ActiveFormTemplateId = firstTemplate.Id
+        };
+        var store = new DeckProfileStore
+        {
+            ActiveProfileId = profile.Id,
+            Profiles = new List<DeckProfile> { profile }
+        };
+        store.Initialize();
+        profileService.SaveStore(store);
+        var formDataService = new FormDataService(tempDirectory.Path);
+        formDataService.RecordSubmission(profile.Id, new FormSubmission
+        {
+            TemplateId = firstTemplate.Id,
+            TemplateName = firstTemplate.Name,
+            RenderedText = "first"
+        });
+        formDataService.RecordSubmission(profile.Id, new FormSubmission
+        {
+            TemplateId = secondTemplate.Id,
+            TemplateName = secondTemplate.Name,
+            RenderedText = "second"
+        });
+        using var viewModel = new MainViewModel(profileService, formDataService: formDataService);
+
+        Assert.Equal("first", Assert.Single(viewModel.FormSubmissions).RenderedText);
+        Assert.Equal(2, viewModel.OverlayFormSubmissions.Count);
+
+        viewModel.SelectedFormTemplate = viewModel.FormTemplates.Single(template => template.Id == secondTemplate.Id);
+
+        Assert.Equal("second", Assert.Single(viewModel.FormSubmissions).RenderedText);
+        Assert.Equal(2, viewModel.OverlayFormSubmissions.Count);
+    }
+
+    [Fact]
+    public async Task RecordFormSubmission_RequiredEmptyFieldIsRejected()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var profileService = new ProfileService(tempDirectory.Path);
+        var template = new FormTemplate { Name = "Required", OutputTemplate = "Hello {who}" };
+        template.Fields.Add(new FormField { Key = "who", Label = "Who", IsRequired = true });
+        var profile = new DeckProfile
+        {
+            FormTemplates = new List<FormTemplate> { template },
+            ActiveFormTemplateId = template.Id
+        };
+        var store = new DeckProfileStore
+        {
+            ActiveProfileId = profile.Id,
+            Profiles = new List<DeckProfile> { profile }
+        };
+        store.Initialize();
+        profileService.SaveStore(store);
+        var formDataService = new FormDataService(tempDirectory.Path);
+        using var viewModel = new MainViewModel(profileService, formDataService: formDataService);
+
+        Assert.False(viewModel.CanSubmitFormResult);
+        Assert.False(viewModel.SaveFormResultCommand.CanExecute(null));
+        Assert.False(await viewModel.RecordFormSubmissionAsync(viewModel.GetRenderedFormText()));
+        Assert.Contains("Who is required.", viewModel.FormSessionValidationText, StringComparison.Ordinal);
+        Assert.Empty(formDataService.GetSubmissions(profile.Id));
+
+        Assert.Single(viewModel.FormSessionFields).Value = "Ada";
+        Assert.True(viewModel.CanSubmitFormResult);
+        Assert.True(viewModel.SaveFormResultCommand.CanExecute(null));
+    }
+
+    [Fact]
     public async Task RecordFormSubmission_PersistsAdvancedCounterBeforeReturning()
     {
         using var tempDirectory = new TemporaryDirectory();
@@ -74,7 +203,9 @@ public sealed class FormTemplateProfileTests
         {
             Key = "who",
             Label = "Who?",
+            IsRequired = true,
             RememberHistory = true,
+            SharedSuggestionKey = "person-name",
             AllowHistoryEditing = true
         });
         var choice = new FormField
@@ -116,6 +247,8 @@ public sealed class FormTemplateProfileTests
         Assert.Equal("Invoice {invoiceNo} - {who}", reloadedTemplate.OutputTemplate);
         Assert.Equal(2, reloadedTemplate.Fields.Count);
         Assert.True(reloadedTemplate.Fields[0].RememberHistory);
+        Assert.Equal("person-name", reloadedTemplate.Fields[0].SharedSuggestionKey);
+        Assert.True(reloadedTemplate.Fields[0].IsRequired);
         Assert.True(reloadedTemplate.Fields[0].AllowHistoryEditing);
         Assert.Equal(FormFieldType.Choice, reloadedTemplate.Fields[1].Type);
         Assert.Equal("Monthly rent for the office", Assert.Single(reloadedTemplate.Fields[1].Options).Text);

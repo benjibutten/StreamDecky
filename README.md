@@ -68,10 +68,13 @@ Published releases are self-contained `win-x64` builds, so end users do not need
 - Profile-scoped fill-in forms designed in the editor and filled in from the overlay
 - Field types: free text (single- or multiline) and choice fields where selecting an option prefills an editable text
 - Per-field autocomplete suggestions from previously submitted values (opt-in per field)
+- Optional shared suggestion keys let explicitly selected fields reuse autocomplete values across forms without sharing submissions or other field data
+- Optional required-field validation that blocks submission until required values are filled in
 - Auto-incrementing counters (e.g. invoice numbers) with optional zero padding; counters increment once per submission
 - Output composed from a template with `{field}`, Choice option-title `{field_choice}`, `{counter}`, and built-in `{date}`, `{time}`, `{datetime}` tokens, with live preview in both editor and overlay
 - Submit to clipboard, or through an optional per-form action-step pipeline against the previously focused window
 - Submission history stored outside the profile with view, copy, and delete in the editor
+- Clearing form history also clears autocomplete suggestion data, including orphaned suggestions
 - Draggable, resizable overlay panel persisted per profile
 
 ### MicMixer music widget

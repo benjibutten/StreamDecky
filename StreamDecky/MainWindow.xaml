@@ -2581,6 +2581,10 @@
                                                          Margin="0,0,0,6"/>
 
                                                 <WrapPanel Margin="0,0,0,2">
+                                                    <CheckBox IsChecked="{Binding IsRequired, Mode=TwoWay}"
+                                                              Content="Required"
+                                                              ToolTip="Prevents submission until this field has a value"
+                                                              Foreground="#CCC" FontSize="12" Margin="0,0,14,0" Cursor="Hand"/>
                                                     <CheckBox IsChecked="{Binding IsMultiline, Mode=TwoWay}"
                                                               Content="Multiline"
                                                               Foreground="#CCC" FontSize="12" Margin="0,0,14,0" Cursor="Hand"/>
@@ -2593,6 +2597,23 @@
                                                               ToolTip="Allows this field to be corrected by double-clicking its value in the overlay history"
                                                               Foreground="#CCC" FontSize="12" Cursor="Hand"/>
                                                 </WrapPanel>
+
+                                                <Grid Margin="0,5,0,2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="8"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Shared suggestion key"
+                                                               Foreground="#888" FontSize="11"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Grid.Column="2"
+                                                             Text="{Binding SharedSuggestionKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             IsEnabled="{Binding RememberHistory}"
+                                                             ToolTip="Optional. Fields in other forms with the same key share only autocomplete values. Leave blank to keep suggestions isolated."
+                                                             Background="#1E1E2E" Foreground="#A6E3A1" FontSize="11" Padding="5,3"
+                                                             BorderBrush="#444" BorderThickness="1"/>
+                                                </Grid>
 
                                                 <!-- Choice options -->
                                                 <StackPanel x:Name="FormFieldOptionsPanel" Visibility="Collapsed" Margin="0,6,0,0">
@@ -2860,7 +2881,7 @@
                         <!-- Submission history -->
                         <Expander Foreground="#AFC0D2" Margin="0,0,0,10">
                             <Expander.Header>
-                                <TextBlock Text="History (submitted forms)" FontWeight="SemiBold"/>
+                                <TextBlock Text="History (selected form)" FontWeight="SemiBold"/>
                             </Expander.Header>
                             <Border Background="#222234" CornerRadius="4" Padding="8" Margin="0,5,0,0">
                                 <StackPanel>
@@ -2871,7 +2892,7 @@
                                                 Command="{Binding ClearFormSubmissionsCommand}"
                                                 Style="{StaticResource FormsFlatButton}"
                                                 Background="#5A2727" FontSize="10" Padding="8,3"
-                                                Visibility="{Binding HasFormSubmissions, Converter={StaticResource BoolToVisibility}}"/>
+                                                Visibility="{Binding HasStoredFormHistory, Converter={StaticResource BoolToVisibility}}"/>
                                     </DockPanel>
                                     <TextBlock Text="No submissions yet."
                                                Foreground="#777" FontSize="12"

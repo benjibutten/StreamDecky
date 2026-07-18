@@ -23,6 +23,9 @@ public class FormSubmission
     /// <summary>Display label → stable field id. Used to apply a corrected
     /// historical value to every matching entry for the same logical field.</summary>
     public Dictionary<string, string> FieldIds { get; set; } = new();
+    /// <summary>Display label → autocomplete history key. This may be shared by
+    /// explicitly opted-in fields while their stable field ids remain isolated.</summary>
+    public Dictionary<string, string> FieldHistoryKeys { get; set; } = new();
     /// <summary>The effective output template with counters and built-ins frozen
     /// at submission time, while field tokens remain replaceable.</summary>
     public string OutputTemplateSnapshot { get; set; } = string.Empty;
@@ -42,6 +45,7 @@ public class FormSubmission
         TokenValues = new Dictionary<string, string>(TokenValues ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
         FieldTokens ??= new Dictionary<string, string>();
         FieldIds ??= new Dictionary<string, string>();
+        FieldHistoryKeys ??= new Dictionary<string, string>();
         OutputTemplateSnapshot ??= string.Empty;
         RenderedText ??= string.Empty;
     }
