@@ -67,6 +67,36 @@
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
 
+        <!-- FormFieldType enum values for ComboBox -->
+        <ObjectDataProvider x:Key="FormFieldTypeValues"
+                            MethodName="GetValues"
+                            ObjectType="{x:Type models:FormFieldType}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="models:FormFieldType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <!-- Flat rounded button used across the Forms editor -->
+        <Style x:Key="FormsFlatButton" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Thin ScrollBar Thumb -->
         <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
             <Setter Property="Template">
@@ -1126,6 +1156,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
                         <Button Grid.Column="0"
@@ -1177,12 +1208,45 @@
                                             <ControlTemplate TargetType="Button">
                                                 <Border x:Name="Bd"
                                                         Background="{TemplateBinding Background}"
-                                                        CornerRadius="0,6,6,0"
+                                                        CornerRadius="0"
                                                         Padding="{TemplateBinding Padding}">
                                                     <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <DataTrigger Binding="{Binding IsClipboardEditorMode}" Value="True">
+                                                        <Setter Property="Opacity" Value="1"/>
+                                                        <Setter TargetName="Bd" Property="Background" Value="#4A6EA0"/>
+                                                    </DataTrigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+
+                        <Button Grid.Column="2"
+                                Content="Forms"
+                                Command="{Binding ShowFormsEditorCommand}"
+                                Background="#3A4A6A"
+                                Foreground="White"
+                                Padding="10,6"
+                                BorderThickness="0"
+                                Cursor="Hand">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Opacity" Value="0.7"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="Bd"
+                                                        Background="{TemplateBinding Background}"
+                                                        CornerRadius="0,6,6,0"
+                                                        Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding IsFormsEditorMode}" Value="True">
                                                         <Setter Property="Opacity" Value="1"/>
                                                         <Setter TargetName="Bd" Property="Background" Value="#4A6EA0"/>
                                                     </DataTrigger>
@@ -2365,6 +2429,480 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
+                    </StackPanel>
+
+                    <!-- ===================== FORMS EDITOR ===================== -->
+                    <StackPanel Visibility="{Binding IsFormsEditorMode, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Forms"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="White"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock Text="Design fill-in forms for the overlay. Compose the output with {tokens} from fields, counters, and built-ins like {date}."
+                                   Foreground="#7B8FA3"
+                                   FontSize="10"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
+                        <CheckBox IsChecked="{Binding FormsHistoryCountsTodayOnly, Mode=TwoWay}"
+                                  Content="Count only today's submissions on the overlay history button"
+                                  ToolTip="Turn this off to show totals for all stored submissions. The history list itself is never filtered."
+                                  Foreground="#CCC"
+                                  FontSize="11"
+                                  Cursor="Hand"
+                                  Margin="0,0,0,10"/>
+
+                        <!-- Form picker -->
+                        <TextBlock Text="FORM"
+                                   Foreground="#7F92A8"
+                                   FontSize="9"
+                                   FontWeight="Bold"
+                                   Margin="0,0,0,3"/>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox ItemsSource="{Binding FormTemplates}"
+                                      SelectedItem="{Binding SelectedFormTemplate, Mode=TwoWay}"
+                                      Style="{StaticResource DarkComboBox}">
+                                <!-- Explicit template instead of DisplayMemberPath: the DarkComboBox
+                                     ControlTemplate only honors SelectionBoxItemTemplate, so the
+                                     closed box would otherwise show ToString(). -->
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Grid.Column="1" Content="+" Command="{Binding AddFormTemplateCommand}"
+                                    Style="{StaticResource FormsFlatButton}"
+                                    ToolTip="Add form" Background="#2D5A27" Width="30" Margin="6,0,0,0"/>
+                            <Button Grid.Column="2" Content="⧉" Command="{Binding DuplicateFormTemplateCommand}"
+                                    Style="{StaticResource FormsFlatButton}"
+                                    ToolTip="Duplicate form" Background="#2A4D7A" Width="30" Margin="5,0,0,0"/>
+                            <Button Grid.Column="3" Content="−" Command="{Binding RemoveFormTemplateCommand}"
+                                    Style="{StaticResource FormsFlatButton}"
+                                    ToolTip="Delete form" Background="#5A2727" Width="30" Margin="5,0,0,0"/>
+                        </Grid>
+
+                        <TextBlock Text="No forms yet. Click + to create your first form."
+                                   Foreground="#777"
+                                   FontSize="12"
+                                   Margin="0,2,0,8"
+                                   Visibility="{Binding HasSelectedFormTemplate, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
+
+                        <StackPanel Visibility="{Binding HasSelectedFormTemplate, Converter={StaticResource BoolToVisibility}}">
+
+                            <!-- Name -->
+                            <TextBlock Text="Name" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding SelectedFormTemplate.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                     BorderBrush="#444" BorderThickness="1"
+                                     Margin="0,0,0,8"/>
+
+                            <CheckBox IsChecked="{Binding SelectedFormTemplate.ShowCopyButton, Mode=TwoWay}"
+                                      Content="Show a Copy button in the overlay"
+                                      ToolTip="Copy puts the rendered text on the clipboard and saves the submission. Off by default so it cannot be hit instead of Save."
+                                      Foreground="#CCC" FontSize="12" Cursor="Hand"
+                                      Margin="0,0,0,12"/>
+
+                            <!-- Fields -->
+                            <DockPanel Margin="0,0,0,4" LastChildFill="False">
+                                <TextBlock Text="FIELDS" Foreground="#7F92A8" FontSize="9" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Content="+ Field"
+                                        Command="{Binding AddFormFieldCommand}"
+                                        Style="{StaticResource FormsFlatButton}"
+                                        Background="#2D5A27" FontSize="11" Padding="8,4"/>
+                            </DockPanel>
+                            <TextBlock Text="Label is shown in the overlay. The token key is the field's variable name — write {key} in the output template to place the value there. For Choice fields, {key_choice} gives the selected option title while {key} gives its editable text. The key follows the label automatically until you set your own. Fields can also reference each other: a default value like 'Payment from {who}' fills in the who-field's value live."
+                                       Foreground="#7B8FA3" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,6"/>
+
+                            <ItemsControl ItemsSource="{Binding SelectedFormTemplate.Fields}" Margin="0,0,0,6">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#2D2D44" CornerRadius="6" BorderBrush="#41415A" BorderThickness="1" Padding="9" Margin="0,0,0,7">
+                                            <StackPanel>
+                                                <DockPanel Margin="0,0,0,6">
+                                                    <Button Content="✕" DockPanel.Dock="Right"
+                                                            Command="{Binding DataContext.RemoveFormFieldCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            Style="{StaticResource FormsFlatButton}"
+                                                            Background="#5A2727" FontSize="11" Padding="6,2" Margin="4,0,0,0"/>
+                                                    <Button Content="▼" DockPanel.Dock="Right"
+                                                            Command="{Binding DataContext.MoveFormFieldDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            Style="{StaticResource FormsFlatButton}"
+                                                            Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
+                                                    <Button Content="▲" DockPanel.Dock="Right"
+                                                            Command="{Binding DataContext.MoveFormFieldUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            Style="{StaticResource FormsFlatButton}"
+                                                            Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
+                                                    <ComboBox SelectedItem="{Binding Type, Mode=TwoWay}"
+                                                              ItemsSource="{Binding Source={StaticResource FormFieldTypeValues}}"
+                                                              Style="{StaticResource DarkComboBox}"
+                                                              Width="90"
+                                                              HorizontalAlignment="Left"/>
+                                                </DockPanel>
+
+                                                <Grid Margin="0,0,0,6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="8"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="Label" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                                        <TextBox Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                                                 BorderBrush="#444" BorderThickness="1"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2">
+                                                        <TextBlock Text="Token key" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                                        <TextBox Text="{Binding Key, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Background="#1E1E2E" Foreground="#A6E3A1" FontSize="12" Padding="6,4"
+                                                                 BorderBrush="#444" BorderThickness="1"
+                                                                 ToolTip="Use as {key} in the output template"/>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <TextBlock Text="Default value (supports counter and date tokens)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                                <TextBox Text="{Binding DefaultValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                                         BorderBrush="#444" BorderThickness="1"
+                                                         Margin="0,0,0,6"/>
+
+                                                <WrapPanel Margin="0,0,0,2">
+                                                    <CheckBox IsChecked="{Binding IsMultiline, Mode=TwoWay}"
+                                                              Content="Multiline"
+                                                              Foreground="#CCC" FontSize="12" Margin="0,0,14,0" Cursor="Hand"/>
+                                                    <CheckBox IsChecked="{Binding RememberHistory, Mode=TwoWay}"
+                                                              Content="Suggest previous entries"
+                                                              ToolTip="Stores submitted values and offers them as autocomplete suggestions in the overlay"
+                                                              Foreground="#CCC" FontSize="12" Margin="0,0,14,0" Cursor="Hand"/>
+                                                    <CheckBox IsChecked="{Binding AllowHistoryEditing, Mode=TwoWay}"
+                                                              Content="Allow quick edit in history"
+                                                              ToolTip="Allows this field to be corrected by double-clicking its value in the overlay history"
+                                                              Foreground="#CCC" FontSize="12" Cursor="Hand"/>
+                                                </WrapPanel>
+
+                                                <!-- Choice options -->
+                                                <StackPanel x:Name="FormFieldOptionsPanel" Visibility="Collapsed" Margin="0,6,0,0">
+                                                    <TextBlock Text="OPTIONS (selecting one prefills the editable text)" Foreground="#71869C" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
+                                                    <ItemsControl ItemsSource="{Binding Options}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Grid Margin="0,0,0,5">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="110"/>
+                                                                        <ColumnDefinition Width="6"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <TextBox Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                             ToolTip="Shown in the dropdown"
+                                                                             Background="#1E1E2E" Foreground="White" FontSize="11" Padding="5,4"
+                                                                             BorderBrush="#444" BorderThickness="1"/>
+                                                                    <TextBox Grid.Column="2"
+                                                                             Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                             ToolTip="Prefilled text when this option is chosen"
+                                                                             Background="#1E1E2E" Foreground="White" FontSize="11" Padding="5,4"
+                                                                             BorderBrush="#444" BorderThickness="1"
+                                                                             AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="60"/>
+                                                                    <Button Grid.Column="3" Content="✕"
+                                                                            Command="{Binding DataContext.RemoveFormFieldOptionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                            CommandParameter="{Binding}"
+                                                                            Style="{StaticResource FormsFlatButton}"
+                                                                            Background="#5A2727" FontSize="11" Padding="6,2" Margin="5,0,0,0"
+                                                                            VerticalAlignment="Top"/>
+                                                                </Grid>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <Button Content="+ Option"
+                                                            Command="{Binding DataContext.AddFormFieldOptionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            Style="{StaticResource FormsFlatButton}"
+                                                            Background="#2D5A27" FontSize="11" Padding="8,3"
+                                                            HorizontalAlignment="Left"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Type}" Value="Choice">
+                                                <Setter TargetName="FormFieldOptionsPanel" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Counters -->
+                            <DockPanel Margin="0,6,0,6" LastChildFill="False">
+                                <TextBlock Text="COUNTERS" Foreground="#7F92A8" FontSize="9" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Content="+ Counter"
+                                        Command="{Binding AddFormCounterCommand}"
+                                        Style="{StaticResource FormsFlatButton}"
+                                        Background="#2D5A27" FontSize="11" Padding="8,4"/>
+                            </DockPanel>
+                            <TextBlock Text="A counter is an automatic number, e.g. an invoice number. It increases by 1 every time the form is saved. Use it as {name} in a field default or the output template. Digits 3 makes it 001, 002, 003 …"
+                                       Foreground="#7B8FA3" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                            <Grid Margin="0,0,0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="27"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="TOKEN NAME" Foreground="#71869C" FontSize="9" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="2" Text="NEXT VALUE" Foreground="#71869C" FontSize="9" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="4" Text="DIGITS" Foreground="#71869C" FontSize="9" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="6" Text="SHOWS AS" Foreground="#71869C" FontSize="9" FontWeight="Bold"/>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding SelectedFormTemplate.Counters}" Margin="0,0,0,8">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,5">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="6"/>
+                                                <ColumnDefinition Width="80"/>
+                                                <ColumnDefinition Width="6"/>
+                                                <ColumnDefinition Width="60"/>
+                                                <ColumnDefinition Width="6"/>
+                                                <ColumnDefinition Width="60"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     ToolTip="Token name — use as {name} in templates"
+                                                     Background="#1E1E2E" Foreground="#A6E3A1" FontSize="12" Padding="6,4"
+                                                     BorderBrush="#444" BorderThickness="1"/>
+                                            <TextBox Grid.Column="2"
+                                                     Text="{Binding NextValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     ToolTip="The number the next submission will get"
+                                                     Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                                     BorderBrush="#444" BorderThickness="1"/>
+                                            <TextBox Grid.Column="4"
+                                                     Text="{Binding PadWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     ToolTip="Minimum number of digits, filled with zeros: 3 gives 001, 002 … (0 = plain number)"
+                                                     Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                                     BorderBrush="#444" BorderThickness="1"/>
+                                            <Border Grid.Column="6"
+                                                    Background="#222234" CornerRadius="4" Padding="6,4">
+                                                <TextBlock Text="{Binding FormattedPreview}"
+                                                           Foreground="#B9C7D6" FontSize="12" FontFamily="Consolas"
+                                                           HorizontalAlignment="Center"/>
+                                            </Border>
+                                            <Button Grid.Column="7" Content="✕"
+                                                    Command="{Binding DataContext.RemoveFormCounterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource FormsFlatButton}"
+                                                    Background="#5A2727" FontSize="11" Padding="6,2" Margin="5,0,0,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Output template -->
+                            <TextBlock Text="OUTPUT TEMPLATE" Foreground="#7F92A8" FontSize="9" FontWeight="Bold" Margin="0,4,0,4"/>
+                            <TextBlock Text="The final text produced when the form is saved — what lands on the clipboard or gets typed into the game. Write anything and drop in {tokens} where field values should go. Leave empty to get one 'Label: value' line per field."
+                                       Foreground="#7B8FA3" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                            <TextBox x:Name="FormOutputTemplateBox"
+                                     Text="{Binding SelectedFormTemplate.OutputTemplate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,5"
+                                     BorderBrush="#444" BorderThickness="1"
+                                     AcceptsReturn="True" TextWrapping="Wrap"
+                                     MinHeight="64" MaxHeight="140"
+                                     VerticalScrollBarVisibility="Auto"
+                                     Margin="0,0,0,6"/>
+                            <TextBlock Text="Click to insert at cursor:" Foreground="#7B8FA3" FontSize="10" Margin="0,0,0,3"/>
+                            <ItemsControl ItemsSource="{Binding FormTokenSuggestions}" Margin="0,0,0,6">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding}"
+                                                ContentStringFormat="{}{{{0}}}"
+                                                Click="InsertFormToken_Click"
+                                                Style="{StaticResource FormsFlatButton}"
+                                                Background="#33415C" Foreground="#C6D4E4"
+                                                FontSize="10" Padding="7,3" Margin="0,0,5,5"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{Binding FormTemplateWarningText}"
+                                       Foreground="#F38BA8"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,6"
+                                       Visibility="{Binding HasFormTemplateWarning, Converter={StaticResource BoolToVisibility}}"/>
+
+                            <!-- Preview -->
+                            <TextBlock Text="PREVIEW" Foreground="#7F92A8" FontSize="9" FontWeight="Bold" Margin="0,4,0,4"/>
+                            <Border Background="#222234" CornerRadius="6" BorderBrush="#41415A" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+                                <TextBlock Text="{Binding FormEditorPreviewText}"
+                                           Foreground="#B9C7D6"
+                                           FontSize="12"
+                                           FontFamily="Consolas"
+                                           TextWrapping="Wrap"/>
+                            </Border>
+
+                            <!-- Send pipeline -->
+                            <Expander Foreground="#AFC0D2" Margin="0,0,0,10">
+                                <Expander.Header>
+                                    <TextBlock Text="Send action (optional)" FontWeight="SemiBold"/>
+                                </Expander.Header>
+                                <Border Background="#222234" CornerRadius="4" Padding="8" Margin="0,5,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Steps run against the previously focused window when you press Send in the overlay. TextInput steps can use {{clipboardText}} for the rendered form text; an empty text uses it automatically. Without steps, only Copy is available."
+                                                   Foreground="#7B8FA3" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                        <ItemsControl ItemsSource="{Binding SelectedFormTemplate.ActionSteps}" Margin="0,0,0,8">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="#2D2D44" CornerRadius="6" Padding="10" Margin="0,0,0,6">
+                                                        <StackPanel>
+                                                            <DockPanel Margin="0,0,0,6">
+                                                                <Button Content="✕" DockPanel.Dock="Right"
+                                                                        Command="{Binding DataContext.RemoveFormActionStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Style="{StaticResource FormsFlatButton}"
+                                                                        Background="#5A2727" FontSize="11" Padding="6,2" Margin="4,0,0,0"/>
+                                                                <Button Content="▲" DockPanel.Dock="Right"
+                                                                        Command="{Binding DataContext.MoveFormActionStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Style="{StaticResource FormsFlatButton}"
+                                                                        Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
+                                                                <Button Content="▼" DockPanel.Dock="Right"
+                                                                        Command="{Binding DataContext.MoveFormActionStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Style="{StaticResource FormsFlatButton}"
+                                                                        Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
+                                                                <ComboBox SelectedItem="{Binding Type, Mode=TwoWay}"
+                                                                          ItemsSource="{Binding Source={StaticResource ActionStepTypeValues}}"
+                                                                          Style="{StaticResource DarkComboBox}"
+                                                                          Margin="0,0,8,0"/>
+                                                            </DockPanel>
+
+                                                            <StackPanel x:Name="FormStepKeyPress" Margin="0,0,0,4">
+                                                                <TextBlock Text="Key (SendKeys format)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                                                <TextBox Text="{Binding KeyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                                                         BorderBrush="#444" BorderThickness="1"/>
+                                                            </StackPanel>
+
+                                                            <StackPanel x:Name="FormStepTextInput" Visibility="Collapsed" Margin="0,0,0,4">
+                                                                <TextBlock Text="Text (leave empty to use the rendered form text)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                                                <TextBox Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                                                         BorderBrush="#444" BorderThickness="1"
+                                                                         AcceptsReturn="True" TextWrapping="Wrap"
+                                                                         MinHeight="40" MaxHeight="80"/>
+                                                                <ComboBox SelectedItem="{Binding TextMode, Mode=TwoWay}"
+                                                                          ItemsSource="{Binding Source={StaticResource TextModeValues}}"
+                                                                          Style="{StaticResource DarkComboBox}"
+                                                                          Margin="0,4,0,4"/>
+                                                                <CheckBox IsChecked="{Binding PressEnterAfter, Mode=TwoWay}"
+                                                                          Content="Press Enter after"
+                                                                          Foreground="#CCC" FontSize="12"/>
+                                                            </StackPanel>
+
+                                                            <StackPanel x:Name="FormStepDelay" Visibility="Collapsed" Margin="0,0,0,4">
+                                                                <TextBlock Text="Duration (ms)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                                                <TextBox Text="{Binding DelayMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
+                                                                         BorderBrush="#444" BorderThickness="1" Width="80" HorizontalAlignment="Left"/>
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </Border>
+                                                    <DataTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding Type}" Value="KeyPress">
+                                                            <Setter TargetName="FormStepKeyPress" Property="Visibility" Value="Visible"/>
+                                                            <Setter TargetName="FormStepTextInput" Property="Visibility" Value="Collapsed"/>
+                                                            <Setter TargetName="FormStepDelay" Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Type}" Value="TextInput">
+                                                            <Setter TargetName="FormStepKeyPress" Property="Visibility" Value="Collapsed"/>
+                                                            <Setter TargetName="FormStepTextInput" Property="Visibility" Value="Visible"/>
+                                                            <Setter TargetName="FormStepDelay" Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Type}" Value="Delay">
+                                                            <Setter TargetName="FormStepKeyPress" Property="Visibility" Value="Collapsed"/>
+                                                            <Setter TargetName="FormStepTextInput" Property="Visibility" Value="Collapsed"/>
+                                                            <Setter TargetName="FormStepDelay" Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </DataTemplate.Triggers>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Button Content="+ Add Step"
+                                                Command="{Binding AddFormActionStepCommand}"
+                                                Style="{StaticResource FormsFlatButton}"
+                                                Background="#2D5A27" FontSize="12" Padding="10,5"
+                                                HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                </Border>
+                            </Expander>
+                        </StackPanel>
+
+                        <!-- Submission history -->
+                        <Expander Foreground="#AFC0D2" Margin="0,0,0,10">
+                            <Expander.Header>
+                                <TextBlock Text="History (submitted forms)" FontWeight="SemiBold"/>
+                            </Expander.Header>
+                            <Border Background="#222234" CornerRadius="4" Padding="8" Margin="0,5,0,0">
+                                <StackPanel>
+                                    <DockPanel Margin="0,0,0,8" LastChildFill="False">
+                                        <TextBlock Text="Stored locally in form-data.json, outside the profile."
+                                                   Foreground="#7B8FA3" FontSize="10" VerticalAlignment="Center"/>
+                                        <Button DockPanel.Dock="Right" Content="Clear all"
+                                                Command="{Binding ClearFormSubmissionsCommand}"
+                                                Style="{StaticResource FormsFlatButton}"
+                                                Background="#5A2727" FontSize="10" Padding="8,3"
+                                                Visibility="{Binding HasFormSubmissions, Converter={StaticResource BoolToVisibility}}"/>
+                                    </DockPanel>
+                                    <TextBlock Text="No submissions yet."
+                                               Foreground="#777" FontSize="12"
+                                               Visibility="{Binding HasFormSubmissions, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
+                                    <ItemsControl ItemsSource="{Binding FormSubmissions}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#2D2D44" CornerRadius="6" BorderBrush="#41415A" BorderThickness="1" Padding="8" Margin="0,0,0,6">
+                                                    <StackPanel>
+                                                        <DockPanel Margin="0,0,0,4">
+                                                            <Button Content="✕" DockPanel.Dock="Right"
+                                                                    Command="{Binding DataContext.DeleteFormSubmissionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Style="{StaticResource FormsFlatButton}"
+                                                                    Background="#5A2727" FontSize="10" Padding="6,2" Margin="4,0,0,0"/>
+                                                            <Button Content="Copy" DockPanel.Dock="Right"
+                                                                    Command="{Binding DataContext.CopyFormSubmissionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Style="{StaticResource FormsFlatButton}"
+                                                                    Background="#2A4D7A" FontSize="10" Padding="8,2" Margin="4,0,0,0"/>
+                                                            <TextBlock Text="{Binding TemplateName}" Foreground="#EAF2FA" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding CreatedText}" Foreground="#71859A" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                                            <TextBlock Text="✓ done" Foreground="#A6E3A1" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0"
+                                                                       Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVisibility}}"/>
+                                                        </DockPanel>
+                                                        <TextBlock Text="{Binding RenderedText}"
+                                                                   Foreground="#B9C7D6" FontSize="11" FontFamily="Consolas"
+                                                                   TextWrapping="Wrap" MaxHeight="80" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </Expander>
                     </StackPanel>
 
                 </StackPanel>

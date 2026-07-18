@@ -97,6 +97,57 @@ public partial class MainViewModel
         }
     }
 
+    /// <summary>Persists the current profile snapshot without the normal debounce.
+    /// Used when another durable write depends on profile state already being
+    /// committed, such as reserving the next form counter value.</summary>
+    private async Task<bool> SavePendingChangesImmediatelyAsync()
+    {
+        if (_isDisposed)
+            return false;
+
+        _autoSaveTimer.Stop();
+        MarkUnsavedChanges();
+        long versionToSave = Interlocked.Read(ref _changeVersion);
+        BeginSaveStatus();
+        string json;
+        try
+        {
+            json = _profileService.SerializeStore(_profileStore);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Immediate profile serialization failed.", ex);
+            FailSaveStatus(ex);
+            return false;
+        }
+
+        bool hasSaveLock = false;
+        try
+        {
+            CancellationToken cancellationToken = _autoSaveCancellation.Token;
+            await _autoSaveSemaphore.WaitAsync(cancellationToken);
+            hasSaveLock = true;
+            await _profileService.SaveStoreSerializedAsync(json, cancellationToken);
+            CompleteSaveStatus(versionToSave);
+            return true;
+        }
+        catch (OperationCanceledException) when (_autoSaveCancellation.IsCancellationRequested)
+        {
+            return false;
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Immediate profile save failed.", ex);
+            FailSaveStatus(ex);
+            return false;
+        }
+        finally
+        {
+            if (hasSaveLock)
+                _autoSaveSemaphore.Release();
+        }
+    }
+
     [RelayCommand]
     private async Task SaveAsync()
     {

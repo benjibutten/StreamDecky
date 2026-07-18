@@ -36,6 +36,10 @@ public static class ProfileSchemaMigrator
                     ApplyStoreV3ToV4(store);
                     version = ProfileSchemaVersion.GlobalQuickTextTags;
                     break;
+                case ProfileSchemaVersion.GlobalQuickTextTags:
+                    ApplyStoreV4ToV5(store);
+                    version = ProfileSchemaVersion.FormsTemplates;
+                    break;
                 default:
                     throw CreateMissingMigrationException("profile store", version);
             }
@@ -78,6 +82,10 @@ public static class ProfileSchemaMigrator
                 case ProfileSchemaVersion.QuickTextCollectionsAndTags:
                     ApplyProfileV3ToV4(profile);
                     version = ProfileSchemaVersion.GlobalQuickTextTags;
+                    break;
+                case ProfileSchemaVersion.GlobalQuickTextTags:
+                    ApplyProfileV4ToV5(profile);
+                    version = ProfileSchemaVersion.FormsTemplates;
                     break;
                 default:
                     throw CreateMissingMigrationException($"profile {GetProfileLabel(profile)}", version);
@@ -131,6 +139,11 @@ public static class ProfileSchemaMigrator
     private static void ApplyStoreV3ToV4(DeckProfileStore store)
     {
         // Version 4 only changes profile-owned clipboard data.
+    }
+
+    private static void ApplyStoreV4ToV5(DeckProfileStore store)
+    {
+        // Version 5 only adds profile-owned form template data.
     }
 
     private static void ApplyProfileV1ToV2(DeckProfile profile)
@@ -266,6 +279,17 @@ public static class ProfileSchemaMigrator
         }
 
         profile.SchemaVersion = ProfileSchemaVersion.GlobalQuickTextTags;
+    }
+
+    private static void ApplyProfileV4ToV5(DeckProfile profile)
+    {
+        profile.FormTemplates ??= new List<FormTemplate>();
+        profile.ActiveFormTemplateId ??= string.Empty;
+
+        foreach (var template in profile.FormTemplates)
+            template.EnsureInitialized();
+
+        profile.SchemaVersion = ProfileSchemaVersion.FormsTemplates;
     }
 
     private static void EnsureStoreIsSupportedForPersistence(DeckProfileStore store)

@@ -176,6 +176,7 @@ public partial class MainViewModel
         LoadCurrentLayout();
         LoadQuickTextCollections();
         LoadQuickTextActionSteps();
+        LoadFormTemplates();
         NotifyPageChanged();
         NotifyNotePageChanged();
 

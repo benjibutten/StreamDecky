@@ -63,6 +63,17 @@ Published releases are self-contained `win-x64` builds, so end users do not need
 - Shared multi-step action pipeline for clipboard rows
 - Session-only inline edits in the overlay without autosaving temporary changes
 
+### Forms
+
+- Profile-scoped fill-in forms designed in the editor and filled in from the overlay
+- Field types: free text (single- or multiline) and choice fields where selecting an option prefills an editable text
+- Per-field autocomplete suggestions from previously submitted values (opt-in per field)
+- Auto-incrementing counters (e.g. invoice numbers) with optional zero padding; counters increment once per submission
+- Output composed from a template with `{field}`, Choice option-title `{field_choice}`, `{counter}`, and built-in `{date}`, `{time}`, `{datetime}` tokens, with live preview in both editor and overlay
+- Submit to clipboard, or through an optional per-form action-step pipeline against the previously focused window
+- Submission history stored outside the profile with view, copy, and delete in the editor
+- Draggable, resizable overlay panel persisted per profile
+
 ### MicMixer music widget
 
 - Optional overlay widget (`Music` in the overlay top bar) that remote-controls MicMixer's built-in music player
@@ -105,6 +116,7 @@ Keeping the same install path helps Windows preserve tray icon preferences and k
 - Primary store: `%LOCALAPPDATA%\StreamDecky\profiles.json`
 - One-version-back backup: `%LOCALAPPDATA%\StreamDecky\profiles.backup.json`
 - Legacy import source: `%LOCALAPPDATA%\StreamDecky\profile.json`
+- Form submissions and autocomplete history: `%LOCALAPPDATA%\StreamDecky\form-data.json` (kept outside the profile store so submissions never churn profile backups and personal history stays out of profile exports)
 - Diagnostics log: `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`
 
 Profile data is autosaved after real data mutations and can also be saved through explicit save flows.
@@ -126,7 +138,8 @@ StreamDecky/
 |-- Models/
 |   |-- DeckProfile, DeckProfileStore, DeckPage, NotePage, StickyNote
 |   |-- ButtonConfig, ActionStep
-|   `-- enums (ActionType, ActionStepType, TextMode, ButtonShape, ProfileSchemaVersion)
+|   |-- FormTemplate, FormField, FormFieldOption, FormCounter, FormSubmission, FormDataStore
+|   `-- enums (ActionType, ActionStepType, TextMode, ButtonShape, FormFieldType, ProfileSchemaVersion)
 |-- ViewModels/
 |   |-- MainViewModel (+ partials for profiles, layouts, sticky notes, quick text, and save flow)
 |   |-- ButtonViewModel
@@ -137,6 +150,8 @@ StreamDecky/
 |-- Services/
 |   |-- ProfileService
 |   |-- ProfileSchemaMigrator
+|   |-- FormRenderService
+|   |-- FormDataService
 |   |-- TextInputActionService
 |   |-- MultiActionService
 |   |-- OverlayWindowController
