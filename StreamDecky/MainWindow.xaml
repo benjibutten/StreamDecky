@@ -397,7 +397,7 @@
                         </Style>
                     </Button.Style>
                 </Button>
-                <Button Content="⚙ Settings" 
+                <Button
                         DockPanel.Dock="Right"
                         HorizontalAlignment="Right"
                         Click="OpenSettings_Click"
@@ -408,6 +408,15 @@
                         Cursor="Hand"
                         BorderThickness="0"
                         Margin="0,0,8,0">
+                    <Button.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource SettingsIconGeometry}"
+                                  Fill="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                  Width="16" Height="16" Stretch="Uniform"
+                                  VerticalAlignment="Center" Margin="0,0,7,0"/>
+                            <TextBlock Text="Settings" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button.Content>
                     <Button.Style>
                         <Style TargetType="Button">
                             <Setter Property="Template">
