@@ -115,6 +115,21 @@ In the overlay:
 
 Keeping the same install path helps Windows preserve tray icon preferences and keeps the startup registry entry valid.
 
+StreamDecky is distributed outside Microsoft Store. Windows Defender SmartScreen
+may show **Windows protected your PC** for an unsigned or newly published build.
+Verify that the archive came from the official GitHub release and compare its
+SHA-256 hash with the attached `.sha256` file before selecting **More info → Run
+anyway**. Windows 11 Smart App Control is a separate feature and may block unknown
+unsigned apps without offering that override. See [INSTALLATION.txt](INSTALLATION.txt)
+for verification commands and details.
+
+Release builds check GitHub for updates at most once every 12 hours while the
+main window is open. When a newer version is available, StreamDecky can download,
+verify, install, and restart itself. A manual check is available from
+**About → Check for updates**. Installs in protected folders may trigger a UAC
+prompt, and Windows may show a security warning when a new build restarts.
+Development builds do not perform update checks.
+
 ## Data storage and recovery
 
 - Primary store: `%LOCALAPPDATA%\StreamDecky\profiles.json`
@@ -235,8 +250,11 @@ Release pipeline notes:
 - `release.yml` injects `Version`, `AssemblyVersion`, `FileVersion`, and `InformationalVersion` during publish.
 - `pr-build.yml` and `release.yml` both run the automated test project before shipping artifacts.
 - The local `.csproj` version is a fallback and can be overridden by CI.
-- The release workflow supports optional code signing when the required PFX secrets are configured.
-- Without code signing, Windows SmartScreen may still require manual approval.
+- The release workflow signs and verifies the executable when both required PFX
+  secrets are configured, and fails if only one secret is present.
+- Release notes state whether the executable was signed. Without a trusted
+  signature, Windows SmartScreen may require manual approval; even a newly signed
+  build can initially lack reputation.
 
 ## Known limitations
 
