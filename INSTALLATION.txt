@@ -1,0 +1,49 @@
+STREAMDECKY - INSTALLATION AND QUICK START
+=========================================
+
+Install StreamDecky
+-------------------
+1. Extract the entire release zip to a permanent folder that you control, for
+   example:
+
+     %LOCALAPPDATA%\Programs\StreamDecky
+
+2. Run StreamDecky.exe from that folder. The release is self-contained, so a
+   separate .NET installation is normally not required.
+3. Configure your profile, overlay hotkey, buttons, and other settings in the
+   app.
+4. Optional: enable "Start with Windows" in Settings after StreamDecky is in its
+   permanent folder. Windows stores the current path to StreamDecky.exe. Moving
+   or deleting the exe later will break autostart until you disable and
+   re-enable the setting from the new location.
+
+When updating, exit StreamDecky from its tray icon and extract the new release
+over the same folder. Keeping the same path also helps Windows retain its tray
+icon preferences. Profiles and app data are stored separately under
+%LOCALAPPDATA%\StreamDecky and are not removed by replacing the application
+files.
+
+Using the MicMixer music widget
+-------------------------------
+The optional Music widget in StreamDecky's overlay controls MicMixer's built-in
+music player over a local connection. No plug-in, network setup, or additional
+integration software is required.
+
+1. Install and run MicMixer on the same Windows account.
+2. Open StreamDecky's overlay and enable/open the Music widget.
+3. The widget connects automatically and can control MicMixer's library,
+   playback, queue, and music settings.
+
+Important:
+- MicMixer.exe must be running for the widget to work.
+- StreamDecky does not start MicMixer automatically. Enable "Start with Windows"
+  in both apps if you want both available after signing in.
+- The widget shows an offline state while MicMixer is unavailable and reconnects
+  automatically after MicMixer starts or restarts.
+- MicMixer handles the audio routing. StreamDecky only provides remote controls
+  for MicMixer's music features.
+
+More help
+---------
+Full documentation is available at:
+https://github.com/benjibutten/StreamDecky
