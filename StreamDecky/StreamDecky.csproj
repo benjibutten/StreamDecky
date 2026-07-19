@@ -27,6 +27,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="StreamDecky.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\INSTALLATION.txt"
           Link="INSTALLATION.txt"
           CopyToOutputDirectory="PreserveNewest"

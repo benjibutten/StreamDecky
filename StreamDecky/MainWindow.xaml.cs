@@ -215,6 +215,8 @@ public partial class MainWindow : Window
         System.Windows.Application.Current.Shutdown();
     }
 
+    internal void ExitForUpdate() => ExitApplication();
+
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MainViewModel.GamepadSupportEnabled))

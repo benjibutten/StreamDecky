@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Threading;
 using StreamDecky.Helpers;
+using StreamDecky.Updates;
 
 using Application = System.Windows.Application;
 
@@ -56,6 +57,43 @@ public partial class App : Application
 
         base.OnStartup(e);
         CreateMainWindow(startHiddenInTray);
+
+        if (MainWindow is Window owner)
+        {
+            if (startHiddenInTray)
+                CheckForUpdatesWhenShown(owner);
+            else
+                _ = CheckForUpdatesAfterStartupAsync(owner);
+        }
+    }
+
+    private static async Task CheckForUpdatesAfterStartupAsync(Window owner)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(8));
+        if (owner.Dispatcher.HasShutdownStarted)
+            return;
+
+        if (!owner.IsVisible)
+        {
+            CheckForUpdatesWhenShown(owner);
+            return;
+        }
+
+        await UpdateCoordinator.CheckAsync(owner, manual: false);
+    }
+
+    private static void CheckForUpdatesWhenShown(Window owner)
+    {
+        DependencyPropertyChangedEventHandler? visibilityChanged = null;
+        visibilityChanged = (_, _) =>
+        {
+            if (!owner.IsVisible)
+                return;
+
+            owner.IsVisibleChanged -= visibilityChanged;
+            _ = CheckForUpdatesAfterStartupAsync(owner);
+        };
+        owner.IsVisibleChanged += visibilityChanged;
     }
 
     protected override void OnExit(ExitEventArgs e)
