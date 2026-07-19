@@ -221,20 +221,20 @@ Requirement: Windows with the `.NET 10 SDK` installed.
 
 ```powershell
 dotnet restore StreamDecky.slnx
-dotnet run --project StreamDecky/StreamDecky.csproj
+dotnet run --project src/StreamDecky/StreamDecky.csproj
 ```
 
 If WPF design-time build or C# Dev Kit locks generated files such as `App.g.cs` and triggers `MC1000`-style failures, use the safer sequence below instead:
 
 ```powershell
-dotnet build StreamDecky/StreamDecky.csproj -c Debug --disable-build-servers /nr:false
-dotnet run --project StreamDecky/StreamDecky.csproj --no-build
+dotnet build src/StreamDecky/StreamDecky.csproj -c Debug --disable-build-servers /nr:false
+dotnet run --project src/StreamDecky/StreamDecky.csproj --no-build
 ```
 
 To run the full automated test suite locally:
 
 ```powershell
-dotnet test StreamDecky.Tests/StreamDecky.Tests.csproj -c Debug --disable-build-servers /nr:false
+dotnet test tests/StreamDecky.Tests/StreamDecky.Tests.csproj -c Debug --disable-build-servers /nr:false
 ```
 
 ## Publishing
@@ -242,7 +242,7 @@ dotnet test StreamDecky.Tests/StreamDecky.Tests.csproj -c Debug --disable-build-
 Example self-contained single-file publish for `win-x64`:
 
 ```powershell
-dotnet publish StreamDecky/StreamDecky.csproj \
+dotnet publish src/StreamDecky/StreamDecky.csproj \
   -c Release \
   -r win-x64 \
   --self-contained true \

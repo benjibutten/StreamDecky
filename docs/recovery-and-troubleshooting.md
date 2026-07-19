@@ -123,8 +123,8 @@ Symptoms:
 
 Actions:
 
-1. Run `dotnet build StreamDecky/StreamDecky.csproj -c Debug --disable-build-servers /nr:false`.
-2. Then run `dotnet run --project StreamDecky/StreamDecky.csproj --no-build`.
+1. Run `dotnet build src/StreamDecky/StreamDecky.csproj -c Debug --disable-build-servers /nr:false`.
+2. Then run `dotnet run --project src/StreamDecky/StreamDecky.csproj --no-build`.
 3. If the problem keeps coming back, stop editor design-time hosts and confirm that antivirus is not aggressively indexing `bin` or `obj`.
 
 ## When the log is enough and when to use the backup
