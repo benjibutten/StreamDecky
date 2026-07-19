@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Navigation;
 using StreamDecky.Helpers;
 using StreamDecky.Services;
 using StreamDecky.ViewModels;
@@ -70,6 +71,23 @@ public partial class MainWindow : Window
     private static bool HasStartHiddenInTrayArgument(string[] args)
     {
         return args.Contains("--minimized", StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void SupportLink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri)
+        {
+            UseShellExecute = true
+        });
+        e.Handled = true;
+    }
+
+    private void AboutButton_Click(object sender, RoutedEventArgs e)
+    {
+        AboutDialog.Show(
+            this,
+            "StreamDecky",
+            "https://github.com/benjibutten/StreamDecky");
     }
 
     public void StartHiddenInTray()

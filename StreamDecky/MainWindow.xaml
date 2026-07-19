@@ -276,6 +276,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="36"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Custom Title Bar -->
@@ -2935,5 +2936,27 @@
             </ScrollViewer>
         </Border>
     </Grid>
+
+        <!-- Project and contributor footer -->
+        <Border Grid.Row="2" Padding="16,8" Background="#181827"
+                BorderBrush="#33334D" BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock VerticalAlignment="Center" FontSize="11.5" Foreground="#9A9AB5" TextWrapping="Wrap">
+                    <Run Text="Enjoying StreamDecky? Consider gifting a sub to "/>
+                    <Hyperlink NavigateUri="https://www.twitch.tv/pixlexi"
+                               RequestNavigate="SupportLink_RequestNavigate"
+                               Foreground="#B4A7FF" FontWeight="SemiBold">Pixlexi</Hyperlink><Run Text=" on Twitch."/>
+                </TextBlock>
+                <Button Grid.Column="1" Margin="16,0,0,0" Padding="11,5"
+                        Click="AboutButton_Click" Content="More information"
+                        FontSize="11" FontWeight="SemiBold" Cursor="Hand"
+                        Background="#2D2D44" Foreground="#D8D8E8"
+                        BorderBrush="#494966" BorderThickness="1"/>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

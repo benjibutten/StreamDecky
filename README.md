@@ -250,6 +250,20 @@ Release pipeline notes:
 - `Start with Windows` writes to `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`.
 - Profiles, backups, and logs stay under `%LOCALAPPDATA%\StreamDecky`.
 
+## Support and acknowledgements
+
+StreamDecky is built and maintained by BenjiButten and released free of charge
+as open-source software. A special thank you goes to
+[Pixlexi](https://www.twitch.tv/pixlexi), who has contributed the use cases
+behind the app, hands-on testing, and valuable feedback throughout development.
+
+If you enjoy StreamDecky and would like to give something back, please consider
+gifting a sub to [Pixlexi](https://www.twitch.tv/pixlexi) on Twitch.
+
+Third-party components and their license information are listed in
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt). Both that file and the
+project license are included in published distributions.
+
 ## License
 
-See `LICENSE`.
+See [LICENSE](LICENSE).
