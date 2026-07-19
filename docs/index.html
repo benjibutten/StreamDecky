@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StreamDecky</title>
+<meta name="description" content="StreamDecky is a free, open-source command deck for Windows: a fullscreen overlay with macro buttons, quick clipboard text, forms, and sticky notes that sends input back into your game.">
+<meta property="og:title" content="StreamDecky">
+<meta property="og:description" content="A fullscreen overlay command deck for Windows: buttons, quick text, forms, and notes that send input back into your game.">
+<meta property="og:image" content="https://benjibutten.github.io/StreamDecky/assets/streamdecky-overlay.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="assets/icon.png">
+<style>
+  :root {
+    --text: #23292f;
+    --muted: #5b6570;
+    --line: #dde2e8;
+    --bg-soft: #f4f6f8;
+    --accent: #6a63d6;
+    --accent-dark: #504aac;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    color: var(--text);
+    background: #ffffff;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 1.02rem;
+    line-height: 1.65;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 22px; }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: var(--accent-dark); }
+  h1 { font-size: 1.9rem; line-height: 1.25; letter-spacing: -0.01em; }
+  h2 { font-size: 1.35rem; margin: 0 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 1.05rem; margin: 26px 0 6px; }
+  p { margin-bottom: 14px; }
+  ul { margin: 0 0 14px 24px; }
+  li { margin-bottom: 6px; }
+  section { padding: 34px 0 8px; }
+  code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 1px 6px;
+  }
+
+  header.top { border-bottom: 1px solid var(--line); }
+  .top-inner { display: flex; align-items: center; gap: 10px; min-height: 58px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+  .top-inner img { width: 24px; height: 24px; }
+  .top-inner .name { font-weight: 600; }
+  .top-links { margin-left: auto; display: flex; gap: 18px; align-items: center; font-size: 0.93rem; flex-wrap: wrap; }
+  .top-links a { color: var(--muted); text-decoration: none; }
+  .top-links a:hover { color: var(--text); text-decoration: underline; }
+
+  .intro { padding-top: 44px; padding-bottom: 10px; }
+  .intro h1 { margin-bottom: 14px; }
+  .intro .actions { display: flex; align-items: center; gap: 18px; margin: 22px 0 8px; flex-wrap: wrap; }
+  .download {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.97rem;
+    padding: 10px 20px;
+    border-radius: 7px;
+  }
+  .download:hover { background: var(--accent-dark); }
+  .actions .alt { font-size: 0.93rem; }
+  .fineprint { color: var(--muted); font-size: 0.87rem; }
+
+  figure.shot { margin: 30px 0 10px; }
+  figure.shot img { border: 1px solid var(--line); border-radius: 8px; }
+  figure.shot figcaption { color: var(--muted); font-size: 0.87rem; margin-top: 8px; }
+
+  ol.setup { margin: 0 0 14px 24px; }
+  ol.setup li { margin-bottom: 10px; }
+
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding: 26px 0 40px; color: var(--muted); font-size: 0.9rem; }
+  footer p { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <img src="assets/icon.png" alt="" width="48" height="48">
+    <span class="name">StreamDecky</span>
+    <nav class="top-links">
+      <a href="#use">What it's for</a>
+      <a href="#editor">Editor</a>
+      <a href="#setup">Setup</a>
+      <a href="https://github.com/benjibutten/StreamDecky">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap intro">
+  <h1>A command deck that opens on top of your game.</h1>
+  <p>
+    StreamDecky is a free, open-source Windows app. Press a global hotkey (or a gamepad
+    combo) and a fullscreen overlay appears above whatever you're playing: a grid of
+    configurable buttons, ready-made chat lines, fill-in forms, and sticky notes. When you
+    click something, StreamDecky gives focus back to the game and sends the keystrokes or
+    text there. No Stream Deck hardware involved; it's all software.
+  </p>
+  <div class="actions">
+    <a class="download" href="https://github.com/benjibutten/StreamDecky/releases/latest/download/StreamDecky-win-x64.zip">Download for Windows</a>
+    <a class="alt" href="https://github.com/benjibutten/StreamDecky">Source on GitHub</a>
+  </div>
+  <p class="fineprint">
+    Downloads <code>StreamDecky-win-x64.zip</code> from the
+    <a href="https://github.com/benjibutten/StreamDecky/releases/latest">latest release</a>.
+    Windows 10/11. Self-contained, no .NET install needed. Runs without admin rights. Apache-2.0.
+  </p>
+
+  <figure class="shot">
+    <img src="assets/streamdecky-overlay.png" alt="The StreamDecky overlay: a grid of colored action buttons, a quick clipboard panel with /me lines, sticky notes, and a music widget" width="2560" height="1440">
+    <figcaption>
+      The overlay with an example roleplay profile: action buttons, the quick clipboard
+      panel, sticky notes, and the MicMixer music widget. <kbd>Esc</kbd> closes it and you're
+      back in the game.
+    </figcaption>
+  </figure>
+</div>
+
+<section class="wrap" id="use">
+  <h2>What it's for</h2>
+
+  <h3>Games that run on chat commands</h3>
+  <p>
+    On roleplay servers like FiveM, and in any other game with a chat box, half of playing
+    is typing <code>/me</code> lines and commands
+    quickly, mid-scene. StreamDecky keeps them as clipboard items, organized in categories
+    and collections and searchable from the overlay. One click copies the line. Or let an
+    action pipeline deliver it whole: press <code>T</code> to open the chat, paste
+    <code>/me checks pulse and breathing</code>, press Enter. Need a one-off variation?
+    Edit the line inline in the overlay without touching the saved version.
+  </p>
+
+  <h3>Emotes and animations as buttons</h3>
+  <p>
+    Buttons can press keys, type or paste text, and chain several steps with delays:
+    <code>open chat → /e dance → Enter</code> is one button. Buttons can also jump to other
+    pages: a <em>Dances</em> button can open a hidden page full of dance emotes with a back
+    button (a “virtual layout”), so the main deck stays clean. Colors, emoji, and images
+    keep it readable in the middle of a scene.
+  </p>
+
+  <h3>Notes floating over the game</h3>
+  <p>
+    Radio channels, court times, license plates, names you keep forgetting: pin them as
+    sticky notes on the overlay. Notes live in their own pages, independent of the button
+    layouts.
+  </p>
+
+  <h3>Repeated paperwork</h3>
+  <p>
+    Forms are designed once in the editor and filled in from the overlay: text fields,
+    choice fields that prefill editable text, auto-incrementing counters (invoice numbers,
+    case IDs), and <code>{date}</code>/<code>{time}</code> tokens. Fields can suggest what
+    you typed last time. Submit to the clipboard, or straight into the game through the same
+    kind of action pipeline. Works for dispatch reports and in-character invoices, and just
+    as well for real-world canned replies and repetitive data entry, since the input goes to
+    whatever window you were using before the overlay opened.
+  </p>
+
+  <h3>Music without alt-tabbing</h3>
+  <p>
+    If <a href="https://benjibutten.github.io/MicMixer/">MicMixer</a> is running, the
+    overlay's music widget remote-controls its player: library search, queue, seek, volumes,
+    delayed start. No configuration needed; it connects automatically over a local named pipe.
+  </p>
+</section>
+
+<section class="wrap" id="editor">
+  <h2>The editor</h2>
+  <figure class="shot">
+    <img src="assets/streamdecky-main.png" alt="The StreamDecky editor window with a grid of configured buttons and an editor panel" width="1050" height="700">
+    <figcaption>The main window, editing the example profile shown above.</figcaption>
+  </figure>
+  <ul>
+    <li>Drag buttons between slots, <code>Ctrl</code>-drag to copy, <code>Ctrl+C</code>/<code>Ctrl+V</code> whole button configurations.</li>
+    <li>Profiles per game or server, each with its own layouts, notes, quick text, and settings, with import/export for sharing.</li>
+    <li>Choose per action whether text is pasted from the clipboard or typed keystroke by keystroke, for games that block programmatic paste.</li>
+    <li>Profiles are autosaved with a versioned schema and a one-version-back backup file. Data stays in <code>%LOCALAPPDATA%\StreamDecky</code>.</li>
+    <li>Optional gamepad support: recorded toggle combo, D-pad/stick navigation, <code>A</code> to activate, <code>LB</code>/<code>RB</code> for pages.</li>
+  </ul>
+</section>
+
+<section class="wrap" id="setup">
+  <h2>Setup</h2>
+  <ol class="setup">
+    <li>Download <a href="https://github.com/benjibutten/StreamDecky/releases/latest/download/StreamDecky-win-x64.zip"><code>StreamDecky-win-x64.zip</code></a> from the latest release.</li>
+    <li>Extract it to a folder you control and run <code>StreamDecky.exe</code>.</li>
+    <li>Build your deck in the editor and set the overlay hotkey in Settings.</li>
+    <li>Optionally enable <em>Start with Windows</em> to keep it in the tray.</li>
+  </ol>
+  <p>
+    The <a href="https://github.com/benjibutten/StreamDecky#readme">README</a> covers the
+    rest: all action types, forms in detail, data storage and recovery, and known limitations
+    (for example, games with aggressive anti-cheat may ignore simulated input).
+  </p>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>
+      Built by <a href="https://github.com/benjibutten">BenjiButten</a>. Use cases, testing,
+      and feedback by <a href="https://www.twitch.tv/pixlexi">Pixlexi</a>. If StreamDecky is
+      useful to you, consider gifting her a sub on Twitch.
+    </p>
+    <p>
+      <a href="https://github.com/benjibutten/StreamDecky/blob/main/LICENSE">Apache-2.0</a> ·
+      also by the same author: <a href="https://benjibutten.github.io/MicMixer/">MicMixer</a>,
+      which mixes your mic and music into one virtual microphone.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
