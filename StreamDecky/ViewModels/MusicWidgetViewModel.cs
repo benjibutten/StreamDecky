@@ -310,7 +310,11 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
 
         HasMonitorOutput = state.HasMonitorOutput;
         CanStartPlayback = state.CanStartPlayback;
-        PlaybackBlockedReason = state.CanStartPlayback ? string.Empty : state.PlaybackBlockedReason ?? string.Empty;
+        // External mode has its own actionable banner above the player. Repeating
+        // the playback gate's machine-readable reason below it is redundant.
+        PlaybackBlockedReason = state.CanStartPlayback || state.IsExternalMode
+            ? string.Empty
+            : state.PlaybackBlockedReason ?? string.Empty;
         ShowRoutingHint = !state.IsRouting && !state.IsExternalMode;
 
         IsDelayedStartActive = state.IsDelayedStartActive;

@@ -14,7 +14,7 @@
     <Authors>benjibutten</Authors>
     <Company>StreamDecky</Company>
     <Product>StreamDecky</Product>
-    <Description>Stream Deck inspired desktop overlay for Windows.</Description>
+    <Description>Customizable desktop command deck and overlay for Windows.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Version Condition="'$(Version)' == ''">1.0.0-local</Version>
     <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">1.0.0.0</AssemblyVersion>

@@ -1,6 +1,6 @@
 # StreamDecky
 
-StreamDecky is a Stream Deck-inspired desktop app for Windows with a full-screen overlay, an editable button grid, sticky notes, quick clipboard text, and a global hotkey.
+StreamDecky is a customizable desktop command deck for Windows with a full-screen overlay, an editable button grid, sticky notes, quick clipboard text, and a global hotkey.
 
 It is designed for fast in-game or in-app actions where the overlay appears above other windows and can send keystrokes or text back to the previously active window.
 

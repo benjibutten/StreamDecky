@@ -297,10 +297,16 @@ public sealed class MusicWidgetViewModelTests
         using var viewModel = new MusicWidgetViewModel(client);
         client.RaiseConnected();
 
-        client.RaiseState(CreateState() with { IsExternalMode = true });
+        client.RaiseState(CreateState() with
+        {
+            IsExternalMode = true,
+            CanStartPlayback = false,
+            PlaybackBlockedReason = "external_mode_active"
+        });
 
         Assert.True(viewModel.IsExternalMode);
         Assert.False(viewModel.ShowPlayerControls);
+        Assert.Empty(viewModel.PlaybackBlockedReason);
     }
 
     private static MicMixerTrack CreateTrack(string id, string name) =>

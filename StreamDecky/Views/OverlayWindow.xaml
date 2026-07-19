@@ -2700,7 +2700,7 @@
                     </StackPanel>
 
                     <StackPanel Visibility="{Binding MusicWidget.IsConnected, Converter={StaticResource BoolToVisibility}}">
-                        <Border Margin="10,10,10,0"
+                        <Border Margin="10"
                                 Padding="10,8"
                                 Background="#2EFFB157"
                                 BorderBrush="#66FFB157"
