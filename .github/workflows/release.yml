@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - StreamDecky/**
-      - StreamDecky.Tests/**
+      - src/**
+      - tests/**
       - StreamDecky.slnx
   workflow_dispatch:
 
@@ -19,8 +19,8 @@ concurrency:
 
 env:
   SOLUTION_PATH: StreamDecky.slnx
-  PROJECT_PATH: StreamDecky/StreamDecky.csproj
-  TEST_PROJECT_PATH: StreamDecky.Tests/StreamDecky.Tests.csproj
+  PROJECT_PATH: src/StreamDecky/StreamDecky.csproj
+  TEST_PROJECT_PATH: tests/StreamDecky.Tests/StreamDecky.Tests.csproj
   RUNTIME_ID: win-x64
   WINDOWS_CODESIGN_CERT_PFX_BASE64: ${{ secrets.WINDOWS_CODESIGN_CERT_PFX_BASE64 }}
   WINDOWS_CODESIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_CERT_PASSWORD }}

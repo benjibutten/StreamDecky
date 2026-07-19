@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\StreamDecky\StreamDecky.csproj" />
+    <ProjectReference Include="../../src/StreamDecky/StreamDecky.csproj" />
   </ItemGroup>
 
 </Project>

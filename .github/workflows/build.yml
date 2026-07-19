@@ -12,8 +12,8 @@ concurrency:
 
 env:
   SOLUTION_PATH: StreamDecky.slnx
-  PROJECT_PATH: StreamDecky/StreamDecky.csproj
-  TEST_PROJECT_PATH: StreamDecky.Tests/StreamDecky.Tests.csproj
+  PROJECT_PATH: src/StreamDecky/StreamDecky.csproj
+  TEST_PROJECT_PATH: tests/StreamDecky.Tests/StreamDecky.Tests.csproj
 
 jobs:
   build:

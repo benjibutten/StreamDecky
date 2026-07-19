@@ -1,4 +1,8 @@
 <Solution>
-  <Project Path="StreamDecky/StreamDecky.csproj" />
-  <Project Path="StreamDecky.Tests/StreamDecky.Tests.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/StreamDecky/StreamDecky.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/StreamDecky.Tests/StreamDecky.Tests.csproj" />
+  </Folder>
 </Solution>

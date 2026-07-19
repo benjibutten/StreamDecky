@@ -16,7 +16,7 @@
       "command": "dotnet",
       "args": [
         "build",
-        "${workspaceFolder}/StreamDecky/StreamDecky.csproj",
+        "${workspaceFolder}/src/StreamDecky/StreamDecky.csproj",
         "-c",
         "Debug",
         "--disable-build-servers",
@@ -34,9 +34,9 @@
       "command": "Start-Process",
       "args": [
         "-FilePath",
-        "${workspaceFolder}/StreamDecky/bin/Debug/net10.0-windows/StreamDecky.exe",
+        "${workspaceFolder}/src/StreamDecky/bin/Debug/net10.0-windows/StreamDecky.exe",
         "-WorkingDirectory",
-        "${workspaceFolder}/StreamDecky"
+        "${workspaceFolder}/src/StreamDecky"
       ],
       "dependsOn": "build StreamDecky (safe)",
       "problemMatcher": []

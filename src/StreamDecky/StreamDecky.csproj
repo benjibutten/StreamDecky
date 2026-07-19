@@ -31,22 +31,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\INSTALLATION.txt"
+    <None Include="..\..\INSTALLATION.txt"
           Link="INSTALLATION.txt"
           CopyToOutputDirectory="PreserveNewest"
           CopyToPublishDirectory="PreserveNewest"
           ExcludeFromSingleFile="true" />
-    <None Include="..\LICENSE"
+    <None Include="..\..\LICENSE"
           Link="LICENSE.txt"
           CopyToOutputDirectory="PreserveNewest"
           CopyToPublishDirectory="PreserveNewest"
           ExcludeFromSingleFile="true" />
-    <None Include="..\NOTICE"
+    <None Include="..\..\NOTICE"
           Link="NOTICE.txt"
           CopyToOutputDirectory="PreserveNewest"
           CopyToPublishDirectory="PreserveNewest"
           ExcludeFromSingleFile="true" />
-    <None Include="..\THIRD-PARTY-NOTICES.txt"
+    <None Include="..\..\THIRD-PARTY-NOTICES.txt"
           Link="THIRD-PARTY-NOTICES.txt"
           CopyToOutputDirectory="PreserveNewest"
           CopyToPublishDirectory="PreserveNewest"

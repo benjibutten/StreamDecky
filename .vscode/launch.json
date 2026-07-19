@@ -6,8 +6,8 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build StreamDecky (safe)",
-      "program": "${workspaceFolder}/StreamDecky/bin/Debug/net10.0-windows/StreamDecky.exe",
-      "cwd": "${workspaceFolder}/StreamDecky",
+      "program": "${workspaceFolder}/src/StreamDecky/bin/Debug/net10.0-windows/StreamDecky.exe",
+      "cwd": "${workspaceFolder}/src/StreamDecky",
       "stopAtEntry": false,
       "console": "internalConsole"
     }
