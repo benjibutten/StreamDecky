@@ -15,6 +15,7 @@
     <Company>StreamDecky</Company>
     <Product>StreamDecky</Product>
     <Description>Stream Deck inspired desktop overlay for Windows.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Version Condition="'$(Version)' == ''">1.0.0-local</Version>
     <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">1.0.0.0</AssemblyVersion>
     <FileVersion Condition="'$(FileVersion)' == ''">1.0.0.0</FileVersion>
@@ -28,6 +29,11 @@
   <ItemGroup>
     <None Include="..\LICENSE"
           Link="LICENSE.txt"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest"
+          ExcludeFromSingleFile="true" />
+    <None Include="..\NOTICE"
+          Link="NOTICE.txt"
           CopyToOutputDirectory="PreserveNewest"
           CopyToPublishDirectory="PreserveNewest"
           ExcludeFromSingleFile="true" />

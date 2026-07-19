@@ -1,7 +1,7 @@
 StreamDecky third-party notices
 ===============================
 
-StreamDecky is distributed under the MIT License. It incorporates the
+StreamDecky is distributed under the Apache License 2.0. It incorporates the
 following third-party software and assets. Each component remains subject to
 its own license terms.
 
