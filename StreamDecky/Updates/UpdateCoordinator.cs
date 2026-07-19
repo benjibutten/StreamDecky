@@ -1,8 +1,6 @@
 using System.Windows;
-using System.Windows.Input;
 using StreamDecky.Helpers;
 using Application = System.Windows.Application;
-using Cursors = System.Windows.Input.Cursors;
 using MessageBox = System.Windows.MessageBox;
 
 namespace StreamDecky.Updates;
@@ -44,11 +42,13 @@ internal static class UpdateCoordinator
             if (answer != MessageBoxResult.Yes)
                 return;
 
-            Mouse.OverrideCursor = Cursors.Wait;
+            var progressWindow = new UpdateProgressWindow(owner);
             owner.IsEnabled = false;
+            progressWindow.Show();
             try
             {
-                await Service.LaunchInstallerAsync(update);
+                var progress = new Progress<UpdateProgress>(progressWindow.Report);
+                await Service.LaunchInstallerAsync(update, progress);
                 if (Application.Current.MainWindow is MainWindow mainWindow)
                     mainWindow.ExitForUpdate();
                 else
@@ -56,8 +56,8 @@ internal static class UpdateCoordinator
             }
             finally
             {
+                progressWindow.Close();
                 owner.IsEnabled = true;
-                Mouse.OverrideCursor = null;
             }
         }
         catch (Exception ex)

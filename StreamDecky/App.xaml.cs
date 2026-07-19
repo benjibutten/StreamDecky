@@ -19,8 +19,17 @@ public partial class App : Application
     private bool _ownsSingleInstanceMutex;
     private bool _activateMainWindowWhenReady;
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
+        if (UpdateInstaller.IsUpdateMode(e.Args))
+        {
+            base.OnStartup(e);
+            await UpdateInstaller.RunAsync(e.Args);
+            Shutdown();
+            return;
+        }
+        UpdateInstaller.ScheduleCleanup(e.Args);
+
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnCurrentDomainUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
