@@ -223,8 +223,8 @@
                 IsSnapToTickEnabled="False"/>
         </DockPanel>
 
-                <Expander Header="Grid Layout (All Pages)"
-              IsExpanded="False"
+                <Expander Header="Profile Grid — All Pages"
+              IsExpanded="True"
               Margin="0,0,0,14"
               Background="#2D2D44"
               Foreground="White"
@@ -233,8 +233,8 @@
               Padding="8,6">
             <StackPanel Margin="0,8,0,0">
             <TextBlock Text="{Binding LayoutSummary}" Foreground="#DDD" FontSize="12" FontWeight="SemiBold"/>
-                        <TextBlock Text="Shared by every page in the profile"
-                   Foreground="#888" FontSize="11" Margin="0,2,0,8"/>
+                        <TextBlock Text="Only the selected profile. Changes apply to all of its regular pages and virtual layouts."
+                   Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,8"/>
 
             <DockPanel Margin="0,0,0,4">
                 <TextBlock Text="Rows" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
