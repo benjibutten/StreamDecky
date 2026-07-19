@@ -64,7 +64,7 @@ jobs:
           $tagName = "v$version"
           $assemblyVersion = "$version.0"
           $releaseName = "StreamDecky $version"
-          $assetName = "StreamDecky-win-x64.zip"
+          $assetName = "StreamDecky-$version-win-x64.zip"
 
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag_name=$tagName" >> $env:GITHUB_OUTPUT

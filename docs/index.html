@@ -107,11 +107,11 @@
     text there. No Stream Deck hardware involved; it's all software.
   </p>
   <div class="actions">
-    <a class="download" href="https://github.com/benjibutten/StreamDecky/releases/latest/download/StreamDecky-win-x64.zip">Download for Windows</a>
+    <a class="download" data-release-download href="https://github.com/benjibutten/StreamDecky/releases/latest">Download for Windows</a>
     <a class="alt" href="https://github.com/benjibutten/StreamDecky">Source on GitHub</a>
   </div>
   <p class="fineprint">
-    Downloads <code>StreamDecky-win-x64.zip</code> from the
+    Download the versioned <code>StreamDecky-&lt;version&gt;-win-x64.zip</code> from the
     <a href="https://github.com/benjibutten/StreamDecky/releases/latest">latest release</a>.
     Windows 10/11. Self-contained, no .NET install needed. Runs without admin rights. Apache-2.0.
   </p>
@@ -193,7 +193,7 @@
 <section class="wrap" id="setup">
   <h2>Setup</h2>
   <ol class="setup">
-    <li>Download <a href="https://github.com/benjibutten/StreamDecky/releases/latest/download/StreamDecky-win-x64.zip"><code>StreamDecky-win-x64.zip</code></a> from the latest release.</li>
+    <li>Download the <a data-release-download href="https://github.com/benjibutten/StreamDecky/releases/latest">versioned <code>StreamDecky-&lt;version&gt;-win-x64.zip</code></a>.</li>
     <li>Extract it to a folder you control and run <code>StreamDecky.exe</code>.</li>
     <li>Build your deck in the editor and set the overlay hotkey in Settings.</li>
     <li>Optionally enable <em>Start with Windows</em> to keep it in the tray.</li>
@@ -219,6 +219,39 @@
     </p>
   </div>
 </footer>
+
+<script>
+  (() => {
+    const links = document.querySelectorAll('[data-release-download]');
+    const fallbackUrl = 'https://github.com/benjibutten/StreamDecky/releases/latest';
+    const downloadUrl = fetch('https://api.github.com/repos/benjibutten/StreamDecky/releases/latest', {
+      headers: { Accept: 'application/vnd.github+json' }
+    })
+      .then(response => response.ok ? response.json() : Promise.reject())
+      .then(release => {
+        const assets = release.assets || [];
+        const zip = assets.find(asset =>
+          /^StreamDecky-\d+\.\d+\.\d+-win-x64\.zip$/i.test(asset.name))
+          || assets.find(asset => /^StreamDecky-win-x64\.zip$/i.test(asset.name));
+        return zip?.browser_download_url;
+      })
+      .catch(() => null);
+
+    downloadUrl.then(url => {
+      if (!url) return;
+      links.forEach(link => {
+        link.href = url;
+        link.dataset.downloadReady = 'true';
+      });
+    });
+
+    links.forEach(link => link.addEventListener('click', async event => {
+      if (link.dataset.downloadReady === 'true') return;
+      event.preventDefault();
+      window.location.assign(await downloadUrl || fallbackUrl);
+    }));
+  })();
+</script>
 
 </body>
 </html>
