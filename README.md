@@ -130,6 +130,20 @@ verify, install, and restart itself. A manual check is available from
 prompt, and Windows may show a security warning when a new build restarts.
 Development builds do not perform update checks.
 
+## Code signing and privacy
+
+Free code signing is provided by [SignPath.io](https://signpath.io/), certificate
+by [SignPath Foundation](https://signpath.org/), for eligible Windows release
+builds after enrollment and signing integration are complete. Until then, a
+release may be unsigned. The release notes state the actual signing status for
+each build.
+
+See the [code signing policy](https://benjibutten.github.io/StreamDecky/code-signing-policy.html)
+for the signing scope, project roles, and build provenance. StreamDecky's
+automatic update checks, local profile and form data, simulated input, and
+MicMixer integration are covered by the
+[privacy policy](https://benjibutten.github.io/StreamDecky/privacy.html).
+
 ## Data storage and recovery
 
 - Primary store: `%LOCALAPPDATA%\StreamDecky\profiles.json`
