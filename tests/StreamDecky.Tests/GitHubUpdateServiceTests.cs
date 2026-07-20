@@ -1,4 +1,7 @@
 using StreamDecky.Updates;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using Xunit;
 
 namespace StreamDecky.Tests;
@@ -42,6 +45,61 @@ public sealed class GitHubUpdateServiceTests
     }
 
     [Fact]
+    public async Task CheckAsync_UsesStreamDeckyLatestReleaseAndSelectsMatchingAssets()
+    {
+        const string zipUrl = "https://github.com/benjibutten/StreamDecky/releases/download/v2026.7.12/StreamDecky-2026.7.12-win-x64.zip";
+        const string checksumUrl = $"{zipUrl}.sha256";
+        string? requestedUrl = null;
+        string json = $$"""
+            {
+              "tag_name": "v2026.7.12",
+              "html_url": "https://github.com/benjibutten/StreamDecky/releases/tag/v2026.7.12",
+              "assets": [
+                { "name": "StreamDecky-2026.7.11-win-x64.zip", "browser_download_url": "https://example.test/wrong.zip" },
+                { "name": "StreamDecky-2026.7.12-win-x64.zip", "browser_download_url": "{{zipUrl}}" },
+                { "name": "StreamDecky-2026.7.12-win-x64.zip.sha256", "browser_download_url": "{{checksumUrl}}" }
+              ]
+            }
+            """;
+        using var client = new HttpClient(new StubHttpMessageHandler(request =>
+        {
+            requestedUrl = request.RequestUri?.AbsoluteUri;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+        }));
+        string stateRoot = Path.Combine(Path.GetTempPath(), $"StreamDecky-update-check-test-{Guid.NewGuid():N}");
+
+        try
+        {
+            var service = new GitHubUpdateService(client, Path.Combine(stateRoot, "state.txt"));
+            UpdateInfo? update = await service.CheckAsync(new Version(2026, 7, 11), force: true);
+
+            Assert.Equal("https://api.github.com/repos/benjibutten/StreamDecky/releases/latest", requestedUrl);
+            Assert.NotNull(update);
+            Assert.Equal(new Uri(zipUrl), update.DownloadUri);
+            Assert.Equal(new Uri(checksumUrl), update.ChecksumUri);
+        }
+        finally
+        {
+            if (Directory.Exists(stateRoot))
+                Directory.Delete(stateRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task VerifySha256Async_AcceptsMatchAndRejectsMismatch()
+    {
+        byte[] download = Encoding.UTF8.GetBytes("StreamDecky release archive");
+        string expectedHash = Convert.ToHexString(SHA256.HashData(download));
+
+        await GitHubUpdateService.VerifySha256Async(new MemoryStream(download), expectedHash);
+        await Assert.ThrowsAsync<InvalidDataException>(() =>
+            GitHubUpdateService.VerifySha256Async(new MemoryStream(download), new string('0', 64)));
+    }
+
+    [Fact]
     public void InstallFiles_UpdatesReleaseFilesAndPreservesOtherFiles()
     {
         string root = Path.Combine(Path.GetTempPath(), $"StreamDecky-update-test-{Guid.NewGuid():N}");
@@ -69,5 +127,18 @@ public sealed class GitHubUpdateServiceTests
             if (Directory.Exists(root))
                 Directory.Delete(root, recursive: true);
         }
+    }
+
+    private sealed class StubHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
+
+        public StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler) =>
+            _handler = handler;
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(_handler(request));
     }
 }
