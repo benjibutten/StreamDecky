@@ -23,8 +23,8 @@ This document collects the most common operational scenarios around profiles, au
 1. Open Settings for the profile you want to export.
 2. Export the profile to a JSON file.
 3. On the target machine or in another installation, open Settings and choose Import.
-4. The imported profile is added as a separate profile in the store file.
-5. Switch to the imported profile and verify layouts, sticky notes, and quick text before deleting the original.
+4. The imported profile is added as a separate profile in the store file, with a new id and a unique name. No existing profile is modified or replaced.
+5. StreamDecky switches to the imported profile automatically. Verify layouts, sticky notes, and quick text before deleting the original.
 
 ## Recovery: save failure or a stuck unsaved state
 
@@ -107,10 +107,11 @@ Actions:
 Symptoms:
 
 - Pages, sticky notes, or quick text appear empty or reordered after import.
+- The deck you were working on seems to have disappeared.
 
 Actions:
 
-1. Confirm that you actually switched to the imported profile in the profile picker.
+1. Open the profile picker. Import switches to the new profile automatically, so an unfamiliar deck after import is the imported one, not a damaged copy of yours — your previous profile is still listed and can be selected again.
 2. Export the profile again immediately after import and verify that a schema version is present in the JSON.
 3. Compare the imported file with the original to see whether the problem existed before or after import.
 4. If the original file is in a legacy format, let StreamDecky import and migrate it, then export it again in the current format.

@@ -9,9 +9,10 @@ touching your existing decks.
 1. Download the `.json` file you want (open it on the project site and use
    **Save link as…**, or download it from this folder on GitHub).
 2. In StreamDecky, open **Settings → Import Profile** and pick the file.
-3. The template is added as a new profile. Switch to it from the profile
-   selector and edit anything you like — the import never overwrites another
-   profile.
+3. The template is added as a new profile and StreamDecky switches to it right
+   away, so the editor will look different — that is the template, not a
+   replacement. Your own profiles are still in the profile selector, unchanged.
+   If the template's name is already taken, the copy gets a number appended.
 
 Nothing in a template is locked. Buttons, quick-text lines, forms, and colors
 are all starting points meant to be changed.

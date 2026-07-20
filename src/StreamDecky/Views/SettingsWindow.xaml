@@ -417,11 +417,12 @@
         <!-- Separator -->
         <Border Height="1" Background="#333" Margin="0,0,0,16"/>
 
-        <!-- Export Section -->
-        <TextBlock Text="EXPORT" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+        <!-- Import/Export Section -->
+        <TextBlock Text="IMPORT / EXPORT" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
         <StackPanel Orientation="Horizontal">
             <Button Content="Import Profile (.json)"
                     Click="ImportProfile_Click"
+                    ToolTip="Adds the file as a new profile. Your existing profiles are not changed."
                     Background="#3D5A3A" Foreground="White"
                     FontSize="12" Padding="12,7"
                     BorderThickness="0" Cursor="Hand"
@@ -473,6 +474,8 @@
                 </Button.Style>
             </Button>
         </StackPanel>
+        <TextBlock Text="Import adds the file as a new profile and switches to it, so the editor will look different afterwards. Nothing is overwritten — your other profiles stay in the profile selector. Export writes the active profile only."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"/>
     </StackPanel>
     </ScrollViewer>
     </DockPanel>

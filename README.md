@@ -30,7 +30,7 @@ or text there. No Stream Deck hardware needed — it's all software.
 2. Run `StreamDecky.exe` and build a deck in the editor.
 3. Set the overlay hotkey in **Settings**, then open the overlay over your game.
 4. Optionally import one of the ready-made profiles below via **Settings →
-   Import Profile**.
+   Import Profile**. It is added next to your own profiles, never over them.
 
 ## Trust at a glance
 
@@ -99,7 +99,8 @@ Published releases are self-contained `win-x64` builds, so end users do not need
 - Shared layout size (`Rows` and `Columns`) across layouts in a profile
 - Page-independent sticky notes stored in dedicated note pages
 - Multiple profiles with separate layouts, notes, quick text, and overlay/input settings
-- Import/export for the active profile from Settings
+- Export the active profile from Settings; import adds the file as a new profile
+  (renamed if the name is taken) and switches to it, leaving existing profiles untouched
 
 ### Quick clipboard text
 
