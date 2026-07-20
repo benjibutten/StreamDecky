@@ -6,8 +6,6 @@ on:
       - main
     paths:
       - src/**
-      - tests/**
-      - StreamDecky.slnx
   workflow_dispatch:
 
 permissions:
@@ -20,13 +18,13 @@ concurrency:
 env:
   SOLUTION_PATH: StreamDecky.slnx
   PROJECT_PATH: src/StreamDecky/StreamDecky.csproj
-  TEST_PROJECT_PATH: tests/StreamDecky.Tests/StreamDecky.Tests.csproj
   RUNTIME_ID: win-x64
   WINDOWS_CODESIGN_CERT_PFX_BASE64: ${{ secrets.WINDOWS_CODESIGN_CERT_PFX_BASE64 }}
   WINDOWS_CODESIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_CERT_PASSWORD }}
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
     runs-on: windows-latest
 
     steps:
@@ -78,7 +76,7 @@ jobs:
 
       - name: Run tests
         shell: pwsh
-        run: dotnet test $env:TEST_PROJECT_PATH -c Release --no-restore
+        run: dotnet test $env:SOLUTION_PATH -c Release --no-restore
 
       - name: Publish app
         shell: pwsh
@@ -122,7 +120,7 @@ jobs:
 
           if (-not $hasCertificate)
           {
-            "status=Unsigned (code-signing secrets were not configured)" >> $env:GITHUB_OUTPUT
+            "status=Unsigned" >> $env:GITHUB_OUTPUT
             return
           }
 
@@ -142,7 +140,7 @@ jobs:
 
             signtool verify /pa /v $exePath
             if ($LASTEXITCODE -ne 0) { throw "signtool verify failed with exit code $LASTEXITCODE." }
-            "status=Signed and signature-verified" >> $env:GITHUB_OUTPUT
+            "status=Signed (signature verified)" >> $env:GITHUB_OUTPUT
           }
           finally
           {
@@ -150,8 +148,10 @@ jobs:
           }
 
       - name: Create release zip
+        id: package
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $zipPath = Join-Path $PWD "artifacts/${{ steps.meta.outputs.asset_name }}"
 
           if (Test-Path $zipPath)
@@ -163,6 +163,7 @@ jobs:
 
           $hash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  ${{ steps.meta.outputs.asset_name }}" | Set-Content -Path "$zipPath.sha256" -NoNewline
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v7
@@ -175,19 +176,24 @@ jobs:
       - name: Write release notes
         shell: pwsh
         run: |
+          $manualNotes = Get-Content -LiteralPath RELEASE_NOTES.md -Raw
           @"
-          Automated release from the main branch.
+          $manualNotes
+
+          ---
+
+          Release metadata
 
           Tag: ${{ steps.meta.outputs.tag_name }}
           Build: ${{ steps.meta.outputs.version }}
           Commit: ${{ github.sha }}
           Runtime: ${{ env.RUNTIME_ID }}
+          SHA-256: ${{ steps.package.outputs.sha256 }}
           Code signing: ${{ steps.codesign.outputs.status }}
           Code signing policy: https://benjibutten.github.io/StreamDecky/code-signing-policy.html
 
-          Free code signing provided by SignPath.io, certificate by SignPath Foundation,
-          for eligible Windows release builds after enrollment and signing integration are complete.
-          The code-signing status above is authoritative for this release.
+          SignPath Foundation approval and signing integration are pending. The
+          code-signing status above is authoritative for this release.
 
           Download the zip asset below and extract, then run StreamDecky.exe.
           Keeping the same install path helps Windows keep tray icon preferences.
@@ -205,7 +211,7 @@ jobs:
           name: ${{ steps.meta.outputs.release_name }}
           bodyFile: artifacts/release-notes.md
           artifacts: artifacts/${{ steps.meta.outputs.asset_name }},artifacts/${{ steps.meta.outputs.asset_name }}.sha256
-          allowUpdates: true
+          allowUpdates: false
           artifactErrorsFailBuild: true
           replacesArtifacts: true
           makeLatest: true

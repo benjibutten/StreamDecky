@@ -132,11 +132,9 @@ Development builds do not perform update checks.
 
 ## Code signing and privacy
 
-Free code signing is provided by [SignPath.io](https://signpath.io/), certificate
-by [SignPath Foundation](https://signpath.org/), for eligible Windows release
-builds after enrollment and signing integration are complete. Until then, a
-release may be unsigned. The release notes state the actual signing status for
-each build.
+Current releases are unsigned. We have applied to
+[SignPath Foundation](https://signpath.org/); approval and signing integration
+are pending. Each release states its actual signing status.
 
 See the [code signing policy](https://benjibutten.github.io/StreamDecky/code-signing-policy.html)
 for the signing scope, project roles, and build provenance. StreamDecky's
@@ -261,14 +259,26 @@ Single-file icon behavior:
 
 Release pipeline notes:
 
-- `release.yml` injects `Version`, `AssemblyVersion`, `FileVersion`, and `InformationalVersion` during publish.
-- `pr-build.yml` and `release.yml` both run the automated test project before shipping artifacts.
+- Pushes to `main` only trigger `release.yml` when `src/**` changes.
+- `release.yml` restores the complete solution and runs the full test suite before
+  publishing anything.
+- It injects `Version`, `AssemblyVersion`, `FileVersion`, and
+  `InformationalVersion` during publish.
 - The local `.csproj` version is a fallback and can be overridden by CI.
 - The release workflow signs and verifies the executable when both required PFX
   secrets are configured, and fails if only one secret is present.
-- Release notes state whether the executable was signed. Without a trusted
-  signature, Windows SmartScreen may require manual approval; even a newly signed
-  build can initially lack reputation.
+- The release tag points to the exact commit that was checked out and built.
+- [RELEASE_NOTES.md](RELEASE_NOTES.md) contains the short, hand-written notes.
+  The workflow adds version, commit, archive hash, and verified signing status.
+- `build.yml` is a manual candidate-build for any selected branch. It runs the
+  full restore, test, publish, and packaging flow and uploads ZIP plus SHA-256
+  without creating a tag or public release.
+
+Feature branches can be combined on the optional `next` branch when a set of
+changes should be tested together before `next` is merged to `main`. Small fixes
+can go directly through a feature branch to `main`. Only `main` publishes a
+release. Without a trusted signature, Windows SmartScreen may require manual
+approval; even a newly signed build can initially lack reputation.
 
 ## Known limitations
 
