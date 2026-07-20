@@ -1,0 +1,77 @@
+{
+  "SchemaVersion": 5,
+  "Name": "Canned Replies",
+  "OverlayBackgroundColor": "#101820",
+  "ButtonOverlayOpacity": 1.0,
+  "ButtonSpacing": 10,
+  "ButtonSize": 100,
+  "LayoutRows": 3,
+  "LayoutColumns": 5,
+  "StickyNotesVisible": false,
+  "QuickTextCollections": [
+    { "Id": "col-support", "Name": "Support" }
+  ],
+  "ActiveQuickTextCollectionId": "col-support",
+  "QuickTextCategories": [
+    { "Id": "cat-greet", "Name": "Openers" },
+    { "Id": "cat-answer", "Name": "Common answers" },
+    { "Id": "cat-close", "Name": "Closers" }
+  ],
+  "ActiveQuickTextCategoryId": "cat-greet",
+  "QuickTextItems": [
+    { "CategoryIds": ["cat-greet"], "CollectionIds": ["col-support"], "Text": "Hi, thanks for reaching out — happy to help with this." },
+    { "CategoryIds": ["cat-greet"], "CollectionIds": ["col-support"], "Text": "Thanks for the details. Let me take a look and get back to you shortly." },
+    { "CategoryIds": ["cat-answer"], "CollectionIds": ["col-support"], "Text": "Could you send a screenshot of the error and the exact steps that lead to it?" },
+    { "CategoryIds": ["cat-answer"], "CollectionIds": ["col-support"], "Text": "This is usually fixed by restarting the app and trying again. Does that help?" },
+    { "CategoryIds": ["cat-answer"], "CollectionIds": ["col-support"], "Text": "I've escalated this to the team and will update you as soon as I hear back." },
+    { "CategoryIds": ["cat-close"], "CollectionIds": ["col-support"], "Text": "Glad that worked! Let me know if anything else comes up." },
+    { "CategoryIds": ["cat-close"], "CollectionIds": ["col-support"], "Text": "I'll go ahead and close this for now — feel free to reply to reopen it anytime." }
+  ],
+  "QuickTextActionSteps": [
+    { "Type": "TextInput", "Text": "", "TextMode": "PasteFromClipboard", "PressEnterAfter": false }
+  ],
+  "FormTemplates": [
+    {
+      "Id": "form-reply",
+      "Name": "Structured reply",
+      "OutputTemplate": "Hi {name},\n\n{opening}\n\n{body}\n\nBest regards,\n{agent}\nTicket #{ticket}",
+      "ShowCopyButton": true,
+      "Fields": [
+        { "Key": "name", "Label": "Customer name", "Type": "Text", "IsRequired": true, "RememberHistory": true },
+        {
+          "Key": "opening",
+          "Label": "Opening",
+          "Type": "Choice",
+          "Options": [
+            { "Label": "Thanks for reaching out", "Text": "Thanks for reaching out, and sorry for the trouble." },
+            { "Label": "Following up", "Text": "Following up on your earlier message." },
+            { "Label": "Good news", "Text": "Good news — we have an update for you." }
+          ]
+        },
+        { "Key": "body", "Label": "Body", "Type": "Text", "IsMultiline": true, "IsRequired": true },
+        { "Key": "agent", "Label": "Your name", "Type": "Text", "RememberHistory": true, "SharedSuggestionKey": "agentname" }
+      ],
+      "Counters": [
+        { "Name": "ticket", "NextValue": 1, "PadWidth": 4 }
+      ],
+      "ActionSteps": []
+    }
+  ],
+  "FormsPanelVisible": true,
+  "Pages": [
+    {
+      "Id": "page-main",
+      "Name": "Replies",
+      "Rows": 3,
+      "Columns": 5,
+      "Buttons": []
+    }
+  ],
+  "NotePages": [
+    {
+      "Id": "notes-1",
+      "Name": "Notes",
+      "StickyNotes": []
+    }
+  ]
+}

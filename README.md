@@ -1,8 +1,53 @@
 # StreamDecky
 
-StreamDecky is a customizable desktop command deck for Windows with a full-screen overlay, an editable button grid, sticky notes, quick clipboard text, and a global hotkey.
+StreamDecky is a software command deck for Windows. Press a global hotkey (or a
+gamepad combo) and a fullscreen overlay opens on top of your game: a grid of
+macro buttons, ready-made chat lines, fill-in forms, and sticky notes. Click
+something and StreamDecky hands focus back to the game and sends the keystrokes
+or text there. No Stream Deck hardware needed — it's all software.
 
-It is designed for fast in-game or in-app actions where the overlay appears above other windows and can send keystrokes or text back to the previously active window.
+[**Download for Windows**](https://github.com/benjibutten/StreamDecky/releases/latest)
+· Windows 10/11 · self-contained, no .NET install · runs without admin · Apache-2.0
+
+![The StreamDecky overlay with a roleplay profile: action buttons, a quick clipboard panel with /me lines, sticky notes, and the music widget.](docs/assets/streamdecky-overlay.png)
+
+## What it's for
+
+- **Roleplay servers like FiveM.** Fire emotes and animations from one-press
+  buttons (`open chat → /e dance → Enter`), keep your `/me` and `/do` lines in a
+  searchable quick-text panel, and pin radio channels or plates as sticky notes
+  over the game.
+- **Repeated paperwork.** Build a form once — text fields, choice fields,
+  auto-incrementing case or invoice numbers, `{date}`/`{time}` tokens — and fill
+  it from the overlay into a dispatch report or a real-world canned reply.
+- **Hotkey and gamepad control.** Open the overlay with a global hotkey or a
+  recorded gamepad combo, and navigate it with the D-pad or stick when you don't
+  want to reach for the keyboard.
+
+## Quick setup
+
+1. Download and extract the latest Windows ZIP.
+2. Run `StreamDecky.exe` and build a deck in the editor.
+3. Set the overlay hotkey in **Settings**, then open the overlay over your game.
+4. Optionally import one of the ready-made profiles below via **Settings →
+   Import Profile**.
+
+## Trust at a glance
+
+- Official releases are built by GitHub Actions from the tagged source commit.
+- Releases since `v2026.7.5` include a `.sha256` file for the Windows archive.
+- The current Windows release is **unsigned**. Check the release notes for its
+  authoritative signing status and see the [code signing policy](https://benjibutten.github.io/StreamDecky/code-signing-policy.html).
+
+## Templates and guides
+
+- **Ready-made profiles** you can import and adapt:
+  [FiveM Roleplay](docs/templates/fivem-roleplay.json) and
+  [Canned Replies](docs/templates/canned-replies.json). See
+  [docs/templates](docs/templates/README.md) for what's inside and how to import.
+- **Guide:** [Build a FiveM roleplay deck](docs/guides/fivem-roleplay-deck.md).
+
+The rest of this document is the detailed reference.
 
 ## Requirements
 

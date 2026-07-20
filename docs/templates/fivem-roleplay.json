@@ -1,0 +1,339 @@
+{
+  "SchemaVersion": 5,
+  "Name": "FiveM Roleplay",
+  "OverlayBackgroundColor": "#12121C",
+  "ButtonOverlayOpacity": 1.0,
+  "ButtonSpacing": 10,
+  "ButtonSize": 100,
+  "LayoutRows": 3,
+  "LayoutColumns": 5,
+  "StickyNotesVisible": true,
+  "StickyNoteFontSize": 13,
+  "QuickTextCollections": [
+    { "Id": "col-rp", "Name": "Roleplay" }
+  ],
+  "ActiveQuickTextCollectionId": "col-rp",
+  "QuickTextCategories": [
+    { "Id": "cat-me", "Name": "/me actions" },
+    { "Id": "cat-do", "Name": "/do details" },
+    { "Id": "cat-comms", "Name": "Comms" }
+  ],
+  "ActiveQuickTextCategoryId": "cat-me",
+  "QuickTextItems": [
+    { "CategoryIds": ["cat-me"], "CollectionIds": ["col-rp"], "Text": "/me checks the person for a pulse and breathing." },
+    { "CategoryIds": ["cat-me"], "CollectionIds": ["col-rp"], "Text": "/me applies pressure to the wound with both hands." },
+    { "CategoryIds": ["cat-me"], "CollectionIds": ["col-rp"], "Text": "/me searches the pockets of the nearest person." },
+    { "CategoryIds": ["cat-me"], "CollectionIds": ["col-rp"], "Text": "/me writes down the details in a notebook." },
+    { "CategoryIds": ["cat-me"], "CollectionIds": ["col-rp"], "Text": "/me shows an ID card and waits for a response." },
+    { "CategoryIds": ["cat-do"], "CollectionIds": ["col-rp"], "Text": "/do The engine is still warm to the touch." },
+    { "CategoryIds": ["cat-do"], "CollectionIds": ["col-rp"], "Text": "/do There is a faint smell of smoke in the air." },
+    { "CategoryIds": ["cat-do"], "CollectionIds": ["col-rp"], "Text": "/do Would this be successful? (roll required)" },
+    { "CategoryIds": ["cat-comms"], "CollectionIds": ["col-rp"], "Text": "Dispatch, show me en route." },
+    { "CategoryIds": ["cat-comms"], "CollectionIds": ["col-rp"], "Text": "Dispatch, show me on scene." },
+    { "CategoryIds": ["cat-comms"], "CollectionIds": ["col-rp"], "Text": "Requesting backup at my location, code 3." }
+  ],
+  "QuickTextActionSteps": [
+    { "Type": "KeyPress", "KeyText": "t" },
+    { "Type": "Delay", "DelayMs": 150 },
+    { "Type": "TextInput", "Text": "", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+  ],
+  "FormTemplates": [
+    {
+      "Id": "form-dispatch",
+      "Name": "Dispatch report",
+      "OutputTemplate": "[MDT #{case}] {type} — {location}\nUnits: {units}\nNotes: {notes}",
+      "ShowCopyButton": true,
+      "Fields": [
+        {
+          "Key": "type",
+          "Label": "Call type",
+          "Type": "Choice",
+          "IsRequired": true,
+          "Options": [
+            { "Label": "Traffic stop", "Text": "Traffic stop" },
+            { "Label": "Robbery in progress", "Text": "Robbery in progress" },
+            { "Label": "Medical emergency", "Text": "Medical emergency" },
+            { "Label": "Officer needs backup", "Text": "Officer needs backup" }
+          ]
+        },
+        { "Key": "location", "Label": "Location", "Type": "Text", "IsRequired": true, "RememberHistory": true },
+        { "Key": "units", "Label": "Units responding", "Type": "Text", "RememberHistory": true },
+        { "Key": "notes", "Label": "Notes", "Type": "Text", "IsMultiline": true }
+      ],
+      "Counters": [
+        { "Name": "case", "NextValue": 1001, "PadWidth": 0 }
+      ],
+      "ActionSteps": []
+    }
+  ],
+  "FormsPanelVisible": false,
+  "Pages": [
+    {
+      "Id": "page-deck",
+      "Name": "Scene",
+      "Rows": 3,
+      "Columns": 5,
+      "Buttons": [
+        {
+          "Title": "Dances",
+          "ActionType": "LayoutNavigation",
+          "TargetLayoutId": "vl-emotes",
+          "BackgroundColor": "#6A63D6",
+          "TextColor": "#FFFFFF",
+          "IconText": "💃"
+        },
+        {
+          "Title": "Hands Up",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#2F6F4F",
+          "TextColor": "#FFFFFF",
+          "IconText": "🙌",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e handsup", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Point",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#2F6F4F",
+          "TextColor": "#FFFFFF",
+          "IconText": "👉",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e point", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Wave",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#2F6F4F",
+          "TextColor": "#FFFFFF",
+          "IconText": "👋",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e wave", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Stop",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#7A3B3B",
+          "TextColor": "#FFFFFF",
+          "IconText": "🛑",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e c", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Sit",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#2F6F4F",
+          "TextColor": "#FFFFFF",
+          "IconText": "💺",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e sit", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Cross Arms",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#2F6F4F",
+          "TextColor": "#FFFFFF",
+          "IconText": "🧍",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e crossarms", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Kneel",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#2F6F4F",
+          "TextColor": "#FFFFFF",
+          "IconText": "🙇",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e kneel", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Salute",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#2F6F4F",
+          "TextColor": "#FFFFFF",
+          "IconText": "🎖️",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e salute", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Search",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#4A5A86",
+          "TextColor": "#FFFFFF",
+          "IconText": "🔍",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/me searches the pockets of the nearest person.", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "En Route",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#4A5A86",
+          "TextColor": "#FFFFFF",
+          "IconText": "🚨",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "Dispatch, show me en route.", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        }
+      ]
+    }
+  ],
+  "VirtualLayouts": [
+    {
+      "Id": "vl-emotes",
+      "Name": "Emotes",
+      "Rows": 3,
+      "Columns": 5,
+      "Buttons": [
+        {
+          "Title": "Scene",
+          "ActionType": "LayoutNavigation",
+          "TargetLayoutId": "page-deck",
+          "BackgroundColor": "#3C3C3C",
+          "TextColor": "#FFFFFF",
+          "IconText": "⬅️"
+        },
+        {
+          "Title": "Dance",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#6A63D6",
+          "TextColor": "#FFFFFF",
+          "IconText": "🕺",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e dance", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Dance 2",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#6A63D6",
+          "TextColor": "#FFFFFF",
+          "IconText": "💃",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e dance2", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Lean",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#6A63D6",
+          "TextColor": "#FFFFFF",
+          "IconText": "🚬",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e lean", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Phone",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#6A63D6",
+          "TextColor": "#FFFFFF",
+          "IconText": "📱",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e phone", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Notepad",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#6A63D6",
+          "TextColor": "#FFFFFF",
+          "IconText": "📝",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e notepad", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Cheer",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#6A63D6",
+          "TextColor": "#FFFFFF",
+          "IconText": "🙌",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e cheer", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Clap",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#6A63D6",
+          "TextColor": "#FFFFFF",
+          "IconText": "👏",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e clap", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        },
+        {
+          "Title": "Facepalm",
+          "ActionType": "MultiAction",
+          "BackgroundColor": "#6A63D6",
+          "TextColor": "#FFFFFF",
+          "IconText": "🤦",
+          "Steps": [
+            { "Type": "KeyPress", "KeyText": "t" },
+            { "Type": "Delay", "DelayMs": 150 },
+            { "Type": "TextInput", "Text": "/e facepalm", "TextMode": "PasteFromClipboard", "PressEnterAfter": true }
+          ]
+        }
+      ]
+    }
+  ],
+  "NotePages": [
+    {
+      "Id": "notes-scene",
+      "Name": "Scene notes",
+      "StickyNotes": [
+        {
+          "Title": "Scene",
+          "Text": "Radio: —\nLocation: —\nPlate: —\nSuspect / patient: —\nNotes: —",
+          "X": 96,
+          "Y": 150,
+          "Width": 250,
+          "Height": 200,
+          "Color": "#F8E784"
+        }
+      ]
+    }
+  ]
+}

@@ -71,6 +71,11 @@
   .actions .alt { font-size: 0.93rem; }
   .fineprint { color: var(--muted); font-size: 0.87rem; }
 
+  .template { border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; margin-bottom: 14px; }
+  .template h3 { margin: 0 0 4px; }
+  .template .dl { font-size: 0.9rem; font-weight: 600; }
+  .template .tshot { border: 1px solid var(--line); border-radius: 6px; margin: 4px 0 12px; }
+
   figure.shot { margin: 30px 0 10px; }
   figure.shot img { border: 1px solid var(--line); border-radius: 8px; }
   figure.shot figcaption { color: var(--muted); font-size: 0.87rem; margin-top: 8px; }
@@ -92,7 +97,7 @@
       <a href="#use">What it's for</a>
       <a href="#editor">Editor</a>
       <a href="#setup">Setup</a>
-      <a href="code-signing-policy.html">Code signing policy</a>
+      <a href="#templates">Templates</a>
       <a href="https://github.com/benjibutten/StreamDecky">GitHub</a>
     </nav>
   </div>
@@ -115,11 +120,9 @@
     Download the versioned <code>StreamDecky-&lt;version&gt;-win-x64.zip</code> from the
     <a href="https://github.com/benjibutten/StreamDecky/releases/latest">latest release</a>.
     Windows 10/11. Self-contained, no .NET install needed. Runs without admin rights. Apache-2.0.
-  </p>
-  <p class="fineprint">
-    <a href="code-signing-policy.html">Code signing policy</a>:
-    Current releases are unsigned. We have applied to SignPath Foundation; approval and
-    signing integration are pending. Each release states its actual signing status.
+    Every release is built automatically from the source in this repository.
+    Windows shows a warning the first time you run it —
+    <a href="#first-run">here's what to click</a>.
   </p>
 
   <figure class="shot">
@@ -204,10 +207,63 @@
     <li>Build your deck in the editor and set the overlay hotkey in Settings.</li>
     <li>Optionally enable <em>Start with Windows</em> to keep it in the tray.</li>
   </ol>
+  <h3 id="first-run">The Windows warning on first run</h3>
+  <p>
+    StreamDecky is not code-signed yet, so the first time you run it Windows shows a blue
+    <em>"Windows protected your PC"</em> box with the Run button hidden. Click
+    <em>More info</em>, then <em>Run anyway</em>. Any new app from a small publisher gets
+    this: it means Windows hasn't seen the file often enough yet, not that it found
+    anything wrong with it.
+  </p>
+  <p>
+    If you'd rather check the download yourself first, each release ships a
+    <code>.sha256</code> checksum next to the ZIP, and the
+    <a href="code-signing-policy.html">code signing policy</a> covers how releases are built
+    and where signing currently stands.
+  </p>
+
   <p>
     The <a href="https://github.com/benjibutten/StreamDecky#readme">README</a> covers the
     rest: all action types, forms in detail, data storage and recovery, and known limitations
     (for example, games with aggressive anti-cheat may ignore simulated input).
+  </p>
+</section>
+
+<section class="wrap" id="templates">
+  <h2>Templates and guides</h2>
+  <p>
+    Don't want to start from an empty grid? Import a ready-made profile and adapt
+    it. In StreamDecky, open <b>Settings → Import Profile</b> and pick the file —
+    it is added as a new profile without touching your existing decks.
+  </p>
+
+  <div class="template">
+    <h3>FiveM Roleplay</h3>
+    <p>
+      One-press emotes with a hidden dances page, ready <code>/me</code> and
+      <code>/do</code> lines that post straight into chat, and a dispatch form
+      with an auto-incrementing case number.
+    </p>
+    <img class="tshot" src="assets/template-fivem-roleplay.png" alt="The StreamDecky editor showing the FiveM Roleplay profile: the Scene page of emote and comms buttons alongside the clipboard library of /me lines." width="1050" height="700" loading="lazy">
+    <p class="dl"><a href="templates/fivem-roleplay.json" download>Download fivem-roleplay.json</a></p>
+  </div>
+
+  <div class="template">
+    <h3>Canned Replies</h3>
+    <p>
+      A productivity deck for support or moderation: quick-text openers, answers,
+      and closers that paste into any focused field, plus a structured-reply form
+      with a padded ticket number. Works in email, help-desk tools, and chat apps.
+    </p>
+    <img class="tshot" src="assets/template-canned-replies_new.png" alt="The StreamDecky clipboard list from the Canned Replies profile: the Support collection with opener, answer, and closer lines." width="720" height="628" loading="lazy">
+    <p class="dl"><a href="templates/canned-replies.json" download>Download canned-replies.json</a></p>
+  </div>
+
+  <p>
+    More detail on each template, and how to build your own, is in
+    <a href="https://github.com/benjibutten/StreamDecky/tree/main/docs/templates">docs/templates</a>.
+    For a step-by-step build, read
+    <a href="https://github.com/benjibutten/StreamDecky/blob/main/docs/guides/fivem-roleplay-deck.md">Build a FiveM roleplay deck</a>.
   </p>
 </section>
 
