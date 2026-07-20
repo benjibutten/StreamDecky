@@ -135,8 +135,24 @@ public sealed class MicMixerClientTests
             PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         await pipe.WaitForConnectionAsync(cancellationToken);
         using var reader = new StreamReader(pipe, leaveOpen: true);
-        using var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
+        var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
 
+        try
+        {
+            await ServeAsync(pipe, reader, writer, cancellationToken);
+        }
+        finally
+        {
+            DisposeIgnoringBrokenPipe(writer);
+        }
+    }
+
+    private static async Task ServeAsync(
+        NamedPipeServerStream pipe,
+        StreamReader reader,
+        StreamWriter writer,
+        CancellationToken cancellationToken)
+    {
         while (!cancellationToken.IsCancellationRequested && pipe.IsConnected)
         {
             string? line = await reader.ReadLineAsync(cancellationToken);
@@ -242,11 +258,31 @@ public sealed class MicMixerClientTests
             PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         await pipe.WaitForConnectionAsync(cancellationToken);
         using var reader = new StreamReader(pipe, leaveOpen: true);
-        using var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
+        var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
 
-        _ = await reader.ReadLineAsync(cancellationToken)
-            ?? throw new IOException("Client disconnected before sending hello.");
-        await writer.WriteLineAsync(new string('x', 1_048_577));
+        try
+        {
+            _ = await reader.ReadLineAsync(cancellationToken)
+                ?? throw new IOException("Client disconnected before sending hello.");
+            await writer.WriteLineAsync(new string('x', 1_048_577));
+        }
+        finally
+        {
+            DisposeIgnoringBrokenPipe(writer);
+        }
+    }
+
+    // The client tears the pipe down first, so the final flush in StreamWriter.Dispose
+    // can race with the OS marking the pipe broken.
+    private static void DisposeIgnoringBrokenPipe(StreamWriter writer)
+    {
+        try
+        {
+            writer.Dispose();
+        }
+        catch (IOException)
+        {
+        }
     }
 
     private static object CreateState() => new
