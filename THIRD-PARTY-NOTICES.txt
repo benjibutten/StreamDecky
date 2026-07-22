@@ -5,7 +5,7 @@ StreamDecky is distributed under the Apache License 2.0. It incorporates the
 following third-party software and assets. Each component remains subject to
 its own license terms.
 
-CommunityToolkit.Mvvm 8.4.0
+CommunityToolkit.Mvvm 8.4.2
 Copyright (c) .NET Foundation and Contributors
 License: MIT
 Source: https://github.com/CommunityToolkit/dotnet
