@@ -3502,14 +3502,38 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox Text="{Binding MusicWidget.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Foreground="#EFF4FA"
-                                     Background="#26000000"
-                                     BorderBrush="#3CFFFFFF"
-                                     BorderThickness="1"
-                                     Padding="8,5"
-                                     FontSize="12"
-                                     ToolTip="Search the whole library"/>
+                            <Grid Grid.Column="0">
+                                <TextBox x:Name="MusicLibrarySearchBox"
+                                         Text="{Binding MusicWidget.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Foreground="#EFF4FA"
+                                         Background="#26000000"
+                                         BorderBrush="#3CFFFFFF"
+                                         BorderThickness="1"
+                                         Padding="8,5"
+                                         FontSize="12"
+                                         ToolTip="Search the whole library"/>
+                                <TextBlock Text="Search the library…"
+                                           Foreground="#71859A"
+                                           Margin="9,0,0,0"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding MusicWidget.SearchQuery, Converter={StaticResource HasTextVisibility}}"
+                                                             Value="Visible">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=MusicLibrarySearchBox}"
+                                                             Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
                             <Button Grid.Column="1"
                                     Command="{Binding MusicWidget.ClearSearchCommand}"
                                     Style="{StaticResource TopMiniButton}"
