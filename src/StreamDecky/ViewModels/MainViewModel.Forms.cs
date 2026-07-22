@@ -317,6 +317,21 @@ public partial class MainViewModel
     }
 
     [RelayCommand]
+    private void RenameFormTemplate(string? newName)
+    {
+        var template = SelectedFormTemplate;
+        if (template == null || string.IsNullOrWhiteSpace(newName))
+            return;
+
+        string normalized = newName.Trim();
+        if (string.Equals(template.Name, normalized, StringComparison.Ordinal))
+            return;
+
+        template.Name = normalized;
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
     private void RemoveFormTemplate()
     {
         var template = SelectedFormTemplate;

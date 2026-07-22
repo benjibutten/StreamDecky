@@ -2,4 +2,7 @@
 
 <!-- Update this list together with user-visible changes under src/. -->
 
-- Maintenance updates and bug fixes.
+- Resize sticky notes, the clipboard panel, and the forms panel from either bottom corner.
+- Rename forms from the editor toolbar and see renamed items update immediately in selectors.
+- Improved editor action consistency and made the music-library search field easier to discover.
+- Updated application and test dependencies.

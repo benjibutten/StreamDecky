@@ -8,6 +8,23 @@ namespace StreamDecky.Tests;
 public sealed class FormTemplateProfileTests
 {
     [Fact]
+    public void RenameFormTemplate_UpdatesSelectedTemplateImmediately()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        using var viewModel = new MainViewModel(new ProfileService(tempDirectory.Path));
+        viewModel.AddFormTemplateCommand.Execute(null);
+        bool nameChanged = false;
+        viewModel.SelectedFormTemplate!.PropertyChanged += (_, e) =>
+            nameChanged |= e.PropertyName == nameof(FormTemplate.Name);
+
+        viewModel.RenameFormTemplateCommand.Execute("  Renamed form  ");
+
+        Assert.True(nameChanged);
+        Assert.Equal("Renamed form", viewModel.SelectedFormTemplate.Name);
+        Assert.Same(viewModel.SelectedFormTemplate, Assert.Single(viewModel.FormTemplates));
+    }
+
+    [Fact]
     public async Task SharedSuggestionKey_SharesValuesAcrossFormsOnlyWhenOptedIn()
     {
         using var tempDirectory = new TemporaryDirectory();

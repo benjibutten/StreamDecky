@@ -1222,6 +1222,7 @@
                                      HorizontalScrollBarVisibility="Disabled"
                                      FontSize="{Binding DataContext.StickyNoteFontSize, RelativeSource={RelativeSource AncestorType=Window}}"/>
 
+                            <!-- Invisible resize hit areas centered on both outer bottom corners. -->
                             <Border Grid.RowSpan="2"
                                     Width="14"
                                     Height="14"
@@ -1234,24 +1235,21 @@
                                     Visibility="{Binding IsMinimized, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"
                                     MouseLeftButtonDown="StickyNoteResizeHandle_MouseLeftButtonDown"
                                     MouseMove="StickyNoteResizeHandle_MouseMove"
-                                    MouseLeftButtonUp="StickyNoteResizeHandle_MouseLeftButtonUp">
-                                <Grid>
-                                    <Line X1="4"
-                                            Y1="10"
-                                            X2="10"
-                                            Y2="4"
-                                          Stroke="#264C4C4C"
-                                          StrokeThickness="1"
-                                          SnapsToDevicePixels="True"/>
-                                    <Line X1="6"
-                                            Y1="10"
-                                            X2="10"
-                                            Y2="6"
-                                          Stroke="#264C4C4C"
-                                          StrokeThickness="1"
-                                          SnapsToDevicePixels="True"/>
-                                </Grid>
-                            </Border>
+                                    MouseLeftButtonUp="StickyNoteResizeHandle_MouseLeftButtonUp"/>
+                            <Border Grid.RowSpan="2"
+                                    Width="14"
+                                    Height="14"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom"
+                                    Margin="0,0,-7,-7"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Cursor="SizeNWSE"
+                                    Panel.ZIndex="20"
+                                    Visibility="{Binding IsMinimized, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"
+                                    MouseLeftButtonDown="StickyNoteResizeRightHandle_MouseLeftButtonDown"
+                                    MouseMove="StickyNoteResizeRightHandle_MouseMove"
+                                    MouseLeftButtonUp="StickyNoteResizeRightHandle_MouseLeftButtonUp"/>
                         </Grid>
                     </Border>
                 </DataTemplate>
@@ -1767,7 +1765,7 @@
                     </ScrollViewer>
                 </Grid>
 
-                <!-- Bottom-left resize handle -->
+                <!-- Invisible resize hit areas centered on both outer bottom corners. -->
                 <Border Grid.RowSpan="2"
                         Width="14"
                         Height="14"
@@ -1780,14 +1778,20 @@
                         Panel.ZIndex="20"
                         MouseLeftButtonDown="QuickTextPanelResizeHandle_MouseLeftButtonDown"
                         MouseMove="QuickTextPanelResizeHandle_MouseMove"
-                        MouseLeftButtonUp="QuickTextPanelResizeHandle_MouseLeftButtonUp">
-                    <Grid>
-                        <Line X1="4" Y1="10" X2="10" Y2="4"
-                              Stroke="#264C4C4C" StrokeThickness="1" SnapsToDevicePixels="True"/>
-                        <Line X1="6" Y1="10" X2="10" Y2="6"
-                              Stroke="#264C4C4C" StrokeThickness="1" SnapsToDevicePixels="True"/>
-                    </Grid>
-                </Border>
+                        MouseLeftButtonUp="QuickTextPanelResizeHandle_MouseLeftButtonUp"/>
+                <Border Grid.RowSpan="2"
+                        Width="14"
+                        Height="14"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,-7,-7"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Cursor="SizeNWSE"
+                        Panel.ZIndex="20"
+                        MouseLeftButtonDown="QuickTextPanelResizeRightHandle_MouseLeftButtonDown"
+                        MouseMove="QuickTextPanelResizeRightHandle_MouseMove"
+                        MouseLeftButtonUp="QuickTextPanelResizeRightHandle_MouseLeftButtonUp"/>
             </Grid>
         </Border>
 
@@ -2485,7 +2489,7 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- Bottom-left resize handle -->
+                <!-- Invisible resize hit areas centered on both outer bottom corners. -->
                 <Border Grid.RowSpan="3"
                         Width="14"
                         Height="14"
@@ -2498,14 +2502,20 @@
                         Panel.ZIndex="20"
                         MouseLeftButtonDown="FormsPanelResizeHandle_MouseLeftButtonDown"
                         MouseMove="FormsPanelResizeHandle_MouseMove"
-                        MouseLeftButtonUp="FormsPanelResizeHandle_MouseLeftButtonUp">
-                    <Grid>
-                        <Line X1="4" Y1="10" X2="10" Y2="4"
-                              Stroke="#264C4C4C" StrokeThickness="1" SnapsToDevicePixels="True"/>
-                        <Line X1="6" Y1="10" X2="10" Y2="6"
-                              Stroke="#264C4C4C" StrokeThickness="1" SnapsToDevicePixels="True"/>
-                    </Grid>
-                </Border>
+                        MouseLeftButtonUp="FormsPanelResizeHandle_MouseLeftButtonUp"/>
+                <Border Grid.RowSpan="3"
+                        Width="14"
+                        Height="14"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,-7,-7"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Cursor="SizeNWSE"
+                        Panel.ZIndex="20"
+                        MouseLeftButtonDown="FormsPanelResizeRightHandle_MouseLeftButtonDown"
+                        MouseMove="FormsPanelResizeRightHandle_MouseMove"
+                        MouseLeftButtonUp="FormsPanelResizeRightHandle_MouseLeftButtonUp"/>
             </Grid>
         </Border>
 
@@ -3492,14 +3502,38 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox Text="{Binding MusicWidget.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Foreground="#EFF4FA"
-                                     Background="#26000000"
-                                     BorderBrush="#3CFFFFFF"
-                                     BorderThickness="1"
-                                     Padding="8,5"
-                                     FontSize="12"
-                                     ToolTip="Search the whole library"/>
+                            <Grid Grid.Column="0">
+                                <TextBox x:Name="MusicLibrarySearchBox"
+                                         Text="{Binding MusicWidget.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Foreground="#EFF4FA"
+                                         Background="#26000000"
+                                         BorderBrush="#3CFFFFFF"
+                                         BorderThickness="1"
+                                         Padding="8,5"
+                                         FontSize="12"
+                                         ToolTip="Search the whole library"/>
+                                <TextBlock Text="Search the library…"
+                                           Foreground="#71859A"
+                                           Margin="9,0,0,0"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding MusicWidget.SearchQuery, Converter={StaticResource HasTextVisibility}}"
+                                                             Value="Visible">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=MusicLibrarySearchBox}"
+                                                             Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
                             <Button Grid.Column="1"
                                     Command="{Binding MusicWidget.ClearSearchCommand}"
                                     Style="{StaticResource TopMiniButton}"

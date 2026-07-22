@@ -806,6 +806,40 @@ public partial class OverlayWindow : Window
         _resizingStickyNote = null;
     }
 
+    private void StickyNoteResizeRightHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        => StickyNoteResizeHandle_MouseLeftButtonDown(sender, e);
+
+    private void StickyNoteResizeRightHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_resizingStickyNote == null)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _stickyResizeStart.X;
+        double dy = pos.Y - _stickyResizeStart.Y;
+
+        double maxWidthByBounds = Math.Max(
+            StickyNoteViewModel.MinWidth,
+            Math.Min(StickyNoteViewModel.MaxWidth, ActualWidth - _stickyResizeStartX - 12));
+
+        _resizingStickyNote.Width = Math.Clamp(
+            _stickyResizeStartWidth + dx,
+            StickyNoteViewModel.MinWidth,
+            maxWidthByBounds);
+        _resizingStickyNote.Height = _stickyResizeStartHeight + dy;
+
+        double maxY = Math.Max(0, ActualHeight - _resizingStickyNote.DisplayHeight - 12);
+        _resizingStickyNote.Y = Math.Clamp(_resizingStickyNote.Y, 0, maxY);
+
+        e.Handled = true;
+    }
+
+    private void StickyNoteResizeRightHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        => StickyNoteResizeHandle_MouseLeftButtonUp(sender, e);
+
     private void StickyNoteRemove_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement element && element.DataContext is StickyNoteViewModel note)
@@ -990,6 +1024,47 @@ public partial class OverlayWindow : Window
         _isResizingQuickTextPanel = false;
     }
 
+    private void QuickTextPanelResizeRightHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        => QuickTextPanelResizeHandle_MouseLeftButtonDown(sender, e);
+
+    private void QuickTextPanelResizeRightHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isResizingQuickTextPanel)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _quickTextPanelResizeStart.X;
+        double dy = pos.Y - _quickTextPanelResizeStart.Y;
+
+        double maxWidthByBounds = Math.Min(
+            Models.DeckProfile.MaxQuickTextPanelWidth,
+            Math.Max(Models.DeckProfile.MinQuickTextPanelWidth, ActualWidth - _quickTextPanelResizeStartX - 12));
+        double clampedWidth = Math.Clamp(
+            _quickTextPanelResizeStartWidth + dx,
+            Models.DeckProfile.MinQuickTextPanelWidth,
+            maxWidthByBounds);
+
+        double maxHeightByBounds = Math.Min(
+            Models.DeckProfile.MaxQuickTextPanelHeight,
+            Math.Max(Models.DeckProfile.MinQuickTextPanelHeight, ActualHeight - _viewModel.QuickTextPanelY - 12));
+        double clampedHeight = Math.Clamp(
+            _quickTextPanelResizeStartHeight + dy,
+            Models.DeckProfile.MinQuickTextPanelHeight,
+            maxHeightByBounds);
+
+        _viewModel.QuickTextPanelWidth = clampedWidth;
+        _viewModel.QuickTextPanelHeight = clampedHeight;
+        ClampQuickTextPanelToBounds();
+
+        e.Handled = true;
+    }
+
+    private void QuickTextPanelResizeRightHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        => QuickTextPanelResizeHandle_MouseLeftButtonUp(sender, e);
+
     private void FormsPanelHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         _isDraggingFormsPanel = true;
@@ -1102,6 +1177,47 @@ public partial class OverlayWindow : Window
 
         _isResizingFormsPanel = false;
     }
+
+    private void FormsPanelResizeRightHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        => FormsPanelResizeHandle_MouseLeftButtonDown(sender, e);
+
+    private void FormsPanelResizeRightHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isResizingFormsPanel)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _formsPanelResizeStart.X;
+        double dy = pos.Y - _formsPanelResizeStart.Y;
+
+        double maxWidthByBounds = Math.Min(
+            Models.DeckProfile.MaxFormsPanelWidth,
+            Math.Max(Models.DeckProfile.MinFormsPanelWidth, ActualWidth - _formsPanelResizeStartX - 12));
+        double clampedWidth = Math.Clamp(
+            _formsPanelResizeStartWidth + dx,
+            Models.DeckProfile.MinFormsPanelWidth,
+            maxWidthByBounds);
+
+        double maxHeightByBounds = Math.Min(
+            Models.DeckProfile.MaxFormsPanelHeight,
+            Math.Max(Models.DeckProfile.MinFormsPanelHeight, ActualHeight - _viewModel.FormsPanelY - 12));
+        double clampedHeight = Math.Clamp(
+            _formsPanelResizeStartHeight + dy,
+            Models.DeckProfile.MinFormsPanelHeight,
+            maxHeightByBounds);
+
+        _viewModel.FormsPanelWidth = clampedWidth;
+        _viewModel.FormsPanelHeight = clampedHeight;
+        ClampFormsPanelToBounds();
+
+        e.Handled = true;
+    }
+
+    private void FormsPanelResizeRightHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        => FormsPanelResizeHandle_MouseLeftButtonUp(sender, e);
 
     private async void FormSend_Click(object sender, RoutedEventArgs e)
     {
