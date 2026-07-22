@@ -76,8 +76,9 @@
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
 
-        <!-- Flat rounded button used across the Forms editor -->
-        <Style x:Key="FormsFlatButton" TargetType="Button">
+        <!-- Shared flat rounded action button. Entity toolbars use the same
+             add / duplicate / rename / remove icon vocabulary everywhere. -->
+        <Style x:Key="FlatActionButton" TargetType="Button">
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Foreground" Value="White"/>
@@ -91,11 +92,18 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
                             </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.4"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="FormsFlatButton"
+               TargetType="Button"
+               BasedOn="{StaticResource FlatActionButton}"/>
 
         <!-- Thin ScrollBar Thumb -->
         <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
@@ -222,6 +230,16 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Keep the closed selection live-bound to mutable display names.
+             DisplayMemberPath is copied into SelectionBoxItem by WPF and can
+             stay stale until the dropdown is opened again. -->
+        <DataTemplate x:Key="NamedComboBoxItemTemplate">
+            <TextBlock Text="{Binding Name}"/>
+        </DataTemplate>
+        <DataTemplate x:Key="LabeledComboBoxItemTemplate">
+            <TextBlock Text="{Binding Label}"/>
+        </DataTemplate>
 
         <!-- Dark ComboBox Style -->
         <Style x:Key="DarkComboBox" TargetType="ComboBox">
@@ -649,7 +667,7 @@
                                     </Style>
                                 </Button.Style>
                             </Button>
-                            <Button Content="Duplicate" Click="DuplicateProfile_Click"
+                            <Button Content="⧉ Duplicate" Click="DuplicateProfile_Click"
                                     Background="#2A4D7A" Foreground="White"
                                     FontSize="12" Padding="10,4" Margin="4,0,0,0"
                                     BorderThickness="0" Cursor="Hand">
@@ -667,7 +685,7 @@
                                     </Style>
                                 </Button.Style>
                             </Button>
-                            <Button Content="Rename" Click="RenameProfile_Click"
+                            <Button Content="✎ Rename" Click="RenameProfile_Click"
                                     Background="#3F4F86" Foreground="White"
                                     FontSize="12" Padding="10,4" Margin="4,0,0,0"
                                     BorderThickness="0" Cursor="Hand">
@@ -718,7 +736,7 @@
                             <ComboBox MinWidth="180"
                                       Margin="0,0,8,0"
                                       ItemsSource="{Binding ProfileOptions}"
-                                      DisplayMemberPath="Label"
+                                      ItemTemplate="{StaticResource LabeledComboBoxItemTemplate}"
                                       SelectedValuePath="Id"
                                       SelectedValue="{Binding SelectedProfileId, Mode=TwoWay}"
                                       Style="{StaticResource DarkComboBox}"/>
@@ -828,7 +846,7 @@
                                 </Style>
                             </Button.Style>
                         </Button>
-                        <Button Content="Rename" Click="RenameLayout_Click"
+                        <Button Content="✎ Rename" Click="RenameLayout_Click"
                                 Background="#3F4F86" Foreground="White"
                                 FontSize="12" Padding="10,4" Margin="4,0,0,0"
                                 BorderThickness="0" Cursor="Hand">
@@ -926,7 +944,7 @@
                                   Margin="0,0,8,0"
                                   HorizontalAlignment="Stretch"
                                   ItemsSource="{Binding LayoutTargets}"
-                                  DisplayMemberPath="Label"
+                                  ItemTemplate="{StaticResource LabeledComboBoxItemTemplate}"
                                   SelectedValuePath="Id"
                                   SelectedValue="{Binding SelectedLayoutId, Mode=TwoWay}"
                                   Style="{StaticResource DarkComboBox}"/>
@@ -1391,7 +1409,7 @@
                                     </Style>
                                 </Button.Style>
                             </Button>
-                            <Button Content="Duplicate" Click="DuplicateButton_Click"
+                            <Button Content="⧉ Duplicate" Click="DuplicateButton_Click"
                                     Background="#2A4D7A" Foreground="White"
                                     FontSize="12" Padding="10,5" Margin="0,0,8,0"
                                     BorderThickness="0" Cursor="Hand">
@@ -1640,7 +1658,7 @@
 
                             <TextBlock Text="Target Layout" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding LayoutTargets}"
-                                      DisplayMemberPath="Label"
+                                      ItemTemplate="{StaticResource LabeledComboBoxItemTemplate}"
                                       SelectedValuePath="Id"
                                       SelectedValue="{Binding SelectedButton.TargetLayoutId, Mode=TwoWay}"
                                       Style="{StaticResource DarkComboBox}"
@@ -2116,17 +2134,20 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <ComboBox ItemsSource="{Binding QuickTextCollections}"
-                                              DisplayMemberPath="Name"
+                                              ItemTemplate="{StaticResource NamedComboBoxItemTemplate}"
                                               SelectedValuePath="Id"
                                               SelectedValue="{Binding SelectedQuickTextCollectionId, Mode=TwoWay}"
                                               Style="{StaticResource DarkComboBox}"/>
                                     <Button Grid.Column="1" Content="+" Command="{Binding AddQuickTextCollectionCommand}"
-                                            ToolTip="Add collection" Background="#2D5A27" Foreground="White" BorderThickness="0" Width="30" Margin="6,0,0,0" Cursor="Hand"/>
+                                            Style="{StaticResource FlatActionButton}"
+                                            ToolTip="Add collection" Background="#2D5A27" Width="30" Margin="6,0,0,0"/>
                                     <Button Grid.Column="2" Content="✎" Click="RenameQuickTextCollection_Click"
-                                            ToolTip="Rename collection" Background="#3F4F86" Foreground="White" BorderThickness="0" Width="30" Margin="5,0,0,0" Cursor="Hand"/>
+                                            Style="{StaticResource FlatActionButton}"
+                                            ToolTip="Rename collection" Background="#3F4F86" Width="30" Margin="5,0,0,0"/>
                                     <Button Grid.Column="3" Content="−" Command="{Binding RemoveQuickTextCollectionCommand}"
+                                            Style="{StaticResource FlatActionButton}"
                                             IsEnabled="{Binding HasMultipleQuickTextCollections}"
-                                            ToolTip="Remove collection; its tags are moved to another collection" Background="#5A2727" Foreground="White" BorderThickness="0" Width="30" Margin="5,0,0,0" Cursor="Hand"/>
+                                            ToolTip="Remove collection; its tags are moved to another collection" Background="#5A2727" Width="30" Margin="5,0,0,0"/>
                                 </Grid>
 
                                 <TextBlock Text="TAG"
@@ -2142,17 +2163,20 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <ComboBox ItemsSource="{Binding QuickTextCategories}"
-                                              DisplayMemberPath="Name"
+                                              ItemTemplate="{StaticResource NamedComboBoxItemTemplate}"
                                               SelectedValuePath="Id"
                                               SelectedValue="{Binding SelectedQuickTextCategoryId, Mode=TwoWay}"
                                               Style="{StaticResource DarkComboBox}"/>
                                     <Button Grid.Column="1" Content="+" Command="{Binding AddQuickTextCategoryCommand}"
-                                            ToolTip="Add tag" Background="#2D5A27" Foreground="White" BorderThickness="0" Width="30" Margin="6,0,0,0" Cursor="Hand"/>
+                                            Style="{StaticResource FlatActionButton}"
+                                            ToolTip="Add tag" Background="#2D5A27" Width="30" Margin="6,0,0,0"/>
                                     <Button Grid.Column="2" Content="✎" Click="RenameQuickTextCategory_Click"
-                                            ToolTip="Rename tag" Background="#3F4F86" Foreground="White" BorderThickness="0" Width="30" Margin="5,0,0,0" Cursor="Hand"/>
+                                            Style="{StaticResource FlatActionButton}"
+                                            ToolTip="Rename tag" Background="#3F4F86" Width="30" Margin="5,0,0,0"/>
                                     <Button Grid.Column="3" Content="−" Command="{Binding RemoveQuickTextCategoryCommand}"
+                                            Style="{StaticResource FlatActionButton}"
                                             IsEnabled="{Binding HasMultipleQuickTextCategories}"
-                                            ToolTip="Remove tag" Background="#5A2727" Foreground="White" BorderThickness="0" Width="30" Margin="5,0,0,0" Cursor="Hand"/>
+                                            ToolTip="Remove tag" Background="#5A2727" Width="30" Margin="5,0,0,0"/>
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -2408,7 +2432,7 @@
                                                 </TextBox>
 
                                                 <Button Grid.Column="1"
-                                                        Content="Duplicate"
+                                                        Content="⧉ Duplicate"
                                                         Command="{Binding DataContext.DuplicateQuickTextItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}"
                                                         Background="#2A4D7A"
@@ -2558,27 +2582,26 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <ComboBox ItemsSource="{Binding FormTemplates}"
                                       SelectedItem="{Binding SelectedFormTemplate, Mode=TwoWay}"
-                                      Style="{StaticResource DarkComboBox}">
-                                <!-- Explicit template instead of DisplayMemberPath: the DarkComboBox
-                                     ControlTemplate only honors SelectionBoxItemTemplate, so the
-                                     closed box would otherwise show ToString(). -->
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Name}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+                                      ItemTemplate="{StaticResource NamedComboBoxItemTemplate}"
+                                      Style="{StaticResource DarkComboBox}"/>
                             <Button Grid.Column="1" Content="+" Command="{Binding AddFormTemplateCommand}"
-                                    Style="{StaticResource FormsFlatButton}"
+                                    Style="{StaticResource FlatActionButton}"
                                     ToolTip="Add form" Background="#2D5A27" Width="30" Margin="6,0,0,0"/>
                             <Button Grid.Column="2" Content="⧉" Command="{Binding DuplicateFormTemplateCommand}"
-                                    Style="{StaticResource FormsFlatButton}"
+                                    Style="{StaticResource FlatActionButton}"
+                                    IsEnabled="{Binding HasSelectedFormTemplate}"
                                     ToolTip="Duplicate form" Background="#2A4D7A" Width="30" Margin="5,0,0,0"/>
-                            <Button Grid.Column="3" Content="−" Command="{Binding RemoveFormTemplateCommand}"
-                                    Style="{StaticResource FormsFlatButton}"
+                            <Button Grid.Column="3" Content="✎" Click="RenameFormTemplate_Click"
+                                    Style="{StaticResource FlatActionButton}"
+                                    IsEnabled="{Binding HasSelectedFormTemplate}"
+                                    ToolTip="Rename form" Background="#3F4F86" Width="30" Margin="5,0,0,0"/>
+                            <Button Grid.Column="4" Content="−" Command="{Binding RemoveFormTemplateCommand}"
+                                    Style="{StaticResource FlatActionButton}"
+                                    IsEnabled="{Binding HasSelectedFormTemplate}"
                                     ToolTip="Delete form" Background="#5A2727" Width="30" Margin="5,0,0,0"/>
                         </Grid>
 
@@ -2589,13 +2612,6 @@
                                    Visibility="{Binding HasSelectedFormTemplate, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
 
                         <StackPanel Visibility="{Binding HasSelectedFormTemplate, Converter={StaticResource BoolToVisibility}}">
-
-                            <!-- Name -->
-                            <TextBlock Text="Name" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-                            <TextBox Text="{Binding SelectedFormTemplate.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Background="#1E1E2E" Foreground="White" FontSize="12" Padding="6,4"
-                                     BorderBrush="#444" BorderThickness="1"
-                                     Margin="0,0,0,8"/>
 
                             <CheckBox IsChecked="{Binding SelectedFormTemplate.ShowCopyButton, Mode=TwoWay}"
                                       Content="Show a Copy button in the overlay"

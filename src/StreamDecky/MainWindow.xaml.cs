@@ -676,6 +676,22 @@ public partial class MainWindow : Window
             _viewModel.RenameQuickTextCollectionCommand.Execute(renamed);
     }
 
+    private void RenameFormTemplate_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.SelectedFormTemplate is not { } template)
+            return;
+
+        string? renamed = TextPromptDialog.Show(
+            this,
+            "Rename Form",
+            "Enter a form name:",
+            template.Name,
+            maxLength: 48);
+
+        if (!string.IsNullOrWhiteSpace(renamed))
+            _viewModel.RenameFormTemplateCommand.Execute(renamed);
+    }
+
     private static bool IsTextEditingControlFocused()
     {
         return Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase
