@@ -161,6 +161,12 @@ In the overlay:
 
 Keeping the same install path helps Windows preserve tray icon preferences and keeps the startup registry entry valid.
 
+Alternatively, install StreamDecky with Windows Package Manager:
+
+```powershell
+winget install --id BenjiButten.StreamDecky --exact
+```
+
 StreamDecky is distributed outside Microsoft Store. Windows Defender SmartScreen
 may show **Windows protected your PC** for an unsigned or newly published build.
 Verify that the archive came from the official GitHub release and compare its
@@ -174,7 +180,8 @@ main window is open. When a newer version is available, StreamDecky can download
 verify, install, and restart itself. A manual check is available from
 **About → Check for updates**. Installs in protected folders may trigger a UAC
 prompt, and Windows may show a security warning when a new build restarts.
-Development builds do not perform update checks.
+Installations made through winget are updated through winget instead of the
+built-in updater. Development builds do not perform update checks.
 
 ## Code signing and privacy
 
