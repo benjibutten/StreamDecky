@@ -199,8 +199,7 @@ jobs:
           Code signing: ${{ steps.codesign.outputs.status }}
           Code signing policy: https://benjibutten.github.io/StreamDecky/code-signing-policy.html
 
-          SignPath Foundation approval and signing integration are pending. The
-          code-signing status above is authoritative for this release.
+          The code-signing status above is authoritative for this release.
 
           For a manual ZIP installation, download the asset below and extract it,
           then run StreamDecky.exe. Keeping the same install path helps Windows keep

@@ -34,38 +34,30 @@
 </header>
 <main class="wrap">
   <h1>Code signing policy</h1>
-  <p class="updated">Effective and last updated: July 20, 2026</p>
+  <p class="updated">Effective and last updated: August 18, 2026</p>
 
   <h2>Signing service and scope</h2>
   <p><strong>Current releases are unsigned.</strong></p>
   <p>
-    The project has applied to SignPath Foundation. Approval and signing integration are pending;
-    SignPath does not currently provide signing for StreamDecky releases.
-  </p>
-  <p>
     This policy covers official Windows release builds of <code>StreamDecky.exe</code> published
     through <a href="https://github.com/benjibutten/StreamDecky/releases">GitHub Releases</a>.
-    The ZIP archive is accompanied by a SHA-256 checksum. If signing is approved and integrated,
-    the executable inside the archive will be the Authenticode-signed artifact; ZIP archives
-    themselves are not Authenticode-signable.
+    The ZIP archive is accompanied by a SHA-256 checksum. The executable inside the archive is the
+    artifact whose signing status is reported; ZIP archives themselves are not Authenticode-signable.
   </p>
   <p class="status">
     Each release's notes state its actual signing status and are authoritative for that release.
-    The policy will be updated only after signing is integrated and a published signature has been
-    verified.
+    The policy will be updated if the release signing status or process changes.
   </p>
 
   <h2>Project roles</h2>
   <ul>
     <li>Author and committer: <a href="https://github.com/benjibutten">BenjiButten (@benjibutten)</a></li>
     <li>Reviewer: <a href="https://github.com/benjibutten">BenjiButten (@benjibutten)</a></li>
-    <li>Future signing approver: <a href="https://github.com/benjibutten">BenjiButten (@benjibutten)</a></li>
   </ul>
   <p>
     Contributions from people without commit access are reviewed before they are merged.
-    If signing is integrated, every signing request will require manual approval by the signing
-    approver. Multi-factor authentication is required for accounts with source-control access and
-    will be required for signing access.
+    Release publication is controlled by the project maintainer. Multi-factor authentication is
+    required for accounts with source-control access.
   </p>
 
   <h2>Source and build provenance</h2>
@@ -75,9 +67,9 @@
     checked-in
     <a href="https://github.com/benjibutten/StreamDecky/blob/main/.github/workflows/release.yml">GitHub Actions release workflow</a>
     on GitHub-hosted Windows runners. The workflow restores declared dependencies, runs the test
-    suite, publishes the self-contained Windows executable, verifies signing when enabled,
+    suite, publishes the self-contained Windows executable, records the actual signing status,
     packages the release, and produces a SHA-256 checksum. Only artifacts originating from this
-    automated release workflow are eligible for SignPath signing.
+    automated release workflow are published as official releases.
   </p>
 
   <h2>Privacy</h2>
@@ -90,8 +82,6 @@
   <p>
     Report suspected signature misuse, compromised releases, or policy violations through the
     <a href="https://github.com/benjibutten/StreamDecky/issues">project issue tracker</a>.
-    Reports concerning a SignPath Foundation certificate may also be sent to
-    <a href="mailto:support@signpath.io">support@signpath.io</a>.
   </p>
 </main>
 </body>
