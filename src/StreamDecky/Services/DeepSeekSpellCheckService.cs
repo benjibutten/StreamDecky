@@ -23,7 +23,7 @@ public sealed record SpellCheckResult(bool Success, string Text, string? ErrorMe
 /// </summary>
 public class DeepSeekSpellCheckService
 {
-    public const string DefaultEndpoint = "https://api.deepseek.com/chat/completions";
+    public const string DefaultEndpoint = DeepSeekProtocol.ChatCompletionsEndpoint;
 
     /// <summary>Guards against pasting a whole document into a widget meant for a chat line.</summary>
     public const int MaxInputLength = 4000;
@@ -190,29 +190,8 @@ public class DeepSeekSpellCheckService
     /// </summary>
     internal static string? GetIncompleteReason(string responseBody)
     {
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(responseBody);
-            if (!document.RootElement.TryGetProperty("choices", out JsonElement choices)
-                || choices.ValueKind != JsonValueKind.Array
-                || choices.GetArrayLength() == 0)
-            {
-                return null;
-            }
-
-            if (!choices[0].TryGetProperty("finish_reason", out JsonElement finishReasonElement))
-                return null;
-
-            string? finishReason = finishReasonElement.GetString();
-            if (string.IsNullOrWhiteSpace(finishReason) || string.Equals(finishReason, "stop", StringComparison.Ordinal))
-                return null;
-
-            return finishReason;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        string? finishReason = DeepSeekProtocol.GetFinishReason(responseBody);
+        return string.Equals(finishReason, "stop", StringComparison.Ordinal) ? null : finishReason;
     }
 
     internal static string DescribeIncompleteAnswer(string finishReason) => finishReason switch
@@ -223,104 +202,13 @@ public class DeepSeekSpellCheckService
         _ => $"DeepSeek stopped before finishing the answer ({finishReason}), so your text was left alone."
     };
 
-    internal static string? ExtractContent(string responseBody)
-    {
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(responseBody);
-            if (!document.RootElement.TryGetProperty("choices", out JsonElement choices)
-                || choices.ValueKind != JsonValueKind.Array
-                || choices.GetArrayLength() == 0)
-            {
-                return null;
-            }
+    internal static string? ExtractContent(string responseBody) =>
+        DeepSeekProtocol.ExtractContent(responseBody);
 
-            JsonElement firstChoice = choices[0];
-            if (!firstChoice.TryGetProperty("message", out JsonElement messageElement)
-                || !messageElement.TryGetProperty("content", out JsonElement contentElement))
-            {
-                return null;
-            }
+    internal static string DescribeFailure(HttpStatusCode statusCode, string responseBody) =>
+        DeepSeekProtocol.DescribeFailure(statusCode, responseBody);
 
-            return contentElement.GetString();
-        }
-        catch (JsonException ex)
-        {
-            AppDiagnostics.Warning("Could not parse the DeepSeek response.", ex);
-            return null;
-        }
-    }
-
-    internal static string DescribeFailure(HttpStatusCode statusCode, string responseBody)
-    {
-        string? apiMessage = TryReadApiErrorMessage(responseBody);
-
-        string summary = statusCode switch
-        {
-            HttpStatusCode.Unauthorized => "DeepSeek rejected the API key. Check it in Settings.",
-            HttpStatusCode.PaymentRequired => "The DeepSeek account is out of credit.",
-            HttpStatusCode.TooManyRequests => "DeepSeek is rate limiting the requests. Wait a moment and try again.",
-            HttpStatusCode.UnprocessableEntity => "DeepSeek could not process the request. Check the model name in Settings.",
-            HttpStatusCode.BadRequest => "DeepSeek rejected the request. Check the model name in Settings.",
-            _ when (int)statusCode >= 500 => "DeepSeek is unavailable right now. Try again shortly.",
-            _ => $"DeepSeek returned an error ({(int)statusCode})."
-        };
-
-        return string.IsNullOrWhiteSpace(apiMessage) ? summary : $"{summary} ({apiMessage})";
-    }
-
-    private static string? TryReadApiErrorMessage(string responseBody)
-    {
-        if (string.IsNullOrWhiteSpace(responseBody))
-            return null;
-
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(responseBody);
-            if (document.RootElement.TryGetProperty("error", out JsonElement error)
-                && error.TryGetProperty("message", out JsonElement message))
-            {
-                return message.GetString();
-            }
-        }
-        catch (JsonException)
-        {
-            // Non-JSON error bodies are common behind proxies; the status summary is enough.
-        }
-
-        return null;
-    }
-
-    /// <summary>Removes wrappers a model sometimes adds despite being told not to.</summary>
-    internal static string Clean(string content)
-    {
-        string cleaned = content.Trim();
-
-        if (cleaned.StartsWith("```", StringComparison.Ordinal))
-        {
-            int firstLineBreak = cleaned.IndexOf('\n');
-            if (firstLineBreak >= 0)
-                cleaned = cleaned[(firstLineBreak + 1)..];
-
-            int closingFence = cleaned.LastIndexOf("```", StringComparison.Ordinal);
-            if (closingFence >= 0)
-                cleaned = cleaned[..closingFence];
-
-            cleaned = cleaned.Trim();
-        }
-
-        // Only unwrap when the quotes are the outermost pair, so a quoted phrase
-        // inside the corrected sentence is never stripped.
-        if (cleaned.Length >= 2
-            && cleaned[0] == '"'
-            && cleaned[^1] == '"'
-            && cleaned.IndexOf('"', 1) == cleaned.Length - 1)
-        {
-            cleaned = cleaned[1..^1];
-        }
-
-        return cleaned;
-    }
+    internal static string Clean(string content) => DeepSeekProtocol.Clean(content);
 
     /// <summary>
     /// Puts back the leading and trailing whitespace of the original text, so a

@@ -22,11 +22,37 @@ public partial class MainViewModel
         "Consolas"
     };
 
+    /// <summary>
+    /// How tall the widget has to be before an answer and its sources fit under the
+    /// writing box without squeezing it down to a couple of lines.
+    /// </summary>
+    private const double MinTextHelperHeightForAnswer = 460;
+
     private TextHelperWidgetViewModel? _textHelperWidget;
 
     /// <summary>Created lazily so sessions that never open the widget pay no HttpClient cost.</summary>
-    public TextHelperWidgetViewModel TextHelperWidget =>
-        _textHelperWidget ??= new TextHelperWidgetViewModel(_appSettingsService, SpellCheckService);
+    public TextHelperWidgetViewModel TextHelperWidget => _textHelperWidget ??= CreateTextHelperWidget();
+
+    private TextHelperWidgetViewModel CreateTextHelperWidget()
+    {
+        var widget = new TextHelperWidgetViewModel(_appSettingsService, SpellCheckService, QuickAnswerService);
+        widget.AnswerShown += (_, _) => GrowTextHelperForAnswer();
+        return widget;
+    }
+
+    /// <summary>
+    /// Makes room for the first answer, once. A widget the user sized for one line of
+    /// text has nowhere to show one, and an answer crushed into 40 pixels is worse than
+    /// a panel that grew a little. Only ever grows, never shrinks: once the user has
+    /// resized it themselves, the size is theirs.
+    /// </summary>
+    private void GrowTextHelperForAnswer()
+    {
+        if (TextHelperHeight >= MinTextHelperHeightForAnswer)
+            return;
+
+        TextHelperHeight = Math.Min(MinTextHelperHeightForAnswer, DeckProfile.MaxTextHelperHeight);
+    }
 
     /// <summary>
     /// The DeepSeek key lives in app-settings.json rather than the profile, so it is
@@ -121,6 +147,140 @@ public partial class MainViewModel
         SpellCheckPrompt = AppSettings.DefaultSpellCheckPrompt;
         OnPropertyChanged(nameof(SpellCheckPrompt));
     }
+
+    /// <summary>
+    /// The Brave Search key, stored beside the DeepSeek one and kept out of profiles for
+    /// the same reason.
+    /// </summary>
+    public string BraveApiKey
+    {
+        get => _appSettingsService.BraveApiKey;
+        set
+        {
+            if (string.Equals(_appSettingsService.BraveApiKey, value?.Trim() ?? string.Empty, StringComparison.Ordinal))
+                return;
+
+            bool stored = _appSettingsService.TrySetBraveApiKey(value, out string? error);
+
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasBraveApiKey));
+
+            IsBraveTestError = !stored;
+            BraveTestStatus = stored ? string.Empty : error ?? string.Empty;
+
+            TestBraveConnectionCommand.NotifyCanExecuteChanged();
+            _textHelperWidget?.Refresh();
+        }
+    }
+
+    public bool HasBraveApiKey => _appSettingsService.HasBraveApiKey;
+
+    /// <summary>Labels for the search mode picker, mapped to <see cref="AppSettings.SearchModes"/>.</summary>
+    public IReadOnlyList<string> QuickAnswerSearchModeOptions { get; } = new[]
+    {
+        "Let the model decide",
+        "Always search",
+        "Never search"
+    };
+
+    public string SelectedQuickAnswerSearchModeOption
+    {
+        get
+        {
+            int index = AppSettings.SearchModes.ToList().IndexOf(_appSettingsService.QuickAnswerSearchMode);
+            return QuickAnswerSearchModeOptions[index < 0 ? 0 : index];
+        }
+        set
+        {
+            int index = QuickAnswerSearchModeOptions.ToList().IndexOf(value);
+            string mode = index < 0 ? AppSettings.SearchModeAuto : AppSettings.SearchModes[index];
+            if (string.Equals(_appSettingsService.QuickAnswerSearchMode, mode, StringComparison.Ordinal))
+                return;
+
+            _appSettingsService.QuickAnswerSearchMode = mode;
+            OnPropertyChanged();
+            _textHelperWidget?.Refresh();
+        }
+    }
+
+    public string SelectedQuickAnswerThinkingOption
+    {
+        get
+        {
+            int index = AppSettings.ThinkingLevels.ToList().IndexOf(_appSettingsService.QuickAnswerThinking);
+            return SpellCheckThinkingOptions[index < 0 ? 0 : index];
+        }
+        set
+        {
+            int index = SpellCheckThinkingOptions.ToList().IndexOf(value);
+            string level = index < 0 ? AppSettings.DefaultQuickAnswerThinking : AppSettings.ThinkingLevels[index];
+            if (string.Equals(_appSettingsService.QuickAnswerThinking, level, StringComparison.Ordinal))
+                return;
+
+            _appSettingsService.QuickAnswerThinking = level;
+            OnPropertyChanged();
+        }
+    }
+
+    public string QuickAnswerPrompt
+    {
+        get => _appSettingsService.QuickAnswerPrompt;
+        set
+        {
+            if (string.Equals(_appSettingsService.QuickAnswerPrompt, value, StringComparison.Ordinal))
+                return;
+
+            _appSettingsService.QuickAnswerPrompt = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsQuickAnswerPromptCustomised));
+        }
+    }
+
+    public bool IsQuickAnswerPromptCustomised =>
+        !string.Equals(QuickAnswerPrompt, AppSettings.DefaultQuickAnswerPrompt, StringComparison.Ordinal);
+
+    [RelayCommand]
+    private void ResetQuickAnswerPrompt()
+    {
+        QuickAnswerPrompt = AppSettings.DefaultQuickAnswerPrompt;
+        OnPropertyChanged(nameof(QuickAnswerPrompt));
+    }
+
+    [RelayCommand(CanExecute = nameof(CanTestBraveConnection))]
+    private async Task TestBraveConnectionAsync()
+    {
+        IsBraveTestRunning = true;
+        IsBraveTestError = false;
+        BraveTestStatus = "Contacting Brave Search…";
+
+        try
+        {
+            WebSearchResult result = await BraveSearchService
+                .SearchAsync("streamdecky", _appSettingsService.BraveApiKey)
+                .ConfigureAwait(true);
+
+            IsBraveTestError = !result.Success;
+            BraveTestStatus = result.Success
+                ? $"Works. Brave returned {result.Hits.Count} result{(result.Hits.Count == 1 ? string.Empty : "s")}."
+                : result.ErrorMessage ?? "The test failed.";
+        }
+        finally
+        {
+            IsBraveTestRunning = false;
+        }
+    }
+
+    private bool CanTestBraveConnection() => !IsBraveTestRunning && HasBraveApiKey;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TestBraveConnectionCommand))]
+    private bool _isBraveTestRunning;
+
+    [ObservableProperty]
+    private string _braveTestStatus = string.Empty;
+
+    [ObservableProperty]
+    private bool _isBraveTestError;
 
     [RelayCommand(CanExecute = nameof(CanTestDeepSeekConnection))]
     private async Task TestDeepSeekConnectionAsync()

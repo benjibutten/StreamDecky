@@ -189,4 +189,141 @@ public sealed class AppSettingsServiceTests
         Assert.DoesNotContain("sk-secret-key", exported);
         Assert.DoesNotContain("DeepSeek", exported, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void QuickAnswers_StartWithTheDocumentedDefaults()
+    {
+        using var directory = new TemporaryDirectory();
+        var service = new AppSettingsService(directory.Path);
+
+        Assert.Equal(string.Empty, service.BraveApiKey);
+        Assert.False(service.HasBraveApiKey);
+        Assert.Equal(AppSettings.DefaultQuickAnswerPrompt, service.QuickAnswerPrompt);
+        Assert.Equal(AppSettings.SearchModeAuto, service.QuickAnswerSearchMode);
+
+        // Deliberately not the spell checker's default: an answer is worth a little
+        // reasoning in a way a respelling never is.
+        Assert.Equal(AppSettings.DefaultQuickAnswerThinking, service.QuickAnswerThinking);
+        Assert.NotEqual(service.SpellCheckThinking, service.QuickAnswerThinking);
+    }
+
+    [Fact]
+    public void BraveApiKey_SurvivesAReloadAndIsNotWrittenInClearText()
+    {
+        using var directory = new TemporaryDirectory();
+        var service = new AppSettingsService(directory.Path);
+
+        Assert.True(service.TrySetBraveApiKey("  brave-secret-key  ", out _));
+
+        var reloaded = new AppSettingsService(directory.Path);
+        Assert.Equal("brave-secret-key", reloaded.BraveApiKey);
+        Assert.True(reloaded.HasBraveApiKey);
+
+        string json = File.ReadAllText(Path.Combine(directory.Path, "app-settings.json"));
+        Assert.DoesNotContain("brave-secret-key", json);
+        Assert.Contains("BraveApiKeyProtected", json);
+    }
+
+    /// <summary>The two keys are stored side by side and must not overwrite each other.</summary>
+    [Fact]
+    public void TheTwoApiKeysAreStoredIndependently()
+    {
+        using var directory = new TemporaryDirectory();
+        var service = new AppSettingsService(directory.Path);
+
+        Assert.True(service.TrySetDeepSeekApiKey("sk-deepseek", out _));
+        Assert.True(service.TrySetBraveApiKey("brave-key", out _));
+
+        var reloaded = new AppSettingsService(directory.Path);
+        Assert.Equal("sk-deepseek", reloaded.DeepSeekApiKey);
+        Assert.Equal("brave-key", reloaded.BraveApiKey);
+
+        Assert.True(reloaded.TrySetBraveApiKey(string.Empty, out _));
+
+        var cleared = new AppSettingsService(directory.Path);
+        Assert.Equal("sk-deepseek", cleared.DeepSeekApiKey);
+        Assert.False(cleared.HasBraveApiKey);
+    }
+
+    [Fact]
+    public void UnprotectedBraveKey_IsUpgradedOnLoad()
+    {
+        using var directory = new TemporaryDirectory();
+        string settingsFile = Path.Combine(directory.Path, "app-settings.json");
+        File.WriteAllText(
+            settingsFile,
+            $$"""{"SchemaVersion":{{AppSettings.CurrentSchemaVersion}},"BraveApiKeyProtected":"brave-legacy-key"}""");
+
+        var service = new AppSettingsService(directory.Path);
+
+        Assert.Equal("brave-legacy-key", service.BraveApiKey);
+        Assert.DoesNotContain("brave-legacy-key", File.ReadAllText(settingsFile));
+    }
+
+    [Theory]
+    [InlineData("always", AppSettings.SearchModeAlways)]
+    [InlineData("NEVER", AppSettings.SearchModeNever)]
+    [InlineData("  auto ", AppSettings.SearchModeAuto)]
+    [InlineData("nonsense", AppSettings.SearchModeAuto)]
+    [InlineData("", AppSettings.SearchModeAuto)]
+    public void QuickAnswerSearchMode_NormalizesAndSurvivesAReload(string input, string expected)
+    {
+        using var directory = new TemporaryDirectory();
+
+        new AppSettingsService(directory.Path).QuickAnswerSearchMode = input;
+
+        Assert.Equal(expected, new AppSettingsService(directory.Path).QuickAnswerSearchMode);
+    }
+
+    /// <summary>
+    /// Blank falls back to this action's own default rather than the shared "off", so a
+    /// cleared value does not quietly move answers onto the spell checker's setting.
+    /// </summary>
+    [Theory]
+    [InlineData("max", "max")]
+    [InlineData("DISABLED", AppSettings.ThinkingDisabled)]
+    [InlineData("nonsense", AppSettings.DefaultQuickAnswerThinking)]
+    [InlineData("", AppSettings.DefaultQuickAnswerThinking)]
+    public void QuickAnswerThinking_NormalizesAndSurvivesAReload(string input, string expected)
+    {
+        using var directory = new TemporaryDirectory();
+
+        new AppSettingsService(directory.Path).QuickAnswerThinking = input;
+
+        Assert.Equal(expected, new AppSettingsService(directory.Path).QuickAnswerThinking);
+    }
+
+    [Fact]
+    public void QuickAnswerSettings_DoNotChangeTheSpellCheckSettings()
+    {
+        using var directory = new TemporaryDirectory();
+        var service = new AppSettingsService(directory.Path)
+        {
+            SpellCheckThinking = AppSettings.ThinkingDisabled,
+            SpellCheckPrompt = "Only fix spelling.",
+            QuickAnswerThinking = "max",
+            QuickAnswerPrompt = "Answer in one word."
+        };
+
+        var reloaded = new AppSettingsService(directory.Path);
+        Assert.Equal(AppSettings.ThinkingDisabled, reloaded.SpellCheckThinking);
+        Assert.Equal("Only fix spelling.", reloaded.SpellCheckPrompt);
+        Assert.Equal("max", reloaded.QuickAnswerThinking);
+        Assert.Equal("Answer in one word.", reloaded.QuickAnswerPrompt);
+    }
+
+    [Fact]
+    public void BraveApiKey_StaysOutOfProfileExports()
+    {
+        using var directory = new TemporaryDirectory();
+        Assert.True(new AppSettingsService(directory.Path).TrySetBraveApiKey("brave-secret-key", out _));
+
+        var profile = new DeckProfile { Name = "Export me" };
+        profile.Initialize();
+
+        string exported = ProfileService.SerializeProfileJson(profile);
+
+        Assert.DoesNotContain("brave-secret-key", exported);
+        Assert.DoesNotContain("Brave", exported, StringComparison.OrdinalIgnoreCase);
+    }
 }

@@ -1610,6 +1610,36 @@ public partial class OverlayWindow : Window
     private void TextHelperResizeRightHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         => TextHelperResizeHandle_MouseLeftButtonUp(sender, e);
 
+    /// <summary>
+    /// Opens a source behind a quick answer in the default browser. The URL comes from a
+    /// search result rather than from the user, so only absolute http(s) links are handed
+    /// to the shell — anything else would let a crafted result launch something local.
+    /// </summary>
+    private void AnswerSource_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button { Tag: string url })
+            return;
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? parsed)
+            || (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps))
+        {
+            AppDiagnostics.Warning($"Refused to open a quick answer source that is not an http(s) link: '{url}'.");
+            return;
+        }
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(parsed.AbsoluteUri)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning($"Could not open the quick answer source '{parsed.AbsoluteUri}'.", ex);
+        }
+    }
+
     private void MusicWidget_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is not (nameof(MusicWidgetViewModel.PositionSeconds)
@@ -1850,6 +1880,21 @@ public partial class OverlayWindow : Window
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is nameof(MainViewModel.TextHelperHeight)
+            or nameof(MainViewModel.TextHelperWidth)
+            && !_isResizingTextHelper)
+        {
+            // The widget can grow without the user dragging it — making room for the first
+            // answer does exactly that — and a widget already near an edge would otherwise
+            // grow straight off the screen. Queued so the panel has been laid out at its
+            // new size before the new bounds are worked out. A drag is excluded because
+            // the resize handlers clamp as they go, and this would queue another one per
+            // mouse move on top of that.
+            Dispatcher.BeginInvoke(
+                new Action(ClampTextHelperToBounds),
+                System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
         if (e.PropertyName is nameof(MainViewModel.QuickTextCollections)
             or nameof(MainViewModel.QuickTextCategories))
         {

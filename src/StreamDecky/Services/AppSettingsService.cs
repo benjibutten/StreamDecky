@@ -39,11 +39,24 @@ public class AppSettingsService
             {
                 // Assign before migrating: the migration saves, and Save() reads Settings.
                 _settings = Load();
-                UpgradeUnprotectedApiKey();
+                UpgradeUnprotectedApiKeys();
             }
 
             return _settings;
         }
+    }
+
+    private void UpgradeUnprotectedApiKeys()
+    {
+        UpgradeUnprotectedApiKey(
+            "DeepSeek",
+            () => _settings!.DeepSeekApiKeyProtected,
+            value => _settings!.DeepSeekApiKeyProtected = value);
+
+        UpgradeUnprotectedApiKey(
+            "Brave",
+            () => _settings!.BraveApiKeyProtected,
+            value => _settings!.BraveApiKeyProtected = value);
     }
 
     /// <summary>
@@ -51,9 +64,9 @@ public class AppSettingsService
     /// editing. Without this it would stay readable forever, since re-entering the same
     /// key is a no-op and every later settings change would rewrite it as it was.
     /// </summary>
-    private void UpgradeUnprotectedApiKey()
+    private void UpgradeUnprotectedApiKey(string keyName, Func<string> read, Action<string> write)
     {
-        string stored = _settings!.DeepSeekApiKeyProtected;
+        string stored = read();
         if (DataProtection.IsProtected(stored))
             return;
 
@@ -64,16 +77,16 @@ public class AppSettingsService
         if (!DataProtection.TryProtect(clearKey, out string protectedValue))
         {
             AppDiagnostics.Error(
-                "An unprotected DeepSeek API key could not be re-protected and is still readable in app-settings.json.");
+                $"An unprotected {keyName} API key could not be re-protected and is still readable in app-settings.json.");
             return;
         }
 
-        _settings.DeepSeekApiKeyProtected = protectedValue;
+        write(protectedValue);
 
         if (Save())
-            AppDiagnostics.Warning("An unprotected DeepSeek API key was re-protected with DPAPI.");
+            AppDiagnostics.Warning($"An unprotected {keyName} API key was re-protected with DPAPI.");
         else
-            _settings.DeepSeekApiKeyProtected = stored;
+            write(stored);
     }
 
     /// <summary>The DeepSeek API key in clear text; empty when unset or unreadable.</summary>
@@ -84,15 +97,48 @@ public class AppSettingsService
     /// Windows cannot protect the value it is not written at all, so the key never
     /// lands on disk in a reversible form.
     /// </summary>
-    public bool TrySetDeepSeekApiKey(string? value, out string? error)
+    public bool TrySetDeepSeekApiKey(string? value, out string? error) =>
+        TrySetApiKey(
+            value,
+            () => DeepSeekApiKey,
+            () => Settings.DeepSeekApiKeyProtected,
+            stored => Settings.DeepSeekApiKeyProtected = stored,
+            out error);
+
+    public bool HasDeepSeekApiKey => !string.IsNullOrWhiteSpace(DeepSeekApiKey);
+
+    /// <summary>The Brave Search API key in clear text; empty when unset or unreadable.</summary>
+    public string BraveApiKey => DataProtection.Unprotect(Settings.BraveApiKeyProtected);
+
+    public bool TrySetBraveApiKey(string? value, out string? error) =>
+        TrySetApiKey(
+            value,
+            () => BraveApiKey,
+            () => Settings.BraveApiKeyProtected,
+            stored => Settings.BraveApiKeyProtected = stored,
+            out error);
+
+    public bool HasBraveApiKey => !string.IsNullOrWhiteSpace(BraveApiKey);
+
+    /// <summary>
+    /// Stores an API key, or reports why it could not be stored. Fails closed: if Windows
+    /// cannot protect the value it is not written at all, so the key never lands on disk
+    /// in a reversible form.
+    /// </summary>
+    private bool TrySetApiKey(
+        string? value,
+        Func<string> readClear,
+        Func<string> readStored,
+        Action<string> writeStored,
+        out string? error)
     {
         error = null;
         string trimmed = value?.Trim() ?? string.Empty;
 
         // An unchanged key is still worth rewriting when what is on disk is not
         // protected, so re-entering the same key repairs a readable one.
-        if (string.Equals(DeepSeekApiKey, trimmed, StringComparison.Ordinal)
-            && DataProtection.IsProtected(Settings.DeepSeekApiKeyProtected))
+        if (string.Equals(readClear(), trimmed, StringComparison.Ordinal)
+            && DataProtection.IsProtected(readStored()))
         {
             return true;
         }
@@ -103,21 +149,19 @@ public class AppSettingsService
             return false;
         }
 
-        string previous = Settings.DeepSeekApiKeyProtected;
-        Settings.DeepSeekApiKeyProtected = protectedValue;
+        string previous = readStored();
+        writeStored(protectedValue);
 
         if (Save())
             return true;
 
         // Roll back so the getter cannot report a key that never reached the disk.
-        Settings.DeepSeekApiKeyProtected = previous;
+        writeStored(previous);
         error = _persistenceBlocked
             ? "The settings file was written by a newer version of StreamDecky, so the API key was not saved."
             : "The API key could not be written to app-settings.json. See the log for details.";
         return false;
     }
-
-    public bool HasDeepSeekApiKey => !string.IsNullOrWhiteSpace(DeepSeekApiKey);
 
     public string DeepSeekModel
     {
@@ -162,6 +206,52 @@ public class AppSettingsService
                 return;
 
             Settings.SpellCheckThinking = normalized;
+            Save();
+        }
+    }
+
+    public string QuickAnswerPrompt
+    {
+        get => Settings.QuickAnswerPrompt;
+        set
+        {
+            string prompt = string.IsNullOrWhiteSpace(value) ? AppSettings.DefaultQuickAnswerPrompt : value;
+            if (string.Equals(Settings.QuickAnswerPrompt, prompt, StringComparison.Ordinal))
+                return;
+
+            Settings.QuickAnswerPrompt = prompt;
+            Save();
+        }
+    }
+
+    /// <summary>
+    /// Kept apart from <see cref="SpellCheckThinking"/>: an answer the user may read out
+    /// on stream is worth a little reasoning, a respelling never is.
+    /// </summary>
+    public string QuickAnswerThinking
+    {
+        get => Settings.QuickAnswerThinking;
+        set
+        {
+            string normalized = AppSettings.NormalizeThinking(value, AppSettings.DefaultQuickAnswerThinking);
+            if (string.Equals(Settings.QuickAnswerThinking, normalized, StringComparison.Ordinal))
+                return;
+
+            Settings.QuickAnswerThinking = normalized;
+            Save();
+        }
+    }
+
+    public string QuickAnswerSearchMode
+    {
+        get => Settings.QuickAnswerSearchMode;
+        set
+        {
+            string normalized = AppSettings.NormalizeSearchMode(value);
+            if (string.Equals(Settings.QuickAnswerSearchMode, normalized, StringComparison.Ordinal))
+                return;
+
+            Settings.QuickAnswerSearchMode = normalized;
             Save();
         }
     }

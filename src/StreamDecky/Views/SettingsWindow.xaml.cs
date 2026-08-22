@@ -36,6 +36,7 @@ public partial class SettingsWindow : Window
     };
 
     private bool _hasPendingDeepSeekApiKey;
+    private bool _hasPendingBraveApiKey;
     private bool _isRecordingGamepadCombo;
     private bool _hasRecordedGamepadPress;
     private ushort _recordedGamepadButtons;
@@ -47,8 +48,12 @@ public partial class SettingsWindow : Window
         InitializeComponent();
         _gamepadRecordTimer.Tick += GamepadRecordTimer_Tick;
 
-        // Closing the window with the caret still in the key box must not lose the key.
-        Closing += (_, _) => CommitDeepSeekApiKey();
+        // Closing the window with the caret still in a key box must not lose the key.
+        Closing += (_, _) =>
+        {
+            CommitDeepSeekApiKey();
+            CommitBraveApiKey();
+        };
     }
 
     private void DeepSeekApiKeyBox_Loaded(object sender, RoutedEventArgs e)
@@ -89,6 +94,40 @@ public partial class SettingsWindow : Window
 
         _hasPendingDeepSeekApiKey = false;
         _viewModel.DeepSeekApiKey = DeepSeekApiKeyBox.Password;
+    }
+
+    private void BraveApiKeyBox_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.PasswordBox box)
+            return;
+
+        // Same one-way seeding as the DeepSeek box: PasswordBox cannot be bound, and
+        // seeding it raises PasswordChanged, which must not count as an edit by the user.
+        string storedKey = _viewModel.BraveApiKey;
+        if (string.Equals(box.Password, storedKey, StringComparison.Ordinal))
+            return;
+
+        box.Password = storedKey;
+        _hasPendingBraveApiKey = false;
+    }
+
+    private void BraveApiKeyBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        _hasPendingBraveApiKey = true;
+    }
+
+    private void BraveApiKeyBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        CommitBraveApiKey();
+    }
+
+    private void CommitBraveApiKey()
+    {
+        if (!_hasPendingBraveApiKey)
+            return;
+
+        _hasPendingBraveApiKey = false;
+        _viewModel.BraveApiKey = BraveApiKeyBox.Password;
     }
 
     private void OverlayBgColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)

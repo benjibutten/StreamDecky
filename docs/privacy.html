@@ -53,7 +53,8 @@
     <li>profile backups and migration backups;</li>
     <li>cached overlay images and references to local files selected by the user;</li>
     <li>
-      the DeepSeek API key, model, thinking level, and spell-fix prompt for the optional text helper widget, in
+      the DeepSeek and Brave Search API keys, model, thinking levels, search mode, and the spell-fix and
+      answer prompts for the optional text helper widget, in
       <code>app-settings.json</code>. The key is protected with Windows DPAPI for the current user
       account and is deliberately kept out of profile exports;
     </li>
@@ -100,6 +101,23 @@
       sent, and nothing is sent while the widget is merely open. Text sent this way is processed by
       DeepSeek under the <a href="https://www.deepseek.com/privacy-policy">DeepSeek Privacy Policy</a>
       and the terms of the user's own DeepSeek account.
+    </li>
+    <li>
+      The same widget's <em>Ask</em> button (or Ctrl+Shift+Enter) sends the question in the widget,
+      together with the configured answer prompt and the current date, to the same DeepSeek endpoint.
+      Nothing is sent unless the user presses it.
+    </li>
+    <li>
+      If the user has also entered a Brave Search API key, <em>Ask</em> may additionally send a search
+      query to Brave's web search endpoint at <code>api.search.brave.com</code> using that key, and the
+      results are sent on to DeepSeek so the answer can be written from them. The query is either the
+      user's question or a rephrasing of it produced by the model. Whether a search happens at all is
+      controlled by the <em>When to Search</em> setting, which can be set to <em>Never search</em> to
+      stop StreamDecky contacting Brave entirely; with no Brave key, no search is ever made. The
+      <em>Test Key</em> button for Brave searches a fixed built-in term, never the user's own question.
+      Queries sent this way are processed by Brave under the
+      <a href="https://brave.com/privacy/browser/">Brave Privacy Policy</a> and the terms of the user's
+      own Brave Search API account.
     </li>
     <li>
       Links opened by the user, including project and release links, are handled by the user's
