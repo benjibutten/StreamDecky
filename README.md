@@ -123,6 +123,17 @@ Published releases are self-contained `win-x64` builds, so end users do not need
 - Clearing form history also clears autocomplete suggestion data, including orphaned suggestions
 - Draggable, resizable overlay panel persisted per profile
 
+### Text helper widget
+
+- Optional overlay widget (`Text` in the overlay top bar) with a roomy, dyslexia-friendly writing box: pick any installed font (Verdana by default) and text size in **Settings**
+- Two looks for the writing area, switchable in **Settings**: a warm off-white that glares less than pure white (default, and easier for most people with dyslexia), or a dark one that matches the overlay theme
+- **Fix spelling** — or `Ctrl+Enter` in the box — replaces what you wrote with a respelled version from DeepSeek, keeping your language, wording, and any `/commands`; `Enter` on its own still inserts a newline, and **Undo** brings your own words straight back
+- **Copy** always copies the box as it stands, whether or not the spell fix has run
+- Needs a DeepSeek API key in **Settings**, where the model, the correction prompt, and how much the model reasons can also be changed; the key is stored scrambled for your Windows account and never travels with a profile export
+- Reasoning is requested **off** by default. DeepSeek otherwise thinks at `high` effort on every call, which costs seconds and tokens that respelling a chat line does not need; raise it in **Settings** only if corrections come back wrong
+- The writing box takes the caret as soon as the widget appears, and its text survives closing and reopening the overlay
+- Draggable, resizable from both bottom corners, and persisted per profile
+
 ### MicMixer music widget
 
 - Optional overlay widget (`Music` in the overlay top bar) that remote-controls MicMixer's built-in music player
@@ -151,6 +162,7 @@ In the main window, when a text field is not focused:
 In the overlay:
 
 - `Esc`: close the overlay
+- `Ctrl+Enter` in the text helper's writing box: fix the spelling (plain `Enter` inserts a newline)
 
 ## Installation
 
@@ -199,6 +211,7 @@ MicMixer integration are covered by the
 - One-version-back backup: `%LOCALAPPDATA%\StreamDecky\profiles.backup.json`
 - Legacy import source: `%LOCALAPPDATA%\StreamDecky\profile.json`
 - Form submissions and autocomplete history: `%LOCALAPPDATA%\StreamDecky\form-data.json` (kept outside the profile store so submissions never churn profile backups and personal history stays out of profile exports)
+- Machine-wide settings, including the DeepSeek API key, model, thinking level, and spell-fix prompt: `%LOCALAPPDATA%\StreamDecky\app-settings.json` (kept outside the profile store so the key is never included in a profile export; the key itself is protected with Windows DPAPI for your user account, so copying the file to another account or machine will not reveal it)
 - Diagnostics log: `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`
 
 Profile data is autosaved after real data mutations and can also be saved through explicit save flows.
@@ -221,10 +234,12 @@ StreamDecky/
 |   |-- DeckProfile, DeckProfileStore, DeckPage, NotePage, StickyNote
 |   |-- ButtonConfig, ActionStep
 |   |-- FormTemplate, FormField, FormFieldOption, FormCounter, FormSubmission, FormDataStore
+|   |-- AppSettings
 |   `-- enums (ActionType, ActionStepType, TextMode, ButtonShape, FormFieldType, ProfileSchemaVersion)
 |-- ViewModels/
-|   |-- MainViewModel (+ partials for profiles, layouts, sticky notes, quick text, and save flow)
+|   |-- MainViewModel (+ partials for profiles, layouts, sticky notes, quick text, text helper, and save flow)
 |   |-- ButtonViewModel
+|   |-- TextHelperWidgetViewModel
 |   `-- StickyNoteViewModel
 |-- Views/
 |   |-- OverlayWindow
@@ -234,6 +249,8 @@ StreamDecky/
 |   |-- ProfileSchemaMigrator
 |   |-- FormRenderService
 |   |-- FormDataService
+|   |-- AppSettingsService
+|   |-- DeepSeekSpellCheckService
 |   |-- TextInputActionService
 |   |-- MultiActionService
 |   |-- OverlayWindowController
@@ -243,6 +260,7 @@ StreamDecky/
 |   |-- OverlayInterop
 |   |-- InputSimulator
 |   |-- OverlayImageCache
+|   |-- DataProtection
 |   `-- Converters
 `-- MainWindow.xaml (+ code-behind)
 ```
@@ -342,6 +360,8 @@ approval; even a newly signed build can initially lack reputation.
 - The app runs as `asInvoker`; administrator rights are not required by default.
 - `Start with Windows` writes to `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`.
 - Profiles, backups, and logs stay under `%LOCALAPPDATA%\StreamDecky`.
+- The text helper widget is the only feature that sends user content to a third party, and only when the user has entered a DeepSeek API key and presses `Fix spelling`. `Test Key` in Settings sends a built-in sample sentence, never your own text.
+- The DeepSeek key is stored DPAPI-protected for the current Windows account and is excluded from profile exports. If Windows cannot protect it, StreamDecky refuses to save it rather than writing it in a reversible form.
 
 ## Support and acknowledgements
 

@@ -34,7 +34,7 @@
 </header>
 <main class="wrap">
   <h1>Privacy policy</h1>
-  <p class="updated">Effective and last updated: July 19, 2026</p>
+  <p class="updated">Effective and last updated: August 21, 2026</p>
 
   <h2>Overview</h2>
   <p>
@@ -52,6 +52,11 @@
     <li>form templates, form submissions, counters, and autocomplete history;</li>
     <li>profile backups and migration backups;</li>
     <li>cached overlay images and references to local files selected by the user;</li>
+    <li>
+      the DeepSeek API key, model, thinking level, and spell-fix prompt for the optional text helper widget, in
+      <code>app-settings.json</code>. The key is protected with Windows DPAPI for the current user
+      account and is deliberately kept out of profile exports;
+    </li>
     <li>the time of the most recent update check; and</li>
     <li>diagnostic logs containing operational messages, local paths, and error details.</li>
   </ul>
@@ -67,10 +72,11 @@
   <h2>Clipboard, input, and local integration</h2>
   <p>
     At the user's direction, StreamDecky can place configured text on the Windows clipboard or
-    simulate keyboard input into the previously active application. StreamDecky itself does not
-    transmit that content over the Internet, but the receiving application may process or transmit
-    it under its own privacy policy. The optional MicMixer integration uses a same-user local named
-    pipe and does not expose the data as an Internet service.
+    simulate keyboard input into the previously active application. Apart from the optional text
+    helper widget described under Network communication, StreamDecky does not transmit that content
+    over the Internet, but the receiving application may process or transmit it under its own
+    privacy policy. The optional MicMixer integration uses a same-user local named pipe and does not
+    expose the data as an Internet service.
   </p>
 
   <h2>Network communication</h2>
@@ -83,6 +89,17 @@
     <li>
       If the user accepts an offered update, StreamDecky downloads the release archive and checksum
       from GitHub, verifies the SHA-256 checksum, and installs the update.
+    </li>
+    <li>
+      The text helper widget is off until the user enables it and enters a DeepSeek API key. When
+      the user presses <em>Fix spelling</em> (or Ctrl+Enter in the widget), StreamDecky sends the
+      text currently in the widget, together with the configured correction prompt, to DeepSeek's
+      chat completions endpoint at <code>api.deepseek.com</code> using that key, and replaces the
+      text with the answer. The <em>Test Key</em> button in Settings sends a fixed sample sentence
+      built into the application instead, never the user's own text. No other StreamDecky content is
+      sent, and nothing is sent while the widget is merely open. Text sent this way is processed by
+      DeepSeek under the <a href="https://www.deepseek.com/privacy-policy">DeepSeek Privacy Policy</a>
+      and the terms of the user's own DeepSeek account.
     </li>
     <li>
       Links opened by the user, including project and release links, are handled by the user's

@@ -191,4 +191,81 @@ public sealed class OverlayWindowXamlSmokeTests
         Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "The overlay window smoke test timed out.");
         Assert.Null(failure);
     }
+
+    /// <summary>
+    /// Inflates the text helper widget and reads the values back off the live
+    /// controls, so a mistyped binding path fails here rather than showing up as a
+    /// silently empty box in the overlay.
+    /// </summary>
+    [Fact]
+    public void OverlayWindow_ShouldBindTheTextHelperWidget()
+    {
+        Exception? failure = null;
+
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                using var tempDirectory = new TemporaryDirectory();
+                using var viewModel = new MainViewModel(
+                    new ProfileService(tempDirectory.Path),
+                    appSettingsService: new AppSettingsService(tempDirectory.Path));
+
+                viewModel.TextHelperVisible = true;
+                viewModel.TextHelperFontFamily = "Tahoma";
+                viewModel.TextHelperFontSize = 22;
+                viewModel.TextHelperWidget.Text = "helo wrld";
+                viewModel.TextHelperWidget.StatusText = "Status line";
+
+                var window = new OverlayWindow(viewModel);
+                try
+                {
+                    window.Measure(new System.Windows.Size(1920, 1080));
+                    window.Arrange(new System.Windows.Rect(0, 0, 1920, 1080));
+                    window.UpdateLayout();
+
+                    Assert.Equal(System.Windows.Visibility.Visible, window.TextHelperPanel.Visibility);
+                    Assert.Equal("helo wrld", window.TextHelperInput.Text);
+                    Assert.Equal("Tahoma", window.TextHelperInput.FontFamily.Source);
+                    Assert.Equal(22, window.TextHelperInput.FontSize);
+
+                    // The widget writes back through the same two-way binding the user types into.
+                    window.TextHelperInput.Text = "typed by hand";
+                    Assert.Equal("typed by hand", viewModel.TextHelperWidget.Text);
+
+                    // Ctrl+Enter must reach the spell check; plain Enter stays a newline.
+                    var shortcut = Assert.IsType<System.Windows.Input.KeyBinding>(
+                        Assert.Single(window.TextHelperInput.InputBindings));
+                    Assert.Equal(System.Windows.Input.Key.Return, shortcut.Key);
+                    Assert.Equal(System.Windows.Input.ModifierKeys.Control, shortcut.Modifiers);
+                    Assert.Same(viewModel.TextHelperWidget.SpellCheckCommand, shortcut.Command);
+
+                    // The writing area defaults to the light theme and follows the profile switch.
+                    Assert.Equal(
+                        System.Windows.Media.Color.FromRgb(0x1B, 0x22, 0x2B),
+                        ((System.Windows.Media.SolidColorBrush)window.TextHelperInput.Foreground).Color);
+
+                    viewModel.TextHelperDarkTextArea = true;
+                    window.UpdateLayout();
+
+                    Assert.Equal(
+                        System.Windows.Media.Color.FromRgb(0xEA, 0xF2, 0xFA),
+                        ((System.Windows.Media.SolidColorBrush)window.TextHelperInput.Foreground).Color);
+                }
+                finally
+                {
+                    window.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+        });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "The text helper smoke test timed out.");
+        Assert.Null(failure);
+    }
 }

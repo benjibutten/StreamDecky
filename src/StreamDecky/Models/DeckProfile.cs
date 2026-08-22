@@ -14,6 +14,13 @@ public class DeckProfile
     public const double MaxMusicWidgetWidth = 700;
     public const double MinMusicWidgetHeight = 260;
     public const double MaxMusicWidgetHeight = 3000;
+    public const double MinTextHelperWidth = 280;
+    public const double MaxTextHelperWidth = 700;
+    public const double MinTextHelperHeight = 200;
+    public const double MaxTextHelperHeight = 900;
+    public const double MinTextHelperFontSize = 12;
+    public const double MaxTextHelperFontSize = 30;
+    public const string DefaultTextHelperFontFamily = "Verdana";
     public const double MinFormsPanelWidth = 300;
     public const double MaxFormsPanelWidth = 700;
     public const double MinFormsPanelHeight = 220;
@@ -63,6 +70,14 @@ public class DeckProfile
     public double MusicWidgetY { get; set; } = 96;
     public double MusicWidgetWidth { get; set; } = 380;
     public double MusicWidgetHeight { get; set; } = 540;
+    public bool TextHelperVisible { get; set; }
+    public double TextHelperX { get; set; } = 30;
+    public double TextHelperY { get; set; } = 96;
+    public double TextHelperWidth { get; set; } = 420;
+    public double TextHelperHeight { get; set; } = 320;
+    public bool TextHelperDarkTextArea { get; set; }
+    public string TextHelperFontFamily { get; set; } = DefaultTextHelperFontFamily;
+    public double TextHelperFontSize { get; set; } = 17;
     public int LayoutRows { get; set; } = 3;
     public int LayoutColumns { get; set; } = 5;
     public List<DeckPage> Pages { get; set; } = new() { new DeckPage() };
@@ -181,5 +196,17 @@ public class DeckProfile
         MusicWidgetHeight = Math.Clamp(MusicWidgetHeight == 0 ? 540 : MusicWidgetHeight, MinMusicWidgetHeight, MaxMusicWidgetHeight);
         MusicWidgetX = Math.Max(0, MusicWidgetX);
         MusicWidgetY = Math.Max(0, MusicWidgetY);
+
+        TextHelperWidth = Math.Clamp(TextHelperWidth == 0 ? 420 : TextHelperWidth, MinTextHelperWidth, MaxTextHelperWidth);
+        TextHelperHeight = Math.Clamp(TextHelperHeight == 0 ? 320 : TextHelperHeight, MinTextHelperHeight, MaxTextHelperHeight);
+        TextHelperX = Math.Max(0, TextHelperX);
+        TextHelperY = Math.Max(0, TextHelperY);
+        TextHelperFontSize = Math.Clamp(
+            TextHelperFontSize == 0 ? 17 : TextHelperFontSize,
+            MinTextHelperFontSize,
+            MaxTextHelperFontSize);
+
+        if (string.IsNullOrWhiteSpace(TextHelperFontFamily))
+            TextHelperFontFamily = DefaultTextHelperFontFamily;
     }
 }

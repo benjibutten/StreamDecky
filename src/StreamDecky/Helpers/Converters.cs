@@ -548,3 +548,32 @@ public class CellClusterCornerRadiusConverter : IMultiValueConverter
             && configured;
     }
 }
+
+/// <summary>
+/// Resolves the text helper's font name to a <see cref="System.Windows.Media.FontFamily"/>, falling back
+/// to the dyslexia-friendly default when the profile names a font this machine lacks.
+/// </summary>
+public class StringToFontFamilyConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        string requested = value as string ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(requested))
+            requested = Models.DeckProfile.DefaultTextHelperFontFamily;
+
+        try
+        {
+            return new System.Windows.Media.FontFamily(requested);
+        }
+        catch (Exception)
+        {
+            // FontFamily rejects malformed names such as a stray "#" fragment.
+            return new System.Windows.Media.FontFamily(Models.DeckProfile.DefaultTextHelperFontFamily);
+        }
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

@@ -128,6 +128,15 @@ public partial class OverlayWindow : Window
     private double _musicWidgetResizeStartX;
     private double _musicWidgetResizeStartWidth;
     private double _musicWidgetResizeStartHeight;
+    private bool _isDraggingTextHelper;
+    private System.Windows.Point _textHelperDragStart;
+    private double _textHelperStartX;
+    private double _textHelperStartY;
+    private bool _isResizingTextHelper;
+    private System.Windows.Point _textHelperResizeStart;
+    private double _textHelperResizeStartX;
+    private double _textHelperResizeStartWidth;
+    private double _textHelperResizeStartHeight;
     private bool _isDraggingMusicSeek;
     private bool _isUpdatingMusicSeekSlider;
     private readonly Dictionary<string, string> _quickTextSessionOverrides = new(StringComparer.Ordinal);
@@ -172,6 +181,13 @@ public partial class OverlayWindow : Window
         Dispatcher.BeginInvoke(new Action(ClampQuickTextPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         Dispatcher.BeginInvoke(new Action(ClampFormsPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         Dispatcher.BeginInvoke(new Action(ClampMusicWidgetToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
+        Dispatcher.BeginInvoke(new Action(ClampTextHelperToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
+
+        // The window is reused between sessions, so the widget's own visibility change
+        // only fires once; re-focus here for every later open.
+        if (_viewModel.TextHelperVisible)
+            FocusTextHelperInput(TextHelperInput);
+
         UpdateGamepadPolling();
     }
 
@@ -1410,6 +1426,189 @@ public partial class OverlayWindow : Window
 
         _isResizingMusicWidget = false;
     }
+
+    /// <summary>
+    /// Puts the caret in the writing box the moment the widget appears, so showing
+    /// it and typing is one step rather than two.
+    /// </summary>
+    private void TextHelperInput_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox textBox || !textBox.IsVisible)
+            return;
+
+        FocusTextHelperInput(textBox);
+    }
+
+    private void FocusTextHelperInput(System.Windows.Controls.TextBox textBox)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!textBox.IsVisible)
+                return;
+
+            textBox.Focus();
+            textBox.CaretIndex = textBox.Text.Length;
+        }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void TextHelperHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isDraggingTextHelper = true;
+        _textHelperDragStart = e.GetPosition(this);
+        _textHelperStartX = _viewModel.TextHelperX;
+        _textHelperStartY = _viewModel.TextHelperY;
+
+        if (sender is UIElement element)
+            element.CaptureMouse();
+
+        e.Handled = true;
+    }
+
+    private void TextHelperHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isDraggingTextHelper)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _textHelperDragStart.X;
+        double dy = pos.Y - _textHelperDragStart.Y;
+
+        UpdateTextHelperPosition(_textHelperStartX + dx, _textHelperStartY + dy);
+        e.Handled = true;
+    }
+
+    private void TextHelperHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _isDraggingTextHelper = false;
+    }
+
+    private void UpdateTextHelperPosition(double desiredX, double desiredY)
+    {
+        double panelWidth = TextHelperPanel.ActualWidth > 1 ? TextHelperPanel.ActualWidth : _viewModel.TextHelperWidth;
+        double panelHeight = TextHelperPanel.ActualHeight > 1 ? TextHelperPanel.ActualHeight : _viewModel.TextHelperHeight;
+
+        double maxX = Math.Max(0, ActualWidth - panelWidth - 12);
+        double maxY = Math.Max(0, ActualHeight - panelHeight - 12);
+        double minY = Math.Min(42, maxY);
+
+        _viewModel.TextHelperX = Math.Clamp(desiredX, 0, maxX);
+        _viewModel.TextHelperY = Math.Clamp(desiredY, minY, maxY);
+    }
+
+    private void ClampTextHelperToBounds()
+    {
+        UpdateTextHelperPosition(_viewModel.TextHelperX, _viewModel.TextHelperY);
+    }
+
+    private void TextHelperResizeHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isResizingTextHelper = true;
+        _textHelperResizeStart = e.GetPosition(this);
+        _textHelperResizeStartX = _viewModel.TextHelperX;
+        _textHelperResizeStartWidth = _viewModel.TextHelperWidth;
+        _textHelperResizeStartHeight = _viewModel.TextHelperHeight;
+
+        if (sender is UIElement element)
+            element.CaptureMouse();
+
+        e.Handled = true;
+    }
+
+    private void TextHelperResizeHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isResizingTextHelper)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _textHelperResizeStart.X;
+        double dy = pos.Y - _textHelperResizeStart.Y;
+
+        // Bottom-left handle: the left edge follows the mouse while the right edge stays anchored.
+        double rightEdge = Math.Min(_textHelperResizeStartX + _textHelperResizeStartWidth, ActualWidth - 12);
+        double maxWidthByRightEdge = Math.Max(
+            Models.DeckProfile.MinTextHelperWidth,
+            Math.Min(Models.DeckProfile.MaxTextHelperWidth, rightEdge));
+        double clampedWidth = Math.Clamp(
+            _textHelperResizeStartWidth - dx,
+            Models.DeckProfile.MinTextHelperWidth,
+            maxWidthByRightEdge);
+
+        double maxHeightByBounds = Math.Min(
+            Models.DeckProfile.MaxTextHelperHeight,
+            Math.Max(Models.DeckProfile.MinTextHelperHeight, ActualHeight - _viewModel.TextHelperY - 12));
+        double clampedHeight = Math.Clamp(
+            _textHelperResizeStartHeight + dy,
+            Models.DeckProfile.MinTextHelperHeight,
+            maxHeightByBounds);
+
+        double desiredX = rightEdge - clampedWidth;
+        double maxX = Math.Max(0, ActualWidth - clampedWidth - 12);
+        _viewModel.TextHelperX = Math.Clamp(desiredX, 0, maxX);
+        _viewModel.TextHelperWidth = clampedWidth;
+        _viewModel.TextHelperHeight = clampedHeight;
+        ClampTextHelperToBounds();
+
+        e.Handled = true;
+    }
+
+    private void TextHelperResizeHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is UIElement element && element.IsMouseCaptured)
+            element.ReleaseMouseCapture();
+
+        _isResizingTextHelper = false;
+    }
+
+    private void TextHelperResizeRightHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        => TextHelperResizeHandle_MouseLeftButtonDown(sender, e);
+
+    private void TextHelperResizeRightHandle_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isResizingTextHelper)
+            return;
+
+        if (sender is not UIElement element || !element.IsMouseCaptured)
+            return;
+
+        var pos = e.GetPosition(this);
+        double dx = pos.X - _textHelperResizeStart.X;
+        double dy = pos.Y - _textHelperResizeStart.Y;
+
+        // Bottom-right handle: the left edge stays anchored while width and height follow the mouse.
+        double maxWidthByBounds = Math.Min(
+            Models.DeckProfile.MaxTextHelperWidth,
+            Math.Max(Models.DeckProfile.MinTextHelperWidth, ActualWidth - _textHelperResizeStartX - 12));
+        double clampedWidth = Math.Clamp(
+            _textHelperResizeStartWidth + dx,
+            Models.DeckProfile.MinTextHelperWidth,
+            maxWidthByBounds);
+
+        double maxHeightByBounds = Math.Min(
+            Models.DeckProfile.MaxTextHelperHeight,
+            Math.Max(Models.DeckProfile.MinTextHelperHeight, ActualHeight - _viewModel.TextHelperY - 12));
+        double clampedHeight = Math.Clamp(
+            _textHelperResizeStartHeight + dy,
+            Models.DeckProfile.MinTextHelperHeight,
+            maxHeightByBounds);
+
+        _viewModel.TextHelperWidth = clampedWidth;
+        _viewModel.TextHelperHeight = clampedHeight;
+        ClampTextHelperToBounds();
+
+        e.Handled = true;
+    }
+
+    private void TextHelperResizeRightHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        => TextHelperResizeHandle_MouseLeftButtonUp(sender, e);
 
     private void MusicWidget_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
