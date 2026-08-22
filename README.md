@@ -123,6 +123,33 @@ Published releases are self-contained `win-x64` builds, so end users do not need
 - Clearing form history also clears autocomplete suggestion data, including orphaned suggestions
 - Draggable, resizable overlay panel persisted per profile
 
+### Text helper widget
+
+- Optional overlay widget (`Text` in the overlay top bar) with a roomy, dyslexia-friendly writing box: pick any installed font (Verdana by default) and text size in **Settings**
+- Two looks for the writing area, switchable in **Settings**: a warm off-white that glares less than pure white (default, and easier for most people with dyslexia), or a dark one that matches the overlay theme
+- **Fix spelling** — or `Ctrl+Enter` in the box — replaces what you wrote with a respelled version from DeepSeek, keeping your language, wording, and any `/commands`; `Enter` on its own still inserts a newline, and **Undo** brings your own words straight back
+- **Copy** always copies the box as it stands, whether or not the spell fix has run
+- **Ask** — or `Ctrl+Shift+Enter` — answers the question in the box without touching what you wrote; the answer appears in its own card underneath with the sources behind it, and **Copy** and **Undo** stay attached to your text as always (see [Quick answers](#quick-answers))
+- Needs a DeepSeek API key in **Settings**, where the model, the correction prompt, and how much the model reasons can also be changed; the key is stored scrambled for your Windows account and never travels with a profile export
+- Reasoning is requested **off** by default. DeepSeek otherwise thinks at `high` effort on every call, which costs seconds and tokens that respelling a chat line does not need; raise it in **Settings** only if corrections come back wrong
+- The writing box takes the caret as soon as the widget appears, and its text survives closing and reopening the overlay
+- Draggable, resizable from both bottom corners, and persisted per profile
+
+### Quick answers
+
+- **Ask** in the text helper answers a short question mid-stream — a score, a release date, a price — without alt-tabbing to a browser. It uses the same DeepSeek key as the spell fix
+- The answer never overwrites the box. It lands in its own card with the question it belongs to, so an answer left on screen while you retype can never read as a reply to the new text. Dismiss it with the `x`, or **Clear** to empty both at once
+- Every answer says where it came from: **Checked against the web** with the source chips it used, or **From the model, not checked against the web**. Chips open in your browser. An answer with nothing behind it is never allowed to look like a sourced one
+- Add a **Brave Search API key** in **Settings** to let answers be checked against the web; the free tier covers this kind of use. Create it under Brave's **Web Search** product — Brave issues a separate key per product, and an Answers key authenticates but comes back empty. Without a key, Ask still answers from the model alone and the card says so
+- **When to Search** decides how the search is triggered:
+  - *Let the model decide* (default) — the model is offered a search tool and takes it for anything that could have changed (scores, prices, releases, who currently holds a role) and skips it for spelling, arithmetic and stable facts. Those come back a step faster and with no irrelevant sources attached, and the model writes a better search query than the raw question
+  - *Always search* — skips that decision and goes straight to Brave, which is quicker when nearly everything you ask is about current events
+  - *Never search* — answers from the model alone; no Brave key needed
+- **Answer Thinking** is separate from the spell-fix setting and defaults to `low`, not off: an answer is a factual claim you might read out on stream, and a little reasoning makes the model stick to its sources and admit when they do not answer the question. The search decision itself never uses thinking, whatever you pick, so the common case stays fast
+- If a search fails, Ask reports the failure rather than quietly answering from memory — the question was routed to a search precisely because memory was not good enough for it
+- Ask takes questions up to 600 characters; longer text can still have its spelling fixed
+- The answer prompt is editable in **Settings**, next to a **Reset to default**
+
 ### MicMixer music widget
 
 - Optional overlay widget (`Music` in the overlay top bar) that remote-controls MicMixer's built-in music player
@@ -151,6 +178,7 @@ In the main window, when a text field is not focused:
 In the overlay:
 
 - `Esc`: close the overlay
+- `Ctrl+Enter` in the text helper's writing box: fix the spelling (plain `Enter` inserts a newline)
 
 ## Installation
 
@@ -199,6 +227,7 @@ MicMixer integration are covered by the
 - One-version-back backup: `%LOCALAPPDATA%\StreamDecky\profiles.backup.json`
 - Legacy import source: `%LOCALAPPDATA%\StreamDecky\profile.json`
 - Form submissions and autocomplete history: `%LOCALAPPDATA%\StreamDecky\form-data.json` (kept outside the profile store so submissions never churn profile backups and personal history stays out of profile exports)
+- Machine-wide settings, including the DeepSeek and Brave Search API keys, model, thinking levels, search mode, and the spell-fix and answer prompts: `%LOCALAPPDATA%\StreamDecky\app-settings.json` (kept outside the profile store so the key is never included in a profile export; the key itself is protected with Windows DPAPI for your user account, so copying the file to another account or machine will not reveal it)
 - Diagnostics log: `%LOCALAPPDATA%\StreamDecky\logs\streamdecky.log`
 
 Profile data is autosaved after real data mutations and can also be saved through explicit save flows.
@@ -221,10 +250,12 @@ StreamDecky/
 |   |-- DeckProfile, DeckProfileStore, DeckPage, NotePage, StickyNote
 |   |-- ButtonConfig, ActionStep
 |   |-- FormTemplate, FormField, FormFieldOption, FormCounter, FormSubmission, FormDataStore
+|   |-- AppSettings
 |   `-- enums (ActionType, ActionStepType, TextMode, ButtonShape, FormFieldType, ProfileSchemaVersion)
 |-- ViewModels/
-|   |-- MainViewModel (+ partials for profiles, layouts, sticky notes, quick text, and save flow)
+|   |-- MainViewModel (+ partials for profiles, layouts, sticky notes, quick text, text helper, and save flow)
 |   |-- ButtonViewModel
+|   |-- TextHelperWidgetViewModel
 |   `-- StickyNoteViewModel
 |-- Views/
 |   |-- OverlayWindow
@@ -234,6 +265,10 @@ StreamDecky/
 |   |-- ProfileSchemaMigrator
 |   |-- FormRenderService
 |   |-- FormDataService
+|   |-- AppSettingsService
+|   |-- DeepSeekSpellCheckService
+|   |-- QuickAnswerService
+|   |-- BraveSearchService
 |   |-- TextInputActionService
 |   |-- MultiActionService
 |   |-- OverlayWindowController
@@ -243,6 +278,7 @@ StreamDecky/
 |   |-- OverlayInterop
 |   |-- InputSimulator
 |   |-- OverlayImageCache
+|   |-- DataProtection
 |   `-- Converters
 `-- MainWindow.xaml (+ code-behind)
 ```
@@ -342,6 +378,9 @@ approval; even a newly signed build can initially lack reputation.
 - The app runs as `asInvoker`; administrator rights are not required by default.
 - `Start with Windows` writes to `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`.
 - Profiles, backups, and logs stay under `%LOCALAPPDATA%\StreamDecky`.
+- The text helper widget is the only feature that sends user content to a third party, and only when the user has entered a key and pressed `Fix spelling` or `Ask`. `Fix spelling` sends the text to DeepSeek. `Ask` sends the question to DeepSeek, and — when a Brave key is set and the question is searched — sends a search query to Brave Search. `Test Key` for either provider sends a built-in sample, never your own text.
+- Both API keys are stored DPAPI-protected for the current Windows account and are excluded from profile exports. If Windows cannot protect a key, StreamDecky refuses to save it rather than writing it in a reversible form.
+- Source links from a quick answer are opened in your browser only when they are absolute `http(s)` URLs, so a crafted search result cannot launch anything local.
 
 ## Support and acknowledgements
 

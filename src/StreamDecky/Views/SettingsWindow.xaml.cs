@@ -35,6 +35,8 @@ public partial class SettingsWindow : Window
         Interval = TimeSpan.FromMilliseconds(33)
     };
 
+    private bool _hasPendingDeepSeekApiKey;
+    private bool _hasPendingBraveApiKey;
     private bool _isRecordingGamepadCombo;
     private bool _hasRecordedGamepadPress;
     private ushort _recordedGamepadButtons;
@@ -45,6 +47,87 @@ public partial class SettingsWindow : Window
         DataContext = viewModel;
         InitializeComponent();
         _gamepadRecordTimer.Tick += GamepadRecordTimer_Tick;
+
+        // Closing the window with the caret still in a key box must not lose the key.
+        Closing += (_, _) =>
+        {
+            CommitDeepSeekApiKey();
+            CommitBraveApiKey();
+        };
+    }
+
+    private void DeepSeekApiKeyBox_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.PasswordBox box)
+            return;
+
+        // PasswordBox cannot be bound, so the stored key is pushed in once on load
+        // and pushed back on every change below. Seeding it raises PasswordChanged,
+        // which must not count as an edit by the user.
+        string storedKey = _viewModel.DeepSeekApiKey;
+        if (string.Equals(box.Password, storedKey, StringComparison.Ordinal))
+            return;
+
+        box.Password = storedKey;
+        _hasPendingDeepSeekApiKey = false;
+    }
+
+    /// <summary>
+    /// Only marks the key dirty. Committing per keystroke would mean a DPAPI call and a
+    /// synchronous file write for every character typed, so the write is deferred to
+    /// <see cref="CommitDeepSeekApiKey"/> when focus leaves the box or the window closes.
+    /// </summary>
+    private void DeepSeekApiKeyBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        _hasPendingDeepSeekApiKey = true;
+    }
+
+    private void DeepSeekApiKeyBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        CommitDeepSeekApiKey();
+    }
+
+    private void CommitDeepSeekApiKey()
+    {
+        if (!_hasPendingDeepSeekApiKey)
+            return;
+
+        _hasPendingDeepSeekApiKey = false;
+        _viewModel.DeepSeekApiKey = DeepSeekApiKeyBox.Password;
+    }
+
+    private void BraveApiKeyBox_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.PasswordBox box)
+            return;
+
+        // Same one-way seeding as the DeepSeek box: PasswordBox cannot be bound, and
+        // seeding it raises PasswordChanged, which must not count as an edit by the user.
+        string storedKey = _viewModel.BraveApiKey;
+        if (string.Equals(box.Password, storedKey, StringComparison.Ordinal))
+            return;
+
+        box.Password = storedKey;
+        _hasPendingBraveApiKey = false;
+    }
+
+    private void BraveApiKeyBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        _hasPendingBraveApiKey = true;
+    }
+
+    private void BraveApiKeyBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        CommitBraveApiKey();
+    }
+
+    private void CommitBraveApiKey()
+    {
+        if (!_hasPendingBraveApiKey)
+            return;
+
+        _hasPendingBraveApiKey = false;
+        _viewModel.BraveApiKey = BraveApiKeyBox.Password;
     }
 
     private void OverlayBgColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)

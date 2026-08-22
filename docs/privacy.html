@@ -34,7 +34,7 @@
 </header>
 <main class="wrap">
   <h1>Privacy policy</h1>
-  <p class="updated">Effective and last updated: July 19, 2026</p>
+  <p class="updated">Effective and last updated: August 21, 2026</p>
 
   <h2>Overview</h2>
   <p>
@@ -52,6 +52,12 @@
     <li>form templates, form submissions, counters, and autocomplete history;</li>
     <li>profile backups and migration backups;</li>
     <li>cached overlay images and references to local files selected by the user;</li>
+    <li>
+      the DeepSeek and Brave Search API keys, model, thinking levels, search mode, and the spell-fix and
+      answer prompts for the optional text helper widget, in
+      <code>app-settings.json</code>. The key is protected with Windows DPAPI for the current user
+      account and is deliberately kept out of profile exports;
+    </li>
     <li>the time of the most recent update check; and</li>
     <li>diagnostic logs containing operational messages, local paths, and error details.</li>
   </ul>
@@ -67,10 +73,11 @@
   <h2>Clipboard, input, and local integration</h2>
   <p>
     At the user's direction, StreamDecky can place configured text on the Windows clipboard or
-    simulate keyboard input into the previously active application. StreamDecky itself does not
-    transmit that content over the Internet, but the receiving application may process or transmit
-    it under its own privacy policy. The optional MicMixer integration uses a same-user local named
-    pipe and does not expose the data as an Internet service.
+    simulate keyboard input into the previously active application. Apart from the optional text
+    helper widget described under Network communication, StreamDecky does not transmit that content
+    over the Internet, but the receiving application may process or transmit it under its own
+    privacy policy. The optional MicMixer integration uses a same-user local named pipe and does not
+    expose the data as an Internet service.
   </p>
 
   <h2>Network communication</h2>
@@ -83,6 +90,34 @@
     <li>
       If the user accepts an offered update, StreamDecky downloads the release archive and checksum
       from GitHub, verifies the SHA-256 checksum, and installs the update.
+    </li>
+    <li>
+      The text helper widget is off until the user enables it and enters a DeepSeek API key. When
+      the user presses <em>Fix spelling</em> (or Ctrl+Enter in the widget), StreamDecky sends the
+      text currently in the widget, together with the configured correction prompt, to DeepSeek's
+      chat completions endpoint at <code>api.deepseek.com</code> using that key, and replaces the
+      text with the answer. The <em>Test Key</em> button in Settings sends a fixed sample sentence
+      built into the application instead, never the user's own text. No other StreamDecky content is
+      sent, and nothing is sent while the widget is merely open. Text sent this way is processed by
+      DeepSeek under the <a href="https://www.deepseek.com/privacy-policy">DeepSeek Privacy Policy</a>
+      and the terms of the user's own DeepSeek account.
+    </li>
+    <li>
+      The same widget's <em>Ask</em> button (or Ctrl+Shift+Enter) sends the question in the widget,
+      together with the configured answer prompt and the current date, to the same DeepSeek endpoint.
+      Nothing is sent unless the user presses it.
+    </li>
+    <li>
+      If the user has also entered a Brave Search API key, <em>Ask</em> may additionally send a search
+      query to Brave's web search endpoint at <code>api.search.brave.com</code> using that key, and the
+      results are sent on to DeepSeek so the answer can be written from them. The query is either the
+      user's question or a rephrasing of it produced by the model. Whether a search happens at all is
+      controlled by the <em>When to Search</em> setting, which can be set to <em>Never search</em> to
+      stop StreamDecky contacting Brave entirely; with no Brave key, no search is ever made. The
+      <em>Test Key</em> button for Brave searches a fixed built-in term, never the user's own question.
+      Queries sent this way are processed by Brave under the
+      <a href="https://brave.com/privacy/browser/">Brave Privacy Policy</a> and the terms of the user's
+      own Brave Search API account.
     </li>
     <li>
       Links opened by the user, including project and release links, are handled by the user's

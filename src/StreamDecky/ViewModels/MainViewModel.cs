@@ -17,7 +17,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly TextInputActionService _textInputService;
     private readonly MultiActionService _multiActionService;
     private readonly FormDataService _formDataService;
+    private readonly AppSettingsService _appSettingsService;
     private readonly List<ButtonViewModel> _trackedButtons = new();
+
+    private DeepSeekSpellCheckService? _spellCheckService;
+    private QuickAnswerService? _quickAnswerService;
+    private BraveSearchService? _braveSearchService;
+
+    /// <summary>Created on first use so the HttpClient only exists once spell check is actually wanted.</summary>
+    private DeepSeekSpellCheckService SpellCheckService =>
+        _spellCheckService ??= new DeepSeekSpellCheckService();
+
+    /// <summary>Created on first use, for the same reason as <see cref="SpellCheckService"/>.</summary>
+    private QuickAnswerService QuickAnswerService =>
+        _quickAnswerService ??= new QuickAnswerService(searchService: BraveSearchService);
+
+    private BraveSearchService BraveSearchService =>
+        _braveSearchService ??= new BraveSearchService();
 
     private DeckProfileStore _profileStore;
     private DeckProfile _profile;
@@ -29,12 +45,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ProfileService? profileService = null,
         TextInputActionService? textInputService = null,
         MultiActionService? multiActionService = null,
-        FormDataService? formDataService = null)
+        FormDataService? formDataService = null,
+        AppSettingsService? appSettingsService = null,
+        DeepSeekSpellCheckService? spellCheckService = null,
+        QuickAnswerService? quickAnswerService = null,
+        BraveSearchService? braveSearchService = null)
     {
         _profileService = profileService ?? new ProfileService();
         _textInputService = textInputService ?? new TextInputActionService();
         _multiActionService = multiActionService ?? new MultiActionService();
         _formDataService = formDataService ?? new FormDataService();
+        _appSettingsService = appSettingsService ?? new AppSettingsService();
+        _spellCheckService = spellCheckService;
+        _quickAnswerService = quickAnswerService;
+        _braveSearchService = braveSearchService;
 
         // Auto-save: debounce 1 second after last change
         _autoSaveTimer = new System.Timers.Timer(1000) { AutoReset = false };
@@ -418,6 +442,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _ = RefreshOverlayBackgroundImageAsync();
         IsOverlayOpen = true;
         ActivateMusicWidgetIfVisible();
+        RefreshTextHelperIfVisible();
     }
 
     [RelayCommand]
@@ -734,5 +759,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         DetachButtonHandlers();
         DetachFormTemplateHandlers();
         _musicWidget?.Dispose();
+        _textHelperWidget?.Dispose();
     }
 }

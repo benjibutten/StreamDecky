@@ -19,6 +19,7 @@
 
     <Window.Resources>
         <helpers:StringToBrushConverter x:Key="StringToBrush"/>
+        <helpers:HasTextToVisibilityConverter x:Key="HasTextVisibility"/>
 
         <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
             <Setter Property="Template">
@@ -74,6 +75,32 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="SettingsActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#2D2D44"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </Window.Resources>
 
     <DockPanel>
@@ -412,6 +439,250 @@
                   Content="Natural simulate typing (experimental)"
                   Foreground="#CCC" FontSize="13" Margin="0,0,0,4" Cursor="Hand"/>
         <TextBlock Text="Adds burst/pause cadence in SimulateTyping mode. Keep off for max consistency."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <!-- Separator -->
+        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+
+        <!-- Text Helper Section -->
+        <TextBlock Text="TEXT HELPER (OVERLAY WIDGET)" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Text="A dyslexia-friendly box in the overlay: write a line, press Ctrl+Enter (or Fix spelling) to let DeepSeek correct it, then copy it. Copy always works, corrected or not. The same box also answers quick questions — see Quick Answers below."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <CheckBox IsChecked="{Binding TextHelperDarkTextArea, Mode=TwoWay}"
+                  Content="Dark writing area"
+                  Foreground="#CCC" FontSize="13" Margin="0,0,0,4" Cursor="Hand"/>
+        <TextBlock Text="Off gives a warm off-white box, which most people with dyslexia read more easily. On matches the dark overlay instead."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <TextBlock Text="Text Font" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <ComboBox IsEditable="True"
+                  Text="{Binding TextHelperFontFamily, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                  ItemsSource="{Binding TextHelperFontOptions}"
+                  Background="#2D2D44" Foreground="Black"
+                  FontSize="13" Padding="6,4"
+                  Margin="0,0,0,4"/>
+        <TextBlock Text="Any installed font works — the listed ones just read well with dyslexia."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <TextBlock Text="Text Size" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <DockPanel Margin="0,0,0,14">
+            <TextBlock DockPanel.Dock="Right"
+                       Text="{Binding TextHelperFontSize, StringFormat={}{0:0}}"
+                       Foreground="#888" FontSize="12" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+            <Slider Value="{Binding TextHelperFontSize, Mode=TwoWay}"
+                    Minimum="12" Maximum="30"
+                    TickFrequency="1" IsSnapToTickEnabled="True"/>
+        </DockPanel>
+
+        <TextBlock Text="DeepSeek API Key" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <PasswordBox x:Name="DeepSeekApiKeyBox"
+                     Loaded="DeepSeekApiKeyBox_Loaded"
+                     PasswordChanged="DeepSeekApiKeyBox_PasswordChanged"
+                     LostKeyboardFocus="DeepSeekApiKeyBox_LostKeyboardFocus"
+                     Background="#2D2D44" Foreground="White" CaretBrush="White"
+                     FontSize="13" Padding="8,6"
+                     BorderBrush="#444" BorderThickness="1"
+                     Margin="0,0,0,4"/>
+        <TextBlock Text="Get a key at platform.deepseek.com. The key is saved when you click away from this box. It is encrypted for your Windows account in app-settings.json and is never included in a profile export. Spell checking sends the text in the widget to DeepSeek."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+            <Button Content="Test Key"
+                    Command="{Binding TestDeepSeekConnectionCommand}"
+                    ToolTip="Sends one short sentence to DeepSeek to confirm the key and model work"
+                    Background="#2D2D44" Foreground="White"
+                    FontSize="12" Padding="12,6"
+                    BorderThickness="0" Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                        </Trigger>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
+        <TextBlock Text="{Binding DeepSeekTestStatus}"
+                   FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"
+                   Visibility="{Binding DeepSeekTestStatus, Converter={StaticResource HasTextVisibility}}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Foreground" Value="#7BC48A"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsDeepSeekTestError}" Value="True">
+                            <Setter Property="Foreground" Value="#E36B6B"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <TextBlock Text="Model" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <TextBox Text="{Binding DeepSeekModel, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                 Background="#2D2D44" Foreground="White" CaretBrush="White"
+                 FontSize="13" Padding="8,6"
+                 BorderBrush="#444" BorderThickness="1"
+                 Margin="0,0,0,4"/>
+        <TextBlock Text="Default is deepseek-v4-flash. Change it only if DeepSeek renames or retires the model."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <TextBlock Text="Thinking" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <ComboBox SelectedItem="{Binding SelectedSpellCheckThinkingOption, Mode=TwoWay}"
+                  ItemsSource="{Binding SpellCheckThinkingOptions}"
+                  Background="#2D2D44" Foreground="Black"
+                  FontSize="13" Padding="6,4"
+                  Margin="0,0,0,4"/>
+        <TextBlock Text="DeepSeek reasons at high effort unless told otherwise, which costs seconds and tokens that fixing spelling does not need. Off is both the fastest and the cheapest, and is the default here. Raise it only if you find corrections coming back wrong."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <DockPanel Margin="0,0,0,4">
+            <TextBlock Text="Spell-Fix Prompt" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
+            <Button DockPanel.Dock="Right"
+                    Content="Reset to default"
+                    Command="{Binding ResetSpellCheckPromptCommand}"
+                    IsEnabled="{Binding IsSpellCheckPromptCustomised}"
+                    HorizontalAlignment="Right"
+                    Background="#2D2D44" Foreground="#DDD"
+                    FontSize="11" Padding="8,3"
+                    BorderThickness="0" Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                        </Trigger>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter TargetName="Bd" Property="Opacity" Value="0.4"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </DockPanel>
+        <TextBox Text="{Binding SpellCheckPrompt, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto"
+                 Height="150"
+                 Background="#2D2D44" Foreground="White" CaretBrush="White"
+                 FontSize="12" Padding="8,6"
+                 BorderBrush="#444" BorderThickness="1"
+                 Margin="0,0,0,4">
+            <TextBox.Resources>
+                <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
+            </TextBox.Resources>
+        </TextBox>
+        <TextBlock Text="This is the instruction sent with every spell fix. The text from the widget is sent separately, so keep the prompt about how to correct it."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <!-- Separator -->
+        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+
+        <!-- Quick Answers Section -->
+        <TextBlock Text="QUICK ANSWERS (SAME WIDGET)" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Text="The Ask button in the text helper answers the question in the box without touching what you wrote — the answer appears in its own card underneath, with the sources it used. Ctrl+Shift+Enter does the same. It uses the DeepSeek key above; the Brave key below is what lets it check an answer against the web."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <TextBlock Text="Brave Search API Key" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <PasswordBox x:Name="BraveApiKeyBox"
+                     Loaded="BraveApiKeyBox_Loaded"
+                     PasswordChanged="BraveApiKeyBox_PasswordChanged"
+                     LostKeyboardFocus="BraveApiKeyBox_LostKeyboardFocus"
+                     Background="#2D2D44" Foreground="White" CaretBrush="White"
+                     FontSize="13" Padding="8,6"
+                     BorderBrush="#444" BorderThickness="1"
+                     Margin="0,0,0,4"/>
+        <TextBlock Text="Optional. Create the key under the Web Search product at api-dashboard.search.brave.com — Brave issues a separate key per product, and a key made for Answers authenticates fine here but returns nothing. The free tier covers this kind of use. Stored exactly like the DeepSeek key: encrypted for your Windows account and never part of a profile export. Without a key, Ask still answers, but only from the model, and the answer card says so."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+            <Button Content="Test Key"
+                    Command="{Binding TestBraveConnectionCommand}"
+                    Style="{StaticResource SettingsActionButton}"
+                    ToolTip="Runs one search to confirm the Brave key works"/>
+        </StackPanel>
+        <TextBlock Text="{Binding BraveTestStatus}"
+                   FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"
+                   Visibility="{Binding BraveTestStatus, Converter={StaticResource HasTextVisibility}}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Foreground" Value="#7BC48A"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsBraveTestError}" Value="True">
+                            <Setter Property="Foreground" Value="#E36B6B"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <TextBlock Text="When to Search" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <ComboBox SelectedItem="{Binding SelectedQuickAnswerSearchModeOption, Mode=TwoWay}"
+                  ItemsSource="{Binding QuickAnswerSearchModeOptions}"
+                  Background="#2D2D44" Foreground="Black"
+                  FontSize="13" Padding="6,4"
+                  Margin="0,0,0,4"/>
+        <TextBlock Text="Let the model decide is the default: it is offered a search tool and takes it for anything that could have changed — scores, prices, releases, who currently holds a role — and skips it for spelling, arithmetic and stable facts, so those come back a step faster and without irrelevant sources attached. Always search skips that decision and goes straight to Brave, which is actually quicker when almost everything you ask is about current events. Never search answers from the model alone and needs no Brave key."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <TextBlock Text="Answer Thinking" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+        <ComboBox SelectedItem="{Binding SelectedQuickAnswerThinkingOption, Mode=TwoWay}"
+                  ItemsSource="{Binding SpellCheckThinkingOptions}"
+                  Background="#2D2D44" Foreground="Black"
+                  FontSize="13" Padding="6,4"
+                  Margin="0,0,0,4"/>
+        <TextBlock Text="Separate from the spell-fix setting above, because the two want opposite things. An answer is a factual claim you might read out on stream, and a little reasoning makes the model stick to its sources and admit when they do not answer the question — so this defaults to Low rather than Off. Raise it for harder questions; every step costs seconds. The search decision itself never uses thinking, whatever you pick here, so it does not slow down the common case."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <DockPanel Margin="0,0,0,4">
+            <TextBlock Text="Answer Prompt" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
+            <Button DockPanel.Dock="Right"
+                    Content="Reset to default"
+                    Command="{Binding ResetQuickAnswerPromptCommand}"
+                    IsEnabled="{Binding IsQuickAnswerPromptCustomised}"
+                    Style="{StaticResource SettingsActionButton}"
+                    HorizontalAlignment="Right"
+                    Foreground="#DDD"
+                    FontSize="11" Padding="8,3"/>
+        </DockPanel>
+        <TextBox Text="{Binding QuickAnswerPrompt, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto"
+                 Height="150"
+                 Background="#2D2D44" Foreground="White" CaretBrush="White"
+                 FontSize="12" Padding="8,6"
+                 BorderBrush="#444" BorderThickness="1"
+                 Margin="0,0,0,4">
+            <TextBox.Resources>
+                <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
+            </TextBox.Resources>
+        </TextBox>
+        <TextBlock Text="This is the instruction sent with every question. The question, today's date and any search results are sent separately, so keep the prompt about how to answer. The rules about only using the search results, and about saying so when they do not answer the question, are what keep the answer card honest — edit those last."
                    Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
         <!-- Separator -->
