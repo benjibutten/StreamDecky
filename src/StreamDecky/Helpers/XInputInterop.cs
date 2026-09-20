@@ -61,12 +61,36 @@ internal static class XInputInterop
     [DllImport("xinput9_1_0.dll", EntryPoint = "XInputGetState", CallingConvention = CallingConvention.StdCall)]
     private static extern uint XInputGetState910(uint dwUserIndex, out XInputState pState);
 
+    private static uint _lastConnectedIndex;
+    private static DateTime _nextFullScanUtc = DateTime.MinValue;
+    private static readonly TimeSpan FullScanInterval = TimeSpan.FromSeconds(2);
+
     internal static bool TryGetFirstConnectedState(out XInputState state)
     {
+        if (TryGetState(_lastConnectedIndex, out state))
+            return true;
+
+        // Querying an empty XInput slot walks the device stack, so with no pad
+        // connected a 30 ms timer would burn four slow calls per tick. Microsoft
+        // recommends looking for new controllers every few seconds instead.
+        DateTime now = DateTime.UtcNow;
+        if (now < _nextFullScanUtc)
+        {
+            state = default;
+            return false;
+        }
+
+        _nextFullScanUtc = now + FullScanInterval;
         for (uint i = 0; i < 4; i++)
         {
+            if (i == _lastConnectedIndex)
+                continue;
+
             if (TryGetState(i, out state))
+            {
+                _lastConnectedIndex = i;
                 return true;
+            }
         }
 
         state = default;
