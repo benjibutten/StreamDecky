@@ -17,6 +17,10 @@ public partial class App : Application
 
     protected override async void OnStartup(StartupEventArgs e)
     {
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += OnCurrentDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+
         if (UpdateInstaller.IsUpdateMode(e.Args))
         {
             base.OnStartup(e);
@@ -25,10 +29,6 @@ public partial class App : Application
             return;
         }
         UpdateInstaller.ScheduleCleanup(e.Args);
-
-        DispatcherUnhandledException += OnDispatcherUnhandledException;
-        AppDomain.CurrentDomain.UnhandledException += OnCurrentDomainUnhandledException;
-        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         bool startHiddenInTray = HasStartHiddenInTrayArgument(e.Args);
 
@@ -107,6 +107,11 @@ public partial class App : Application
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         AppDiagnostics.Error("Unhandled dispatcher exception.", e.Exception);
+        // A bug in one handler (a timer tick, a click) should not take the whole
+        // deck down and skip the shutdown save; the failure is logged instead.
+        // Before the main window exists there is nothing to keep alive, and
+        // swallowing would leave an invisible process holding the instance mutex.
+        e.Handled = MainWindow != null;
     }
 
     private void OnCurrentDomainUnhandledException(object? sender, UnhandledExceptionEventArgs e)

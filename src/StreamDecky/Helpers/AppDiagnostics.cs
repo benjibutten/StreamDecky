@@ -6,11 +6,12 @@ namespace StreamDecky.Helpers;
 public static class AppDiagnostics
 {
     private static readonly object SyncRoot = new();
-    private static readonly string LogDirectory = Path.Combine(
+    public static readonly string LogDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "StreamDecky",
         "logs");
     private static readonly string LogPath = Path.Combine(LogDirectory, "streamdecky.log");
+    private const long MaxLogBytes = 2 * 1024 * 1024;
 
     public static void Info(string message)
     {
@@ -50,6 +51,7 @@ public static class AppDiagnostics
 
             lock (SyncRoot)
             {
+                RotateIfTooLarge();
                 File.AppendAllText(LogPath, builder.ToString());
             }
         }
@@ -57,5 +59,14 @@ public static class AppDiagnostics
         {
             // Diagnostics must never interfere with app behavior.
         }
+    }
+
+    private static void RotateIfTooLarge()
+    {
+        var info = new FileInfo(LogPath);
+        if (!info.Exists || info.Length < MaxLogBytes)
+            return;
+
+        File.Move(LogPath, LogPath + ".1", overwrite: true);
     }
 }

@@ -158,6 +158,7 @@ public partial class MainWindow : Window
 
         var contextMenu = new System.Windows.Forms.ContextMenuStrip();
         contextMenu.Items.Add("Show", null, (_, _) => ShowFromTray());
+        contextMenu.Items.Add("Open log folder", null, (_, _) => OpenLogFolder());
         contextMenu.Items.Add("-");
         contextMenu.Items.Add("Exit", null, (_, _) => ExitApplication());
         _trayIcon.ContextMenuStrip = contextMenu;
@@ -184,6 +185,22 @@ public partial class MainWindow : Window
     private void ShowFromTray()
     {
         ShowAndActivate();
+    }
+
+    private static void OpenLogFolder()
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(AppDiagnostics.LogDirectory);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AppDiagnostics.LogDirectory)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Failed to open the log folder.", ex);
+        }
     }
 
     public void ShowAndActivate()
