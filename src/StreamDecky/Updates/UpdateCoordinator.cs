@@ -12,6 +12,7 @@ internal static class UpdateCoordinator
 
     public static async Task CheckAsync(Window owner, bool manual)
     {
+        bool userConsentedToInstall = false;
         Version? currentVersion = AppVersion.Current;
         if (currentVersion is null || currentVersion.Major < 2000)
         {
@@ -66,6 +67,7 @@ internal static class UpdateCoordinator
             if (answer != MessageBoxResult.Yes)
                 return;
 
+            userConsentedToInstall = true;
             var progressWindow = new UpdateProgressWindow(owner);
             owner.IsEnabled = false;
             progressWindow.Show();
@@ -87,7 +89,7 @@ internal static class UpdateCoordinator
         catch (Exception ex)
         {
             AppDiagnostics.Warning("Update check or installation preparation failed.", ex);
-            if (manual)
+            if (manual || userConsentedToInstall)
                 MessageBox.Show(owner, $"Could not check for or prepare the update.\n\n{ex.Message}", "StreamDecky Update", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally

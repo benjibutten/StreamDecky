@@ -40,11 +40,11 @@ internal sealed class GitHubUpdateService
         using var response = await _httpClient.GetAsync(
             "https://api.github.com/repos/benjibutten/StreamDecky/releases/latest",
             cancellationToken);
+        SaveCheckTime();
         response.EnsureSuccessStatusCode();
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-        SaveCheckTime();
 
         JsonElement root = document.RootElement;
         string tagName = root.GetProperty("tag_name").GetString() ?? string.Empty;
