@@ -379,6 +379,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void OnButtonPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        // Selection is view state; gamepad navigation flips it several times a
+        // second and must not mark the profile dirty or rewrite it to disk.
+        if (e.PropertyName == nameof(ButtonViewModel.IsSelected))
+            return;
+
         ScheduleAutoSave();
 
         if (e.PropertyName is nameof(ButtonViewModel.IsConfigured)
