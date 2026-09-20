@@ -188,9 +188,16 @@ public partial class MainWindow : Window
 
     public void ShowAndActivate()
     {
+        // An open overlay re-asserts topmost on deactivation and would sit as a
+        // dimmed, click-eating sheet over the editor we are about to show.
+        if (_overlayController.IsOpen)
+            _overlayController.Toggle();
+
+        // Restore before Show so a window hidden while minimized does not first
+        // appear minimized and then animate up.
+        WindowState = WindowState.Normal;
         ShowInTaskbar = true;
         Show();
-        WindowState = WindowState.Normal;
         Activate();
 
         // Toggle Topmost once to bring a hidden/minimized window to the foreground reliably.
@@ -201,8 +208,10 @@ public partial class MainWindow : Window
 
     private void HideToTray()
     {
-        ShowInTaskbar = false;
+        // Hide first: WPF applies a ShowInTaskbar change to a visible window by
+        // hiding and re-showing it, which flashes the window on its way out.
         Hide();
+        ShowInTaskbar = false;
     }
 
     private void ExitApplication()

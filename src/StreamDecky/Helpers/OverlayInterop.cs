@@ -38,7 +38,12 @@ public static class OverlayInterop
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
     [DllImport("user32.dll")]
+    private static extern bool AllowSetForegroundWindow(uint dwProcessId);
+
+    [DllImport("user32.dll")]
     private static extern bool IsIconic(IntPtr hWnd);
+
+    private const uint ASFW_ANY = unchecked((uint)-1);
 
     // Without MOD_NOREPEAT, holding the hotkey down makes Windows post repeated
     // WM_HOTKEY messages (keyboard auto-repeat), which would toggle the overlay
@@ -65,6 +70,16 @@ public static class OverlayInterop
         var hwnd = new WindowInteropHelper(window).Handle;
         if (hwnd != IntPtr.Zero)
             SetForegroundWindow(hwnd);
+    }
+
+    /// <summary>
+    /// Lets another process take the foreground on our behalf. Windows only grants
+    /// SetForegroundWindow to the process that received the last user input, which
+    /// is the freshly launched second instance, not the running one it hands off to.
+    /// </summary>
+    public static void AllowAnyProcessToSetForeground()
+    {
+        AllowSetForegroundWindow(ASFW_ANY);
     }
 
     public static bool RegisterGlobalHotkey(Window window, int id, uint modifiers, uint vk)

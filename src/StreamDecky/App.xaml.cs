@@ -10,14 +10,10 @@ namespace StreamDecky;
 
 public partial class App : Application
 {
-    private const string SingleInstanceMutexName = @"Local\StreamDecky.SingleInstance";
     private const string ActivateExistingInstanceEventName = @"Local\StreamDecky.ActivateExistingInstance";
 
-    private Mutex? _singleInstanceMutex;
     private EventWaitHandle? _activateExistingInstanceEvent;
     private RegisteredWaitHandle? _activationWaitHandle;
-    private bool _ownsSingleInstanceMutex;
-    private bool _activateMainWindowWhenReady;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -35,18 +31,6 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         bool startHiddenInTray = HasStartHiddenInTrayArgument(e.Args);
-
-        _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out bool isFirstInstance);
-        _ownsSingleInstanceMutex = isFirstInstance;
-
-        if (!isFirstInstance)
-        {
-            if (!startHiddenInTray)
-                SignalRunningInstanceToActivate();
-
-            Shutdown();
-            return;
-        }
 
         _activateExistingInstanceEvent = new EventWaitHandle(
             initialState: false,
@@ -117,12 +101,6 @@ public partial class App : Application
         _activateExistingInstanceEvent?.Dispose();
         _activateExistingInstanceEvent = null;
 
-        if (_ownsSingleInstanceMutex)
-            _singleInstanceMutex?.ReleaseMutex();
-
-        _singleInstanceMutex?.Dispose();
-        _singleInstanceMutex = null;
-
         base.OnExit(e);
     }
 
@@ -149,10 +127,11 @@ public partial class App : Application
         AppDiagnostics.Error("Unobserved task exception.", e.Exception);
     }
 
-    private static void SignalRunningInstanceToActivate()
+    internal static void SignalRunningInstanceToActivate()
     {
         try
         {
+            OverlayInterop.AllowAnyProcessToSetForeground();
             using var activationEvent = EventWaitHandle.OpenExisting(ActivateExistingInstanceEventName);
             activationEvent.Set();
         }
@@ -162,7 +141,7 @@ public partial class App : Application
         }
     }
 
-    private static bool HasStartHiddenInTrayArgument(string[] args)
+    internal static bool HasStartHiddenInTrayArgument(string[] args)
     {
         return args.Contains("--minimized", StringComparer.OrdinalIgnoreCase);
     }
@@ -171,13 +150,6 @@ public partial class App : Application
     {
         var mainWindow = new MainWindow(startHiddenInTray);
         MainWindow = mainWindow;
-
-        if (_activateMainWindowWhenReady)
-        {
-            _activateMainWindowWhenReady = false;
-            mainWindow.ShowAndActivate();
-            return;
-        }
 
         if (startHiddenInTray)
         {
@@ -190,23 +162,10 @@ public partial class App : Application
 
     private void ActivateMainWindow()
     {
+        // The activation signal is only registered after CreateMainWindow ran, and
+        // the dispatcher does not pump until OnStartup returns, so MainWindow is set.
         if (MainWindow is MainWindow mainWindow)
-        {
             mainWindow.ShowAndActivate();
-            return;
-        }
-
-        if (MainWindow == null)
-        {
-            _activateMainWindowWhenReady = true;
-            return;
-        }
-
-        MainWindow.Show();
-        if (MainWindow.WindowState == WindowState.Minimized)
-            MainWindow.WindowState = WindowState.Normal;
-
-        MainWindow.Activate();
     }
 }
 
