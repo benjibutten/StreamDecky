@@ -206,6 +206,8 @@ public partial class OverlayWindow : Window
     {
         // Temporary quick-text edits are scoped to one overlay session; since the
         // window survives between sessions now, clear them on every show.
+        // Rebuild even without session edits: the editor may have changed or
+        // removed source items while this reused window was hidden.
         _quickTextSessionOverrides.Clear();
         _quickTextEditingIds.Clear();
         RebuildOverlayQuickTextItems();
