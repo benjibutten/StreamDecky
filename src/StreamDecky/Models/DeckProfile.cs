@@ -78,6 +78,7 @@ public class DeckProfile
     public bool TextHelperDarkTextArea { get; set; }
     public string TextHelperFontFamily { get; set; } = DefaultTextHelperFontFamily;
     public double TextHelperFontSize { get; set; } = 17;
+    public List<ActionStep> TextHelperActionSteps { get; set; } = new();
     public int LayoutRows { get; set; } = 3;
     public int LayoutColumns { get; set; } = 5;
     public List<DeckPage> Pages { get; set; } = new() { new DeckPage() };
@@ -100,6 +101,7 @@ public class DeckProfile
         QuickTextPanelHeight = Math.Clamp(QuickTextPanelHeight == 0 ? 380 : QuickTextPanelHeight, MinQuickTextPanelHeight, MaxQuickTextPanelHeight);
 
         QuickTextActionSteps ??= new List<ActionStep>();
+        TextHelperActionSteps ??= new List<ActionStep>();
 
         Pages ??= new List<DeckPage>();
         VirtualLayouts ??= new List<DeckPage>();

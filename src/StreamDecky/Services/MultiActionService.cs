@@ -15,7 +15,8 @@ public class MultiActionService
     {
         ClipboardTextToken,
         "{{clipboard}}",
-        "{{itemText}}"
+        "{{itemText}}",
+        "{{text}}"
     };
 
     public virtual async Task ExecuteAsync(ButtonConfig config, bool useNaturalTyping = false)

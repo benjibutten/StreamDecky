@@ -1,4 +1,5 @@
 using System.Linq;
+using StreamDecky.Models;
 using StreamDecky.Services;
 using StreamDecky.ViewModels;
 using StreamDecky.Views;
@@ -303,6 +304,12 @@ public sealed class OverlayWindowXamlSmokeTests
                         binding => binding.Modifiers ==
                             (System.Windows.Input.ModifierKeys.Control | System.Windows.Input.ModifierKeys.Shift));
                     Assert.Same(viewModel.TextHelperWidget.AskCommand, askShortcut.Command);
+
+                    // The Send button only exists once the profile has send steps.
+                    Assert.Equal(System.Windows.Visibility.Collapsed, window.TextHelperSendButton.Visibility);
+                    viewModel.TextHelperActionSteps.Add(new ActionStep { Type = ActionStepType.KeyPress, KeyText = "t" });
+                    window.UpdateLayout();
+                    Assert.Equal(System.Windows.Visibility.Visible, window.TextHelperSendButton.Visibility);
 
                     // The writing area defaults to the light theme and follows the profile switch.
                     Assert.Equal(

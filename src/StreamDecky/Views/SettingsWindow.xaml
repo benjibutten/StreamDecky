@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:helpers="clr-namespace:StreamDecky.Helpers"
+        xmlns:models="clr-namespace:StreamDecky.Models"
         Title="Settings"
         Width="420" Height="580"
         WindowStartupLocation="CenterOwner"
@@ -20,6 +21,20 @@
     <Window.Resources>
         <helpers:StringToBrushConverter x:Key="StringToBrush"/>
         <helpers:HasTextToVisibilityConverter x:Key="HasTextVisibility"/>
+        <ObjectDataProvider x:Key="ActionStepTypeValues"
+                            MethodName="GetValues"
+                            ObjectType="{x:Type models:ActionStepType}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="models:ActionStepType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider x:Key="TextModeValues"
+                            MethodName="GetValues"
+                            ObjectType="{x:Type models:TextMode}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="models:TextMode"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
 
         <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
             <Setter Property="Template">
@@ -598,6 +613,99 @@
         </TextBox>
         <TextBlock Text="This is the instruction sent with every spell fix. The text from the widget is sent separately, so keep the prompt about how to correct it."
                    Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <!-- Text helper action: same step editor as the clipboard action, run with the box text -->
+        <TextBlock Text="SEND ACTION (TEXT HELPER)" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Text="Adds a Send button to the widget that closes the overlay and runs these steps with the text in the box. TextInput steps can use {{text}} anywhere; leave the field empty to send the whole text. Example for a game chat: KeyPress t, then TextInput /me {{text}} with Press Enter after."
+                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+        <ItemsControl ItemsSource="{Binding TextHelperActionSteps}" Margin="0,0,0,8">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="#2D2D44" CornerRadius="6" Padding="10" Margin="0,0,0,6">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <Button Content="✕" DockPanel.Dock="Right"
+                                        Command="{Binding DataContext.RemoveTextHelperActionStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource SettingsActionButton}"
+                                        Background="#5A2727" FontSize="11" Padding="6,2" Margin="4,0,0,0"/>
+                                <Button Content="▲" DockPanel.Dock="Right"
+                                        Command="{Binding DataContext.MoveTextHelperActionStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource SettingsActionButton}"
+                                        Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
+                                <Button Content="▼" DockPanel.Dock="Right"
+                                        Command="{Binding DataContext.MoveTextHelperActionStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource SettingsActionButton}"
+                                        Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
+                                <ComboBox SelectedItem="{Binding Type, Mode=TwoWay}"
+                                          ItemsSource="{Binding Source={StaticResource ActionStepTypeValues}}"
+                                          Background="#2D2D44" Foreground="Black" FontSize="12" Padding="6,4"
+                                          Margin="0,0,8,0"/>
+                            </DockPanel>
+
+                            <StackPanel x:Name="StepKeyPress" Margin="0,0,0,4">
+                                <TextBlock Text="Key (SendKeys format)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                <TextBox Text="{Binding KeyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#1E1E2E" Foreground="White" CaretBrush="White" FontSize="12" Padding="6,4"
+                                         BorderBrush="#444" BorderThickness="1"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="StepTextInput" Visibility="Collapsed" Margin="0,0,0,4">
+                                <TextBlock Text="Text" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                <TextBlock Text="Use {{text}} for the text in the box and add your own text before or after it. Example: /me {{text}}! Leave empty to send only the box text."
+                                           Foreground="#AAA" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                <TextBox Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#1E1E2E" Foreground="White" CaretBrush="White" FontSize="12" Padding="6,4"
+                                         BorderBrush="#444" BorderThickness="1"
+                                         AcceptsReturn="True" TextWrapping="Wrap"
+                                         MinHeight="40" MaxHeight="80"/>
+                                <ComboBox SelectedItem="{Binding TextMode, Mode=TwoWay}"
+                                          ItemsSource="{Binding Source={StaticResource TextModeValues}}"
+                                          Background="#2D2D44" Foreground="Black" FontSize="12" Padding="6,4"
+                                          Margin="0,4,0,4"/>
+                                <CheckBox IsChecked="{Binding PressEnterAfter, Mode=TwoWay}"
+                                          Content="Press Enter after"
+                                          Foreground="#CCC" FontSize="12"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="StepDelay" Visibility="Collapsed" Margin="0,0,0,4">
+                                <TextBlock Text="Duration (ms)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                <TextBox Text="{Binding DelayMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#1E1E2E" Foreground="White" CaretBrush="White" FontSize="12" Padding="6,4"
+                                         BorderBrush="#444" BorderThickness="1" Width="80" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Type}" Value="KeyPress">
+                            <Setter TargetName="StepKeyPress" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="StepTextInput" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="StepDelay" Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Type}" Value="TextInput">
+                            <Setter TargetName="StepKeyPress" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="StepTextInput" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="StepDelay" Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Type}" Value="Delay">
+                            <Setter TargetName="StepKeyPress" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="StepTextInput" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="StepDelay" Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Button Content="+ Add Step"
+                Command="{Binding AddTextHelperActionStepCommand}"
+                Style="{StaticResource SettingsActionButton}"
+                Background="#2D5A27" FontSize="12" Padding="10,5"
+                HorizontalAlignment="Left" Margin="0,0,0,12"/>
 
         <!-- Separator -->
         <Border Height="1" Background="#333" Margin="0,0,0,16"/>

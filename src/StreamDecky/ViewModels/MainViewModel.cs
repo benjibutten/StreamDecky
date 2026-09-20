@@ -73,6 +73,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         StickyNotesVisible = true;
         LoadQuickTextCollections();
         LoadQuickTextActionSteps();
+        LoadTextHelperActionSteps();
         LoadFormTemplates();
 
         RebuildProfileOptions();

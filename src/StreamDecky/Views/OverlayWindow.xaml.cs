@@ -1717,6 +1717,44 @@ public partial class OverlayWindow : Window
         _viewModel.MusicWidget.ToggleTrackSelectionCommand.Execute(track);
     }
 
+    private void TextHelperAction_Click(object sender, RoutedEventArgs e)
+    {
+        RunTextHelperAction();
+    }
+
+    /// <summary>
+    /// Ctrl+Alt+Enter (AltGr+Enter on Nordic layouts) sends. Handled here rather than
+    /// as a KeyBinding because the send needs this window, and InputBindings sit
+    /// outside the visual tree so they cannot bind to it.
+    /// </summary>
+    private void TextHelperInput_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Return || Keyboard.Modifiers != (ModifierKeys.Control | ModifierKeys.Alt))
+            return;
+
+        e.Handled = true;
+        RunTextHelperAction();
+    }
+
+    private void RunTextHelperAction()
+    {
+        if (!_viewModel.HasTextHelperAction || !_viewModel.TextHelperWidget.HasText)
+            return;
+
+        // Same hand-off as a clipboard action: the steps type into whatever had
+        // focus before the overlay opened, so give that window the foreground back.
+        var prevHwnd = _previousForegroundWindow;
+        _viewModel.CloseOverlayCommand.Execute(null);
+        HideOverlay();
+
+        var mainWindow = System.Windows.Application.Current.MainWindow;
+        if (mainWindow != null)
+            mainWindow.WindowState = WindowState.Minimized;
+
+        OverlayInterop.ForceSetForegroundWindow(prevHwnd);
+        _viewModel.ExecuteTextHelperAction();
+    }
+
     private void QuickTextAction_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { DataContext: OverlayQuickTextSessionItemViewModel item })
