@@ -87,6 +87,40 @@ public sealed class MainViewModelActionExecutionTests
         Assert.Equal("macro text", multiActionService.LastItemText);
     }
 
+    [Fact]
+    public void ExecuteTextHelperAction_RoutesTrimmedBoxTextThroughMultiActionService()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var multiActionService = new RecordingMultiActionService();
+        using var viewModel = new MainViewModel(new ProfileService(tempDirectory.Path), new RecordingTextInputActionService(), multiActionService);
+
+        viewModel.TextHelperActionSteps.Add(new ActionStep { Type = ActionStepType.TextInput, Text = "/me {{text}}", PressEnterAfter = true });
+        viewModel.TextHelperWidget.Text = "  hello there  ";
+
+        viewModel.ExecuteTextHelperAction();
+
+        Assert.True(viewModel.HasTextHelperAction);
+        Assert.Equal(1, multiActionService.ExecuteWithItemTextCallCount);
+        Assert.Equal("hello there", multiActionService.LastItemText);
+    }
+
+    [Fact]
+    public void ExecuteTextHelperAction_WithoutStepsOrText_DoesNothing()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        var multiActionService = new RecordingMultiActionService();
+        using var viewModel = new MainViewModel(new ProfileService(tempDirectory.Path), new RecordingTextInputActionService(), multiActionService);
+
+        viewModel.TextHelperWidget.Text = "hello";
+        viewModel.ExecuteTextHelperAction();
+
+        viewModel.TextHelperActionSteps.Add(new ActionStep { Type = ActionStepType.KeyPress, KeyText = "t" });
+        viewModel.TextHelperWidget.Text = "   ";
+        viewModel.ExecuteTextHelperAction();
+
+        Assert.Equal(0, multiActionService.ExecuteWithItemTextCallCount);
+    }
+
     private sealed class RecordingTextInputActionService : TextInputActionService
     {
         public int CallCount { get; private set; }

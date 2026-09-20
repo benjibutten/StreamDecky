@@ -2,8 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:helpers="clr-namespace:StreamDecky.Helpers"
+        xmlns:models="clr-namespace:StreamDecky.Models"
         Title="Settings"
-        Width="420" Height="580"
+        Width="880" Height="680"
         WindowStartupLocation="CenterOwner"
         Background="#1E1E2E"
         ResizeMode="NoResize"
@@ -20,6 +21,20 @@
     <Window.Resources>
         <helpers:StringToBrushConverter x:Key="StringToBrush"/>
         <helpers:HasTextToVisibilityConverter x:Key="HasTextVisibility"/>
+        <ObjectDataProvider x:Key="ActionStepTypeValues"
+                            MethodName="GetValues"
+                            ObjectType="{x:Type models:ActionStepType}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="models:ActionStepType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider x:Key="TextModeValues"
+                            MethodName="GetValues"
+                            ObjectType="{x:Type models:TextMode}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="models:TextMode"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
 
         <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
             <Setter Property="Template">
@@ -69,7 +84,7 @@
                                        Maximum="{TemplateBinding ScrollableHeight}"
                                        ViewportSize="{TemplateBinding ViewportHeight}"
                                        Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
-                                       Margin="0,0,-14,0"/>
+                                       Margin="0"/>
                         </Grid>
                     </ControlTemplate>
                 </Setter.Value>
@@ -99,6 +114,83 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <Style x:Key="SettingsNavItem" TargetType="TabItem">
+            <Setter Property="Foreground" Value="#AAA"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Margin="0,0,0,2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="3"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="Accent" Background="Transparent" CornerRadius="2" Margin="0,6"/>
+                                <ContentPresenter Grid.Column="1" ContentSource="Header"
+                                                  VerticalAlignment="Center" Margin="12,9"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#24243C"/>
+                                <Setter Property="Foreground" Value="#DDD"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2D2D44"/>
+                                <Setter TargetName="Accent" Property="Background" Value="#6C5CE7"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SettingsNav" TargetType="TabControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="196"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Background="#191930" BorderBrush="#2A2A40" BorderThickness="0,0,1,0">
+                                <StackPanel IsItemsHost="True" Margin="10,14,10,14"/>
+                            </Border>
+                            <ContentPresenter x:Name="PART_SelectedContentHost"
+                                              Grid.Column="1" ContentSource="SelectedContent"
+                                              KeyboardNavigation.TabNavigation="Local"
+                                              KeyboardNavigation.DirectionalNavigation="Contained"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SettingsPage" TargetType="StackPanel">
+            <Setter Property="Width" Value="600"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="28,22,0,28"/>
+        </Style>
+
+        <Style x:Key="SettingsPageTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#EDEDF5"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style x:Key="SettingsPageSubtitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#777"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,4,0,18"/>
         </Style>
 
     </Window.Resources>
@@ -136,618 +228,730 @@
             </DockPanel>
         </Border>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource DarkScrollViewer}">
-    <StackPanel Margin="24">
-        <TextBlock Text="OVERLAY" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TabControl Style="{StaticResource SettingsNav}" Background="Transparent" BorderThickness="0">
 
-        <TextBlock Text="Background Color" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <Grid Margin="0,0,0,14">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="30"/>
-            </Grid.ColumnDefinitions>
-            <TextBox Text="{Binding OverlayBackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                     Background="#2D2D44" Foreground="White" FontSize="13" Padding="8,6"
-                     BorderBrush="#444" BorderThickness="1"/>
-            <Border Grid.Column="1" 
-                    Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
-                    CornerRadius="4" Margin="4,0,0,0"
-                    BorderBrush="#444" BorderThickness="1"
-                    Cursor="Hand"
-                    MouseLeftButtonDown="OverlayBgColorPicker_Click"/>
-        </Grid>
+        <TabItem Header="Overlay" Style="{StaticResource SettingsNavItem}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource DarkScrollViewer}">
+                <StackPanel Style="{StaticResource SettingsPage}">
+                <TextBlock Text="Overlay" Style="{StaticResource SettingsPageTitle}"/>
+                <TextBlock Text="How the overlay looks, and how many buttons fit on a page." Style="{StaticResource SettingsPageSubtitle}"/>
 
-        <TextBlock Text="Background Image" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <Grid Margin="0,0,0,14">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Border Background="#2D2D44" BorderBrush="#444" BorderThickness="1" CornerRadius="4" Padding="8,6">
-                <TextBlock Text="{Binding OverlayBackgroundImagePath}" 
-                           Foreground="#888" FontSize="12"
-                           TextTrimming="CharacterEllipsis"/>
-            </Border>
-            <Button Grid.Column="1" Content="📂 Browse" 
-                    Click="BgImageBrowse_Click"
-                    Background="#2D2D44" Foreground="White"
-                    FontSize="12" Padding="10,5" Margin="4,0,0,0"
-                    BorderThickness="0" Cursor="Hand">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Button.Style>
-            </Button>
-            <Button Grid.Column="2" Content="✕" 
-                    Click="BgImageClear_Click"
-                    Background="#2D2D44" Foreground="#888"
-                    FontSize="12" Padding="8,5" Margin="4,0,0,0"
-                    BorderThickness="0" Cursor="Hand">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Button.Style>
-            </Button>
-        </Grid>
 
-        <TextBlock Text="Button Size" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <DockPanel Margin="0,0,0,14">
-            <TextBlock DockPanel.Dock="Right" 
-                       Text="{Binding ButtonSize, StringFormat={}{0:0}}" 
-                       Foreground="#888" FontSize="12" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
-            <Slider Value="{Binding ButtonSize, Mode=TwoWay}" 
-                    Minimum="60" Maximum="200" 
-                    TickFrequency="5" IsSnapToTickEnabled="True"/>
-        </DockPanel>
+                <TextBlock Text="Background Color" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="30"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Text="{Binding OverlayBackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             Background="#2D2D44" Foreground="White" FontSize="13" Padding="8,6"
+                             BorderBrush="#444" BorderThickness="1"/>
+                    <Border Grid.Column="1" 
+                            Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
+                            CornerRadius="4" Margin="4,0,0,0"
+                            BorderBrush="#444" BorderThickness="1"
+                            Cursor="Hand"
+                            MouseLeftButtonDown="OverlayBgColorPicker_Click"/>
+                </Grid>
 
-        <TextBlock Text="Button Spacing" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <DockPanel Margin="0,0,0,14">
-            <TextBlock DockPanel.Dock="Right" 
-                       Text="{Binding ButtonSpacing, StringFormat={}{0:0}}" 
-                       Foreground="#888" FontSize="12" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
-            <Slider Value="{Binding ButtonSpacing, Mode=TwoWay}" 
-                    Minimum="2" Maximum="30" 
-                    TickFrequency="1" IsSnapToTickEnabled="True"/>
-        </DockPanel>
+                <TextBlock Text="Background Image" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Background="#2D2D44" BorderBrush="#444" BorderThickness="1" CornerRadius="4" Padding="8,6">
+                        <TextBlock Text="{Binding OverlayBackgroundImagePath}" 
+                                   Foreground="#888" FontSize="12"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </Border>
+                    <Button Grid.Column="1" Content="📂 Browse" 
+                            Click="BgImageBrowse_Click"
+                            Background="#2D2D44" Foreground="White"
+                            FontSize="12" Padding="10,5" Margin="4,0,0,0"
+                            BorderThickness="0" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Grid.Column="2" Content="✕" 
+                            Click="BgImageClear_Click"
+                            Background="#2D2D44" Foreground="#888"
+                            FontSize="12" Padding="8,5" Margin="4,0,0,0"
+                            BorderThickness="0" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Grid>
 
-        <TextBlock Text="Button Overlay Opacity" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <DockPanel Margin="0,0,0,14">
-            <TextBlock DockPanel.Dock="Right"
-                   Text="{Binding ButtonOverlayOpacity, StringFormat={}{0:0.00}}"
-                   Foreground="#888" FontSize="12" Width="40" TextAlignment="Right" VerticalAlignment="Center"/>
-            <Slider Value="{Binding ButtonOverlayOpacity, Mode=TwoWay}"
-                Minimum="0.2" Maximum="1"
-                TickFrequency="0.05"
-                IsSnapToTickEnabled="False"/>
-        </DockPanel>
+                <TextBlock Text="Button Size" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,14">
+                    <TextBlock DockPanel.Dock="Right" 
+                               Text="{Binding ButtonSize, StringFormat={}{0:0}}" 
+                               Foreground="#888" FontSize="12" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+                    <Slider Value="{Binding ButtonSize, Mode=TwoWay}" 
+                            Minimum="60" Maximum="200" 
+                            TickFrequency="5" IsSnapToTickEnabled="True"/>
+                </DockPanel>
 
-                <Expander Header="Profile Grid — All Pages"
-              IsExpanded="True"
-              Margin="0,0,0,14"
-              Background="#2D2D44"
-              Foreground="White"
-              BorderBrush="#444"
-              BorderThickness="1"
-              Padding="8,6">
-            <StackPanel Margin="0,8,0,0">
-            <TextBlock Text="{Binding LayoutSummary}" Foreground="#DDD" FontSize="12" FontWeight="SemiBold"/>
-                        <TextBlock Text="Only the selected profile. Changes apply to all of its regular pages and virtual layouts."
-                   Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,8"/>
+                <TextBlock Text="Button Spacing" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,14">
+                    <TextBlock DockPanel.Dock="Right" 
+                               Text="{Binding ButtonSpacing, StringFormat={}{0:0}}" 
+                               Foreground="#888" FontSize="12" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+                    <Slider Value="{Binding ButtonSpacing, Mode=TwoWay}" 
+                            Minimum="2" Maximum="30" 
+                            TickFrequency="1" IsSnapToTickEnabled="True"/>
+                </DockPanel>
 
-            <DockPanel Margin="0,0,0,4">
-                <TextBlock Text="Rows" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Content="-" Command="{Binding DecreaseRowsCommand}"
-                    Width="22" Height="22"
-                    Background="#1E1E2E" Foreground="#DDD"
-                    BorderBrush="#444" BorderThickness="1"
-                    Cursor="Hand"/>
-                <Border Background="#1E1E2E" BorderBrush="#444" BorderThickness="1"
-                    CornerRadius="3" Margin="4,0" MinWidth="34" Height="22">
-                    <TextBlock Text="{Binding Rows}" Foreground="#DDD" FontSize="12"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                </Border>
-                <Button Content="+" Command="{Binding IncreaseRowsCommand}"
-                    Width="22" Height="22"
-                    Background="#1E1E2E" Foreground="#DDD"
-                    BorderBrush="#444" BorderThickness="1"
-                    Cursor="Hand"/>
+                <TextBlock Text="Button Overlay Opacity" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,14">
+                    <TextBlock DockPanel.Dock="Right"
+                           Text="{Binding ButtonOverlayOpacity, StringFormat={}{0:0.00}}"
+                           Foreground="#888" FontSize="12" Width="40" TextAlignment="Right" VerticalAlignment="Center"/>
+                    <Slider Value="{Binding ButtonOverlayOpacity, Mode=TwoWay}"
+                        Minimum="0.2" Maximum="1"
+                        TickFrequency="0.05"
+                        IsSnapToTickEnabled="False"/>
+                </DockPanel>
+
+                        <Expander Header="Profile Grid — All Pages"
+                      IsExpanded="True"
+                      Margin="0,0,0,14"
+                      Background="#2D2D44"
+                      Foreground="White"
+                      BorderBrush="#444"
+                      BorderThickness="1"
+                      Padding="8,6">
+                    <StackPanel Margin="0,8,0,0">
+                    <TextBlock Text="{Binding LayoutSummary}" Foreground="#DDD" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock Text="Only the selected profile. Changes apply to all of its regular pages and virtual layouts."
+                           Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,8"/>
+
+                    <DockPanel Margin="0,0,0,4">
+                        <TextBlock Text="Rows" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="-" Command="{Binding DecreaseRowsCommand}"
+                            Width="22" Height="22"
+                            Background="#1E1E2E" Foreground="#DDD"
+                            BorderBrush="#444" BorderThickness="1"
+                            Cursor="Hand"/>
+                        <Border Background="#1E1E2E" BorderBrush="#444" BorderThickness="1"
+                            CornerRadius="3" Margin="4,0" MinWidth="34" Height="22">
+                            <TextBlock Text="{Binding Rows}" Foreground="#DDD" FontSize="12"
+                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <Button Content="+" Command="{Binding IncreaseRowsCommand}"
+                            Width="22" Height="22"
+                            Background="#1E1E2E" Foreground="#DDD"
+                            BorderBrush="#444" BorderThickness="1"
+                            Cursor="Hand"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <Slider Value="{Binding Rows, Mode=TwoWay}"
+                        Minimum="{Binding MinRows}"
+                        Maximum="{Binding MaxRows}"
+                        TickFrequency="1"
+                        IsSnapToTickEnabled="True"
+                        Margin="0,0,0,8"/>
+
+                    <DockPanel Margin="0,0,0,4">
+                        <TextBlock Text="Columns" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="-" Command="{Binding DecreaseColumnsCommand}"
+                            Width="22" Height="22"
+                            Background="#1E1E2E" Foreground="#DDD"
+                            BorderBrush="#444" BorderThickness="1"
+                            Cursor="Hand"/>
+                        <Border Background="#1E1E2E" BorderBrush="#444" BorderThickness="1"
+                            CornerRadius="3" Margin="4,0" MinWidth="34" Height="22">
+                            <TextBlock Text="{Binding Columns}" Foreground="#DDD" FontSize="12"
+                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <Button Content="+" Command="{Binding IncreaseColumnsCommand}"
+                            Width="22" Height="22"
+                            Background="#1E1E2E" Foreground="#DDD"
+                            BorderBrush="#444" BorderThickness="1"
+                            Cursor="Hand"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <Slider Value="{Binding Columns, Mode=TwoWay}"
+                        Minimum="{Binding MinColumns}"
+                        Maximum="{Binding MaxColumns}"
+                        TickFrequency="1"
+                        IsSnapToTickEnabled="True"/>
+                    </StackPanel>
+                </Expander>
                 </StackPanel>
-            </DockPanel>
-            <Slider Value="{Binding Rows, Mode=TwoWay}"
-                Minimum="{Binding MinRows}"
-                Maximum="{Binding MaxRows}"
-                TickFrequency="1"
-                IsSnapToTickEnabled="True"
-                Margin="0,0,0,8"/>
+            </ScrollViewer>
+        </TabItem>
 
-            <DockPanel Margin="0,0,0,4">
-                <TextBlock Text="Columns" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Content="-" Command="{Binding DecreaseColumnsCommand}"
-                    Width="22" Height="22"
-                    Background="#1E1E2E" Foreground="#DDD"
-                    BorderBrush="#444" BorderThickness="1"
-                    Cursor="Hand"/>
-                <Border Background="#1E1E2E" BorderBrush="#444" BorderThickness="1"
-                    CornerRadius="3" Margin="4,0" MinWidth="34" Height="22">
-                    <TextBlock Text="{Binding Columns}" Foreground="#DDD" FontSize="12"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                </Border>
-                <Button Content="+" Command="{Binding IncreaseColumnsCommand}"
-                    Width="22" Height="22"
-                    Background="#1E1E2E" Foreground="#DDD"
-                    BorderBrush="#444" BorderThickness="1"
-                    Cursor="Hand"/>
+        <TabItem Header="Input" Style="{StaticResource SettingsNavItem}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource DarkScrollViewer}"
+                          Unloaded="InputPage_Unloaded">
+                <StackPanel Style="{StaticResource SettingsPage}">
+                <TextBlock Text="Input" Style="{StaticResource SettingsPageTitle}"/>
+                <TextBlock Text="How you open the overlay, and how text is typed into other apps." Style="{StaticResource SettingsPageSubtitle}"/>
+
+                <TextBlock Text="HOTKEY" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                <TextBlock Text="Toggle Overlay" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Background="#2D2D44" BorderBrush="#444" BorderThickness="1" CornerRadius="4" Padding="8,6">
+                        <TextBlock Text="{Binding HotkeyDisplayText}" 
+                                   Foreground="#6C5CE7" 
+                                   FontSize="13" 
+                                   FontWeight="Bold"/>
+                    </Border>
+                    <Button x:Name="RecordHotkeyButton" 
+                            Grid.Column="1" 
+                            Content="⌨ Record" 
+                            Click="RecordHotkey_Click"
+                            Background="#2D2D44" Foreground="White"
+                            FontSize="12" Padding="10,5" Margin="4,0,0,0"
+                            BorderThickness="0" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Grid>
+
+                <Border Height="1" Background="#333" Margin="0,4,0,16"/>
+
+                <TextBlock Text="GAMEPAD OVERLAY (OPTIONAL)" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+                <CheckBox IsChecked="{Binding GamepadSupportEnabled, Mode=TwoWay}"
+                          Content="Enable gamepad support (XInput)"
+                          Foreground="#CCC" FontSize="13" Margin="0,0,0,8" Cursor="Hand"/>
+                <TextBlock Text="Overlay activation combo"
+                           Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Background="#2D2D44" BorderBrush="#444" BorderThickness="1" CornerRadius="4" Padding="8,6">
+                        <TextBlock Text="{Binding GamepadToggleDisplayText}"
+                                   Foreground="#A7D3FF"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+                    <Button x:Name="RecordGamepadComboButton"
+                            Grid.Column="1"
+                            Content="🎮 Record"
+                            Click="RecordGamepadCombo_Click"
+                            Background="#2D2D44"
+                            Foreground="White"
+                            FontSize="12"
+                            Padding="10,5"
+                            Margin="4,0,0,0"
+                            BorderThickness="0"
+                            Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Grid>
+                <TextBlock Text="Click Record, press your desired gamepad button combo, then release to save it."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                <TextBlock Text="Overlay controls: D-pad navigation, left stick fallback, A activates selected shortcut, LB/RB switches regular pages."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                <Border Height="1" Background="#333" Margin="0,4,0,16"/>
+
+                <TextBlock Text="TYPING" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+                <CheckBox IsChecked="{Binding NaturalTypingEnabled, Mode=TwoWay}"
+                          Content="Natural simulate typing (experimental)"
+                          Foreground="#CCC" FontSize="13" Margin="0,0,0,4" Cursor="Hand"/>
+                <TextBlock Text="Adds burst/pause cadence in SimulateTyping mode. Keep off for max consistency."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
                 </StackPanel>
-            </DockPanel>
-            <Slider Value="{Binding Columns, Mode=TwoWay}"
-                Minimum="{Binding MinColumns}"
-                Maximum="{Binding MaxColumns}"
-                TickFrequency="1"
-                IsSnapToTickEnabled="True"/>
-            </StackPanel>
-        </Expander>
+            </ScrollViewer>
+        </TabItem>
 
-        <!-- Separator -->
-        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+        <TabItem Header="Text Helper" Style="{StaticResource SettingsNavItem}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource DarkScrollViewer}">
+                <StackPanel Style="{StaticResource SettingsPage}">
+                <TextBlock Text="Text Helper" Style="{StaticResource SettingsPageTitle}" Margin="0,0,0,10"/>
 
-        <!-- Hotkey Section -->
-        <TextBlock Text="HOTKEY" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+                <TextBlock Text="A dyslexia-friendly box in the overlay: write a line, press Ctrl+Enter (or Fix spelling) to let DeepSeek correct it, then copy it. Copy always works, corrected or not. The same box also answers quick questions — see the Quick Answers page."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-        <TextBlock Text="Toggle Overlay" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <Grid Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Border Background="#2D2D44" BorderBrush="#444" BorderThickness="1" CornerRadius="4" Padding="8,6">
-                <TextBlock Text="{Binding HotkeyDisplayText}" 
-                           Foreground="#6C5CE7" 
-                           FontSize="13" 
-                           FontWeight="Bold"/>
-            </Border>
-            <Button x:Name="RecordHotkeyButton" 
-                    Grid.Column="1" 
-                    Content="⌨ Record" 
-                    Click="RecordHotkey_Click"
-                    Background="#2D2D44" Foreground="White"
-                    FontSize="12" Padding="10,5" Margin="4,0,0,0"
-                    BorderThickness="0" Cursor="Hand">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Button.Style>
-            </Button>
-        </Grid>
+                <CheckBox IsChecked="{Binding TextHelperDarkTextArea, Mode=TwoWay}"
+                          Content="Dark writing area"
+                          Foreground="#CCC" FontSize="13" Margin="0,0,0,4" Cursor="Hand"/>
+                <TextBlock Text="Off gives a warm off-white box, which most people with dyslexia read more easily. On matches the dark overlay instead."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-        <!-- Separator -->
-        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+                <TextBlock Text="Text Font" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <ComboBox IsEditable="True"
+                          Text="{Binding TextHelperFontFamily, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                          ItemsSource="{Binding TextHelperFontOptions}"
+                          Background="#2D2D44" Foreground="Black"
+                          FontSize="13" Padding="6,4"
+                          Margin="0,0,0,4"/>
+                <TextBlock Text="Any installed font works — the listed ones just read well with dyslexia."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-        <!-- Gamepad Section -->
-        <TextBlock Text="GAMEPAD OVERLAY (OPTIONAL)" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
-        <CheckBox IsChecked="{Binding GamepadSupportEnabled, Mode=TwoWay}"
-                  Content="Enable gamepad support (XInput)"
-                  Foreground="#CCC" FontSize="13" Margin="0,0,0,8" Cursor="Hand"/>
-        <TextBlock Text="Overlay activation combo"
-                   Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <Grid Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Border Background="#2D2D44" BorderBrush="#444" BorderThickness="1" CornerRadius="4" Padding="8,6">
-                <TextBlock Text="{Binding GamepadToggleDisplayText}"
-                           Foreground="#A7D3FF"
-                           FontSize="13"
-                           FontWeight="SemiBold"/>
-            </Border>
-            <Button x:Name="RecordGamepadComboButton"
-                    Grid.Column="1"
-                    Content="🎮 Record"
-                    Click="RecordGamepadCombo_Click"
-                    Background="#2D2D44"
-                    Foreground="White"
-                    FontSize="12"
-                    Padding="10,5"
-                    Margin="4,0,0,0"
-                    BorderThickness="0"
-                    Cursor="Hand">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Button.Style>
-            </Button>
-        </Grid>
-        <TextBlock Text="Click Record, press your desired gamepad button combo, then release to save it."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4"/>
-        <TextBlock Text="Overlay controls: D-pad navigation, left stick fallback, A activates selected shortcut, LB/RB switches regular pages."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <TextBlock Text="Text Size" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,14">
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding TextHelperFontSize, StringFormat={}{0:0}}"
+                               Foreground="#888" FontSize="12" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+                    <Slider Value="{Binding TextHelperFontSize, Mode=TwoWay}"
+                            Minimum="12" Maximum="30"
+                            TickFrequency="1" IsSnapToTickEnabled="True"/>
+                </DockPanel>
 
-        <!-- Separator -->
-        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+                <TextBlock Text="DeepSeek API Key" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <PasswordBox x:Name="DeepSeekApiKeyBox"
+                             Loaded="DeepSeekApiKeyBox_Loaded"
+                             PasswordChanged="DeepSeekApiKeyBox_PasswordChanged"
+                             LostKeyboardFocus="DeepSeekApiKeyBox_LostKeyboardFocus"
+                             Background="#2D2D44" Foreground="White" CaretBrush="White"
+                             FontSize="13" Padding="8,6"
+                             BorderBrush="#444" BorderThickness="1"
+                             Margin="0,0,0,4"/>
+                <TextBlock Text="Get a key at platform.deepseek.com. The key is saved when you click away from this box. It is encrypted for your Windows account in app-settings.json and is never included in a profile export. Spell checking sends the text in the widget to DeepSeek."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
-        <!-- Startup Section -->
-        <TextBlock Text="STARTUP" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
-        <CheckBox IsChecked="{Binding StartWithWindows, Mode=TwoWay}" 
-                  Content="Start with Windows" 
-                  Foreground="#CCC" FontSize="13" Margin="0,0,0,10" Cursor="Hand"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <Button Content="Test Key"
+                            Command="{Binding TestDeepSeekConnectionCommand}"
+                            ToolTip="Sends one short sentence to DeepSeek to confirm the key and model work"
+                            Background="#2D2D44" Foreground="White"
+                            FontSize="12" Padding="12,6"
+                            BorderThickness="0" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                                </Trigger>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+                <TextBlock Text="{Binding DeepSeekTestStatus}"
+                           FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"
+                           Visibility="{Binding DeepSeekTestStatus, Converter={StaticResource HasTextVisibility}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#7BC48A"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDeepSeekTestError}" Value="True">
+                                    <Setter Property="Foreground" Value="#E36B6B"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
 
-        <!-- Separator -->
-        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+                <TextBlock Text="Model" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <TextBox Text="{Binding DeepSeekModel, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                         Background="#2D2D44" Foreground="White" CaretBrush="White"
+                         FontSize="13" Padding="8,6"
+                         BorderBrush="#444" BorderThickness="1"
+                         Margin="0,0,0,4"/>
+                <TextBlock Text="Default is deepseek-v4-flash. Change it only if DeepSeek renames or retires the model."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-        <!-- Typing Section -->
-        <TextBlock Text="TYPING" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
-        <CheckBox IsChecked="{Binding NaturalTypingEnabled, Mode=TwoWay}"
-                  Content="Natural simulate typing (experimental)"
-                  Foreground="#CCC" FontSize="13" Margin="0,0,0,4" Cursor="Hand"/>
-        <TextBlock Text="Adds burst/pause cadence in SimulateTyping mode. Keep off for max consistency."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <TextBlock Text="Thinking" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <ComboBox SelectedItem="{Binding SelectedSpellCheckThinkingOption, Mode=TwoWay}"
+                          ItemsSource="{Binding SpellCheckThinkingOptions}"
+                          Background="#2D2D44" Foreground="Black"
+                          FontSize="13" Padding="6,4"
+                          Margin="0,0,0,4"/>
+                <TextBlock Text="DeepSeek reasons at high effort unless told otherwise, which costs seconds and tokens that fixing spelling does not need. Off is both the fastest and the cheapest, and is the default here. Raise it only if you find corrections coming back wrong."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-        <!-- Separator -->
-        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+                <DockPanel Margin="0,0,0,4">
+                    <TextBlock Text="Spell-Fix Prompt" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
+                    <Button DockPanel.Dock="Right"
+                            Content="Reset to default"
+                            Command="{Binding ResetSpellCheckPromptCommand}"
+                            IsEnabled="{Binding IsSpellCheckPromptCustomised}"
+                            HorizontalAlignment="Right"
+                            Background="#2D2D44" Foreground="#DDD"
+                            FontSize="11" Padding="8,3"
+                            BorderThickness="0" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                                </Trigger>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter TargetName="Bd" Property="Opacity" Value="0.4"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </DockPanel>
+                <TextBox Text="{Binding SpellCheckPrompt, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         Height="150"
+                         Background="#2D2D44" Foreground="White" CaretBrush="White"
+                         FontSize="12" Padding="8,6"
+                         BorderBrush="#444" BorderThickness="1"
+                         Margin="0,0,0,4">
+                    <TextBox.Resources>
+                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
+                    </TextBox.Resources>
+                </TextBox>
+                <TextBlock Text="This is the instruction sent with every spell fix. The text from the widget is sent separately, so keep the prompt about how to correct it."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-        <!-- Text Helper Section -->
-        <TextBlock Text="TEXT HELPER (OVERLAY WIDGET)" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
-        <TextBlock Text="A dyslexia-friendly box in the overlay: write a line, press Ctrl+Enter (or Fix spelling) to let DeepSeek correct it, then copy it. Copy always works, corrected or not. The same box also answers quick questions — see Quick Answers below."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <!-- Text helper action: same step editor as the clipboard action, run with the box text -->
+                <TextBlock Text="SEND ACTION" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,4"/>
+                <TextBlock Text="Adds a Send button to the widget that closes the overlay and runs these steps with the text in the box. TextInput steps can use {{text}} anywhere; leave the field empty to send the whole text. Example for a game chat: KeyPress t, then TextInput /me {{text}} with Press Enter after."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
-        <CheckBox IsChecked="{Binding TextHelperDarkTextArea, Mode=TwoWay}"
-                  Content="Dark writing area"
-                  Foreground="#CCC" FontSize="13" Margin="0,0,0,4" Cursor="Hand"/>
-        <TextBlock Text="Off gives a warm off-white box, which most people with dyslexia read more easily. On matches the dark overlay instead."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <ItemsControl ItemsSource="{Binding TextHelperActionSteps}" Margin="0,0,0,8">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#2D2D44" CornerRadius="6" Padding="10" Margin="0,0,0,6">
+                                <StackPanel>
+                                    <DockPanel Margin="0,0,0,6">
+                                        <Button Content="✕" DockPanel.Dock="Right"
+                                                Command="{Binding DataContext.RemoveTextHelperActionStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource SettingsActionButton}"
+                                                Background="#5A2727" FontSize="11" Padding="6,2" Margin="4,0,0,0"/>
+                                        <Button Content="▲" DockPanel.Dock="Right"
+                                                Command="{Binding DataContext.MoveTextHelperActionStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource SettingsActionButton}"
+                                                Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
+                                        <Button Content="▼" DockPanel.Dock="Right"
+                                                Command="{Binding DataContext.MoveTextHelperActionStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource SettingsActionButton}"
+                                                Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
+                                        <ComboBox SelectedItem="{Binding Type, Mode=TwoWay}"
+                                                  ItemsSource="{Binding Source={StaticResource ActionStepTypeValues}}"
+                                                  Background="#2D2D44" Foreground="Black" FontSize="12" Padding="6,4"
+                                                  Margin="0,0,8,0"/>
+                                    </DockPanel>
 
-        <TextBlock Text="Text Font" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <ComboBox IsEditable="True"
-                  Text="{Binding TextHelperFontFamily, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                  ItemsSource="{Binding TextHelperFontOptions}"
-                  Background="#2D2D44" Foreground="Black"
-                  FontSize="13" Padding="6,4"
-                  Margin="0,0,0,4"/>
-        <TextBlock Text="Any installed font works — the listed ones just read well with dyslexia."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                                    <StackPanel x:Name="StepKeyPress" Margin="0,0,0,4">
+                                        <TextBlock Text="Key (SendKeys format)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                        <TextBox Text="{Binding KeyText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Background="#1E1E2E" Foreground="White" CaretBrush="White" FontSize="12" Padding="6,4"
+                                                 BorderBrush="#444" BorderThickness="1"/>
+                                    </StackPanel>
 
-        <TextBlock Text="Text Size" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <DockPanel Margin="0,0,0,14">
-            <TextBlock DockPanel.Dock="Right"
-                       Text="{Binding TextHelperFontSize, StringFormat={}{0:0}}"
-                       Foreground="#888" FontSize="12" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
-            <Slider Value="{Binding TextHelperFontSize, Mode=TwoWay}"
-                    Minimum="12" Maximum="30"
-                    TickFrequency="1" IsSnapToTickEnabled="True"/>
-        </DockPanel>
+                                    <StackPanel x:Name="StepTextInput" Visibility="Collapsed" Margin="0,0,0,4">
+                                        <TextBlock Text="Text" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                        <TextBlock Text="Use {{text}} for the text in the box and add your own text before or after it. Example: /me {{text}}! Leave empty to send only the box text."
+                                                   Foreground="#AAA" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                        <TextBox Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Background="#1E1E2E" Foreground="White" CaretBrush="White" FontSize="12" Padding="6,4"
+                                                 BorderBrush="#444" BorderThickness="1"
+                                                 AcceptsReturn="True" TextWrapping="Wrap"
+                                                 MinHeight="40" MaxHeight="80"/>
+                                        <ComboBox SelectedItem="{Binding TextMode, Mode=TwoWay}"
+                                                  ItemsSource="{Binding Source={StaticResource TextModeValues}}"
+                                                  Background="#2D2D44" Foreground="Black" FontSize="12" Padding="6,4"
+                                                  Margin="0,4,0,4"/>
+                                        <CheckBox IsChecked="{Binding PressEnterAfter, Mode=TwoWay}"
+                                                  Content="Press Enter after"
+                                                  Foreground="#CCC" FontSize="12"/>
+                                    </StackPanel>
 
-        <TextBlock Text="DeepSeek API Key" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <PasswordBox x:Name="DeepSeekApiKeyBox"
-                     Loaded="DeepSeekApiKeyBox_Loaded"
-                     PasswordChanged="DeepSeekApiKeyBox_PasswordChanged"
-                     LostKeyboardFocus="DeepSeekApiKeyBox_LostKeyboardFocus"
-                     Background="#2D2D44" Foreground="White" CaretBrush="White"
-                     FontSize="13" Padding="8,6"
-                     BorderBrush="#444" BorderThickness="1"
-                     Margin="0,0,0,4"/>
-        <TextBlock Text="Get a key at platform.deepseek.com. The key is saved when you click away from this box. It is encrypted for your Windows account in app-settings.json and is never included in a profile export. Spell checking sends the text in the widget to DeepSeek."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                    <StackPanel x:Name="StepDelay" Visibility="Collapsed" Margin="0,0,0,4">
+                                        <TextBlock Text="Duration (ms)" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+                                        <TextBox Text="{Binding DelayMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Background="#1E1E2E" Foreground="White" CaretBrush="White" FontSize="12" Padding="6,4"
+                                                 BorderBrush="#444" BorderThickness="1" Width="80" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
 
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-            <Button Content="Test Key"
-                    Command="{Binding TestDeepSeekConnectionCommand}"
-                    ToolTip="Sends one short sentence to DeepSeek to confirm the key and model work"
-                    Background="#2D2D44" Foreground="White"
-                    FontSize="12" Padding="12,6"
-                    BorderThickness="0" Cursor="Hand">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
-                                        </Trigger>
-                                        <Trigger Property="IsEnabled" Value="False">
-                                            <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Button.Style>
-            </Button>
-        </StackPanel>
-        <TextBlock Text="{Binding DeepSeekTestStatus}"
-                   FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"
-                   Visibility="{Binding DeepSeekTestStatus, Converter={StaticResource HasTextVisibility}}">
-            <TextBlock.Style>
-                <Style TargetType="TextBlock">
-                    <Setter Property="Foreground" Value="#7BC48A"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsDeepSeekTestError}" Value="True">
-                            <Setter Property="Foreground" Value="#E36B6B"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </TextBlock.Style>
-        </TextBlock>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Type}" Value="KeyPress">
+                                    <Setter TargetName="StepKeyPress" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="StepTextInput" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="StepDelay" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Type}" Value="TextInput">
+                                    <Setter TargetName="StepKeyPress" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="StepTextInput" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="StepDelay" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Type}" Value="Delay">
+                                    <Setter TargetName="StepKeyPress" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="StepTextInput" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="StepDelay" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-        <TextBlock Text="Model" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <TextBox Text="{Binding DeepSeekModel, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                 Background="#2D2D44" Foreground="White" CaretBrush="White"
-                 FontSize="13" Padding="8,6"
-                 BorderBrush="#444" BorderThickness="1"
-                 Margin="0,0,0,4"/>
-        <TextBlock Text="Default is deepseek-v4-flash. Change it only if DeepSeek renames or retires the model."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <Button Content="+ Add Step"
+                        Command="{Binding AddTextHelperActionStepCommand}"
+                        Style="{StaticResource SettingsActionButton}"
+                        Background="#2D5A27" FontSize="12" Padding="10,5"
+                        HorizontalAlignment="Left" Margin="0,0,0,12"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
 
-        <TextBlock Text="Thinking" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <ComboBox SelectedItem="{Binding SelectedSpellCheckThinkingOption, Mode=TwoWay}"
-                  ItemsSource="{Binding SpellCheckThinkingOptions}"
-                  Background="#2D2D44" Foreground="Black"
-                  FontSize="13" Padding="6,4"
-                  Margin="0,0,0,4"/>
-        <TextBlock Text="DeepSeek reasons at high effort unless told otherwise, which costs seconds and tokens that fixing spelling does not need. Off is both the fastest and the cheapest, and is the default here. Raise it only if you find corrections coming back wrong."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+        <TabItem Header="Quick Answers" Style="{StaticResource SettingsNavItem}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource DarkScrollViewer}">
+                <StackPanel Style="{StaticResource SettingsPage}">
+                <TextBlock Text="Quick Answers" Style="{StaticResource SettingsPageTitle}" Margin="0,0,0,10"/>
 
-        <DockPanel Margin="0,0,0,4">
-            <TextBlock Text="Spell-Fix Prompt" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
-            <Button DockPanel.Dock="Right"
-                    Content="Reset to default"
-                    Command="{Binding ResetSpellCheckPromptCommand}"
-                    IsEnabled="{Binding IsSpellCheckPromptCustomised}"
-                    HorizontalAlignment="Right"
-                    Background="#2D2D44" Foreground="#DDD"
-                    FontSize="11" Padding="8,3"
-                    BorderThickness="0" Cursor="Hand">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
-                                        </Trigger>
-                                        <Trigger Property="IsEnabled" Value="False">
-                                            <Setter TargetName="Bd" Property="Opacity" Value="0.4"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Button.Style>
-            </Button>
-        </DockPanel>
-        <TextBox Text="{Binding SpellCheckPrompt, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                 AcceptsReturn="True"
-                 TextWrapping="Wrap"
-                 VerticalScrollBarVisibility="Auto"
-                 Height="150"
-                 Background="#2D2D44" Foreground="White" CaretBrush="White"
-                 FontSize="12" Padding="8,6"
-                 BorderBrush="#444" BorderThickness="1"
-                 Margin="0,0,0,4">
-            <TextBox.Resources>
-                <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
-            </TextBox.Resources>
-        </TextBox>
-        <TextBlock Text="This is the instruction sent with every spell fix. The text from the widget is sent separately, so keep the prompt about how to correct it."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <TextBlock Text="The Ask button in the text helper answers the question in the box without touching what you wrote — the answer appears in its own card underneath, with the sources it used. Ctrl+Shift+Enter does the same. It uses the DeepSeek key from the Text Helper page; the Brave key below is what lets it check an answer against the web."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-        <!-- Separator -->
-        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+                <TextBlock Text="Brave Search API Key" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <PasswordBox x:Name="BraveApiKeyBox"
+                             Loaded="BraveApiKeyBox_Loaded"
+                             PasswordChanged="BraveApiKeyBox_PasswordChanged"
+                             LostKeyboardFocus="BraveApiKeyBox_LostKeyboardFocus"
+                             Background="#2D2D44" Foreground="White" CaretBrush="White"
+                             FontSize="13" Padding="8,6"
+                             BorderBrush="#444" BorderThickness="1"
+                             Margin="0,0,0,4"/>
+                <TextBlock Text="Optional. Create the key under the Web Search product at api-dashboard.search.brave.com — Brave issues a separate key per product, and a key made for Answers authenticates fine here but returns nothing. The free tier covers this kind of use. Stored exactly like the DeepSeek key: encrypted for your Windows account and never part of a profile export. Without a key, Ask still answers, but only from the model, and the answer card says so."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
-        <!-- Quick Answers Section -->
-        <TextBlock Text="QUICK ANSWERS (SAME WIDGET)" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
-        <TextBlock Text="The Ask button in the text helper answers the question in the box without touching what you wrote — the answer appears in its own card underneath, with the sources it used. Ctrl+Shift+Enter does the same. It uses the DeepSeek key above; the Brave key below is what lets it check an answer against the web."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <Button Content="Test Key"
+                            Command="{Binding TestBraveConnectionCommand}"
+                            Style="{StaticResource SettingsActionButton}"
+                            ToolTip="Runs one search to confirm the Brave key works"/>
+                </StackPanel>
+                <TextBlock Text="{Binding BraveTestStatus}"
+                           FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"
+                           Visibility="{Binding BraveTestStatus, Converter={StaticResource HasTextVisibility}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#7BC48A"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsBraveTestError}" Value="True">
+                                    <Setter Property="Foreground" Value="#E36B6B"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
 
-        <TextBlock Text="Brave Search API Key" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <PasswordBox x:Name="BraveApiKeyBox"
-                     Loaded="BraveApiKeyBox_Loaded"
-                     PasswordChanged="BraveApiKeyBox_PasswordChanged"
-                     LostKeyboardFocus="BraveApiKeyBox_LostKeyboardFocus"
-                     Background="#2D2D44" Foreground="White" CaretBrush="White"
-                     FontSize="13" Padding="8,6"
-                     BorderBrush="#444" BorderThickness="1"
-                     Margin="0,0,0,4"/>
-        <TextBlock Text="Optional. Create the key under the Web Search product at api-dashboard.search.brave.com — Brave issues a separate key per product, and a key made for Answers authenticates fine here but returns nothing. The free tier covers this kind of use. Stored exactly like the DeepSeek key: encrypted for your Windows account and never part of a profile export. Without a key, Ask still answers, but only from the model, and the answer card says so."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                <TextBlock Text="When to Search" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <ComboBox SelectedItem="{Binding SelectedQuickAnswerSearchModeOption, Mode=TwoWay}"
+                          ItemsSource="{Binding QuickAnswerSearchModeOptions}"
+                          Background="#2D2D44" Foreground="Black"
+                          FontSize="13" Padding="6,4"
+                          Margin="0,0,0,4"/>
+                <TextBlock Text="Let the model decide is the default: it is offered a search tool and takes it for anything that could have changed — scores, prices, releases, who currently holds a role — and skips it for spelling, arithmetic and stable facts, so those come back a step faster and without irrelevant sources attached. Always search skips that decision and goes straight to Brave, which is actually quicker when almost everything you ask is about current events. Never search answers from the model alone and needs no Brave key."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-            <Button Content="Test Key"
-                    Command="{Binding TestBraveConnectionCommand}"
-                    Style="{StaticResource SettingsActionButton}"
-                    ToolTip="Runs one search to confirm the Brave key works"/>
-        </StackPanel>
-        <TextBlock Text="{Binding BraveTestStatus}"
-                   FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"
-                   Visibility="{Binding BraveTestStatus, Converter={StaticResource HasTextVisibility}}">
-            <TextBlock.Style>
-                <Style TargetType="TextBlock">
-                    <Setter Property="Foreground" Value="#7BC48A"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsBraveTestError}" Value="True">
-                            <Setter Property="Foreground" Value="#E36B6B"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </TextBlock.Style>
-        </TextBlock>
+                <TextBlock Text="Answer Thinking" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <ComboBox SelectedItem="{Binding SelectedQuickAnswerThinkingOption, Mode=TwoWay}"
+                          ItemsSource="{Binding SpellCheckThinkingOptions}"
+                          Background="#2D2D44" Foreground="Black"
+                          FontSize="13" Padding="6,4"
+                          Margin="0,0,0,4"/>
+                <TextBlock Text="Separate from the spell-fix setting on the Text Helper page, because the two want opposite things. An answer is a factual claim you might read out on stream, and a little reasoning makes the model stick to its sources and admit when they do not answer the question — so this defaults to Low rather than Off. Raise it for harder questions; every step costs seconds. The search decision itself never uses thinking, whatever you pick here, so it does not slow down the common case."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-        <TextBlock Text="When to Search" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <ComboBox SelectedItem="{Binding SelectedQuickAnswerSearchModeOption, Mode=TwoWay}"
-                  ItemsSource="{Binding QuickAnswerSearchModeOptions}"
-                  Background="#2D2D44" Foreground="Black"
-                  FontSize="13" Padding="6,4"
-                  Margin="0,0,0,4"/>
-        <TextBlock Text="Let the model decide is the default: it is offered a search tool and takes it for anything that could have changed — scores, prices, releases, who currently holds a role — and skips it for spelling, arithmetic and stable facts, so those come back a step faster and without irrelevant sources attached. Always search skips that decision and goes straight to Brave, which is actually quicker when almost everything you ask is about current events. Never search answers from the model alone and needs no Brave key."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <DockPanel Margin="0,0,0,4">
+                    <TextBlock Text="Answer Prompt" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
+                    <Button DockPanel.Dock="Right"
+                            Content="Reset to default"
+                            Command="{Binding ResetQuickAnswerPromptCommand}"
+                            IsEnabled="{Binding IsQuickAnswerPromptCustomised}"
+                            Style="{StaticResource SettingsActionButton}"
+                            HorizontalAlignment="Right"
+                            Foreground="#DDD"
+                            FontSize="11" Padding="8,3"/>
+                </DockPanel>
+                <TextBox Text="{Binding QuickAnswerPrompt, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         Height="150"
+                         Background="#2D2D44" Foreground="White" CaretBrush="White"
+                         FontSize="12" Padding="8,6"
+                         BorderBrush="#444" BorderThickness="1"
+                         Margin="0,0,0,4">
+                    <TextBox.Resources>
+                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
+                    </TextBox.Resources>
+                </TextBox>
+                <TextBlock Text="This is the instruction sent with every question. The question, today's date and any search results are sent separately, so keep the prompt about how to answer. The rules about only using the search results, and about saying so when they do not answer the question, are what keep the answer card honest — edit those last."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
 
-        <TextBlock Text="Answer Thinking" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
-        <ComboBox SelectedItem="{Binding SelectedQuickAnswerThinkingOption, Mode=TwoWay}"
-                  ItemsSource="{Binding SpellCheckThinkingOptions}"
-                  Background="#2D2D44" Foreground="Black"
-                  FontSize="13" Padding="6,4"
-                  Margin="0,0,0,4"/>
-        <TextBlock Text="Separate from the spell-fix setting above, because the two want opposite things. An answer is a factual claim you might read out on stream, and a little reasoning makes the model stick to its sources and admit when they do not answer the question — so this defaults to Low rather than Off. Raise it for harder questions; every step costs seconds. The search decision itself never uses thinking, whatever you pick here, so it does not slow down the common case."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+        <TabItem Header="General" Style="{StaticResource SettingsNavItem}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource DarkScrollViewer}">
+                <StackPanel Style="{StaticResource SettingsPage}">
+                <TextBlock Text="General" Style="{StaticResource SettingsPageTitle}"/>
+                <TextBlock Text="Startup behaviour, and moving profiles between machines." Style="{StaticResource SettingsPageSubtitle}"/>
 
-        <DockPanel Margin="0,0,0,4">
-            <TextBlock Text="Answer Prompt" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
-            <Button DockPanel.Dock="Right"
-                    Content="Reset to default"
-                    Command="{Binding ResetQuickAnswerPromptCommand}"
-                    IsEnabled="{Binding IsQuickAnswerPromptCustomised}"
-                    Style="{StaticResource SettingsActionButton}"
-                    HorizontalAlignment="Right"
-                    Foreground="#DDD"
-                    FontSize="11" Padding="8,3"/>
-        </DockPanel>
-        <TextBox Text="{Binding QuickAnswerPrompt, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                 AcceptsReturn="True"
-                 TextWrapping="Wrap"
-                 VerticalScrollBarVisibility="Auto"
-                 Height="150"
-                 Background="#2D2D44" Foreground="White" CaretBrush="White"
-                 FontSize="12" Padding="8,6"
-                 BorderBrush="#444" BorderThickness="1"
-                 Margin="0,0,0,4">
-            <TextBox.Resources>
-                <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
-            </TextBox.Resources>
-        </TextBox>
-        <TextBlock Text="This is the instruction sent with every question. The question, today's date and any search results are sent separately, so keep the prompt about how to answer. The rules about only using the search results, and about saying so when they do not answer the question, are what keep the answer card honest — edit those last."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <TextBlock Text="STARTUP" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+                <CheckBox IsChecked="{Binding StartWithWindows, Mode=TwoWay}" 
+                          Content="Start with Windows" 
+                          Foreground="#CCC" FontSize="13" Margin="0,0,0,10" Cursor="Hand"/>
 
-        <!-- Separator -->
-        <Border Height="1" Background="#333" Margin="0,0,0,16"/>
+                <Border Height="1" Background="#333" Margin="0,4,0,16"/>
 
-        <!-- Import/Export Section -->
-        <TextBlock Text="IMPORT / EXPORT" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
-        <StackPanel Orientation="Horizontal">
-            <Button Content="Import Profile (.json)"
-                    Click="ImportProfile_Click"
-                    ToolTip="Adds the file as a new profile. Your existing profiles are not changed."
-                    Background="#3D5A3A" Foreground="White"
-                    FontSize="12" Padding="12,7"
-                    BorderThickness="0" Cursor="Hand"
-                    HorizontalAlignment="Left"
-                    Margin="0,0,8,0">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="#4A6D49"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Button.Style>
-            </Button>
+                <TextBlock Text="IMPORT / EXPORT" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Import Profile (.json)"
+                            Click="ImportProfile_Click"
+                            ToolTip="Adds the file as a new profile. Your existing profiles are not changed."
+                            Background="#3D5A3A" Foreground="White"
+                            FontSize="12" Padding="12,7"
+                            BorderThickness="0" Cursor="Hand"
+                            HorizontalAlignment="Left"
+                            Margin="0,0,8,0">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#4A6D49"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
 
-            <Button Content="Export Active Profile (.json)"
-                    Click="ExportProfile_Click"
-                    Background="#2D2D44" Foreground="White"
-                    FontSize="12" Padding="12,7"
-                    BorderThickness="0" Cursor="Hand"
-                    HorizontalAlignment="Left">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Button.Style>
-            </Button>
-        </StackPanel>
-        <TextBlock Text="Import adds the file as a new profile and switches to it, so the editor will look different afterwards. Nothing is overwritten — your other profiles stay in the profile selector. Export writes the active profile only."
-                   Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"/>
-    </StackPanel>
-    </ScrollViewer>
+                    <Button Content="Export Active Profile (.json)"
+                            Click="ExportProfile_Click"
+                            Background="#2D2D44" Foreground="White"
+                            FontSize="12" Padding="12,7"
+                            BorderThickness="0" Cursor="Hand"
+                            HorizontalAlignment="Left">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#3D3D54"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+                <TextBlock Text="Import adds the file as a new profile and switches to it, so the editor will look different afterwards. Nothing is overwritten — your other profiles stay in the profile selector. Export writes the active profile only."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        </TabControl>
     </DockPanel>
 </Window>

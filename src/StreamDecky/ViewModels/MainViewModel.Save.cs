@@ -79,7 +79,7 @@ public partial class MainViewModel
         {
             AppDiagnostics.Warning("Autosave failed.", ex);
             if (!_autoSaveCancellation.IsCancellationRequested)
-                await InvokeOnUiThreadAsync(() => FailSaveStatus(ex)).ConfigureAwait(false);
+                await InvokeOnUiThreadAsync(() => FailSaveStatus(ex), _autoSaveCancellation.Token).ConfigureAwait(false);
         }
         finally
         {
@@ -178,7 +178,7 @@ public partial class MainViewModel
         {
             AppDiagnostics.Warning("Manual save failed.", ex);
             if (!_autoSaveCancellation.IsCancellationRequested)
-                await InvokeOnUiThreadAsync(() => FailSaveStatus(ex)).ConfigureAwait(false);
+                await InvokeOnUiThreadAsync(() => FailSaveStatus(ex), _autoSaveCancellation.Token).ConfigureAwait(false);
         }
         finally
         {

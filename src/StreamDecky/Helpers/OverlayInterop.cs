@@ -37,6 +37,14 @@ public static class OverlayInterop
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
+    [DllImport("user32.dll")]
+    private static extern bool AllowSetForegroundWindow(uint dwProcessId);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    private const uint ASFW_ANY = unchecked((uint)-1);
+
     // Without MOD_NOREPEAT, holding the hotkey down makes Windows post repeated
     // WM_HOTKEY messages (keyboard auto-repeat), which would toggle the overlay
     // open/closed several times per press and make it look like it flickers or
@@ -48,7 +56,6 @@ public static class OverlayInterop
     private const uint SWP_NOMOVE = 0x0002;
     private const uint SWP_SHOWWINDOW = 0x0040;
     private const int SW_RESTORE = 9;
-    private const int SW_SHOW = 5;
 
     public static void MakeTopmost(Window window)
     {
@@ -63,6 +70,16 @@ public static class OverlayInterop
         var hwnd = new WindowInteropHelper(window).Handle;
         if (hwnd != IntPtr.Zero)
             SetForegroundWindow(hwnd);
+    }
+
+    /// <summary>
+    /// Lets another process take the foreground on our behalf. Windows only grants
+    /// SetForegroundWindow to the process that received the last user input, which
+    /// is the freshly launched second instance, not the running one it hands off to.
+    /// </summary>
+    public static void AllowAnyProcessToSetForeground()
+    {
+        AllowSetForegroundWindow(ASFW_ANY);
     }
 
     public static bool RegisterGlobalHotkey(Window window, int id, uint modifiers, uint vk)
@@ -109,8 +126,10 @@ public static class OverlayInterop
         if (currentThreadId != targetThreadId)
             AttachThreadInput(currentThreadId, targetThreadId, true);
 
-        // Now force the target window to foreground
-        ShowWindow(targetHwnd, SW_RESTORE);
+        // Only restore minimized targets: SW_RESTORE would also un-maximize a
+        // maximized window right before the text is typed into it.
+        if (IsIconic(targetHwnd))
+            ShowWindow(targetHwnd, SW_RESTORE);
         BringWindowToTop(targetHwnd);
         SetForegroundWindow(targetHwnd);
 

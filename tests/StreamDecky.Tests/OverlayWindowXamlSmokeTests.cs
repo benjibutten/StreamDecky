@@ -1,4 +1,5 @@
 using System.Linq;
+using StreamDecky.Models;
 using StreamDecky.Services;
 using StreamDecky.ViewModels;
 using StreamDecky.Views;
@@ -8,6 +9,58 @@ namespace StreamDecky.Tests;
 
 public sealed class OverlayWindowXamlSmokeTests
 {
+    [Fact]
+    public void NewOverlaySession_RefreshesEditedAndRemovedQuickTextItems()
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                using var tempDirectory = new TemporaryDirectory();
+                using var viewModel = new MainViewModel(new ProfileService(tempDirectory.Path));
+                viewModel.AddQuickTextItemCommand.Execute(null);
+                var editedItem = viewModel.QuickTextItems[^1];
+                editedItem.Text = "Original text";
+                viewModel.AddQuickTextItemCommand.Execute(null);
+                var removedItem = viewModel.QuickTextItems[^1];
+                removedItem.Text = "Remove me";
+
+                var window = new OverlayWindow(viewModel);
+                try
+                {
+                    Assert.Equal(2, window.OverlayQuickTextItems.Count);
+                    editedItem.Text = "Updated text";
+                    viewModel.RemoveQuickTextItemCommand.Execute(removedItem);
+
+                    // Exercise the session reset used by ShowOverlay without
+                    // activating a real window or stealing the user's focus.
+                    typeof(OverlayWindow).GetMethod(
+                        "ResetQuickTextSessionState",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                        .Invoke(window, null);
+
+                    var item = Assert.Single(window.OverlayQuickTextItems);
+                    Assert.Equal(editedItem.Id, item.Id);
+                    Assert.Equal("Updated text", item.SessionText);
+                }
+                finally
+                {
+                    window.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+        });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "The overlay refresh test timed out.");
+        Assert.Null(failure);
+    }
+
     [Fact]
     public void OverlayFilters_AreIndependentAndAllowMultipleTags()
     {
@@ -251,6 +304,12 @@ public sealed class OverlayWindowXamlSmokeTests
                         binding => binding.Modifiers ==
                             (System.Windows.Input.ModifierKeys.Control | System.Windows.Input.ModifierKeys.Shift));
                     Assert.Same(viewModel.TextHelperWidget.AskCommand, askShortcut.Command);
+
+                    // The Send button only exists once the profile has send steps.
+                    Assert.Equal(System.Windows.Visibility.Collapsed, window.TextHelperSendButton.Visibility);
+                    viewModel.TextHelperActionSteps.Add(new ActionStep { Type = ActionStepType.KeyPress, KeyText = "t" });
+                    window.UpdateLayout();
+                    Assert.Equal(System.Windows.Visibility.Visible, window.TextHelperSendButton.Visibility);
 
                     // The writing area defaults to the light theme and follows the profile switch.
                     Assert.Equal(

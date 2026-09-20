@@ -206,6 +206,8 @@ public partial class OverlayWindow : Window
     {
         // Temporary quick-text edits are scoped to one overlay session; since the
         // window survives between sessions now, clear them on every show.
+        // Rebuild even without session edits: the editor may have changed or
+        // removed source items while this reused window was hidden.
         _quickTextSessionOverrides.Clear();
         _quickTextEditingIds.Clear();
         RebuildOverlayQuickTextItems();
@@ -522,10 +524,14 @@ public partial class OverlayWindow : Window
         if (XInputInterop.IsButtonPressed(buttons, XInputInterop.GamepadDPadRight))
             return OverlayNavigationDirection.Right;
 
-        if (Math.Abs(thumbLX) < LeftStickNavigationDeadZone && Math.Abs(thumbLY) < LeftStickNavigationDeadZone)
+        // Widen before Math.Abs: a stick pushed fully left/down reports short.MinValue,
+        // and Math.Abs(short.MinValue) throws OverflowException.
+        int absX = Math.Abs((int)thumbLX);
+        int absY = Math.Abs((int)thumbLY);
+        if (absX < LeftStickNavigationDeadZone && absY < LeftStickNavigationDeadZone)
             return OverlayNavigationDirection.None;
 
-        if (Math.Abs(thumbLX) > Math.Abs(thumbLY))
+        if (absX > absY)
             return thumbLX > 0 ? OverlayNavigationDirection.Right : OverlayNavigationDirection.Left;
 
         return thumbLY > 0 ? OverlayNavigationDirection.Up : OverlayNavigationDirection.Down;
@@ -1709,6 +1715,44 @@ public partial class OverlayWindow : Window
         }
 
         _viewModel.MusicWidget.ToggleTrackSelectionCommand.Execute(track);
+    }
+
+    private void TextHelperAction_Click(object sender, RoutedEventArgs e)
+    {
+        RunTextHelperAction();
+    }
+
+    /// <summary>
+    /// Ctrl+Alt+Enter (AltGr+Enter on Nordic layouts) sends. Handled here rather than
+    /// as a KeyBinding because the send needs this window, and InputBindings sit
+    /// outside the visual tree so they cannot bind to it.
+    /// </summary>
+    private void TextHelperInput_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Return || Keyboard.Modifiers != (ModifierKeys.Control | ModifierKeys.Alt))
+            return;
+
+        e.Handled = true;
+        RunTextHelperAction();
+    }
+
+    private void RunTextHelperAction()
+    {
+        if (!_viewModel.HasTextHelperAction || !_viewModel.TextHelperWidget.HasText)
+            return;
+
+        // Same hand-off as a clipboard action: the steps type into whatever had
+        // focus before the overlay opened, so give that window the foreground back.
+        var prevHwnd = _previousForegroundWindow;
+        _viewModel.CloseOverlayCommand.Execute(null);
+        HideOverlay();
+
+        var mainWindow = System.Windows.Application.Current.MainWindow;
+        if (mainWindow != null)
+            mainWindow.WindowState = WindowState.Minimized;
+
+        OverlayInterop.ForceSetForegroundWindow(prevHwnd);
+        _viewModel.ExecuteTextHelperAction();
     }
 
     private void QuickTextAction_Click(object sender, RoutedEventArgs e)

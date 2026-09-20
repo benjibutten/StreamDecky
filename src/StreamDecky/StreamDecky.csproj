@@ -11,6 +11,7 @@
     <ApplicationIcon>StreamDecky.ico</ApplicationIcon>
     <RootNamespace>StreamDecky</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <StartupObject>StreamDecky.Program</StartupObject>
     <Authors>benjibutten</Authors>
     <Company>StreamDecky</Company>
     <Product>StreamDecky</Product>

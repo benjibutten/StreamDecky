@@ -72,35 +72,92 @@ public class ProfileService
                 int sourceSchemaVersion = ReadSchemaVersion(json);
                 var store = DeserializeStoreJson(json);
                 PreservePreMigrationBackup(_profilesPath, json, sourceSchemaVersion);
-                RefreshStartupBackupIfChanged(_profilesPath);
+                RefreshStartupBackupIfChanged(json);
                 return store;
             }
             catch (Exception ex)
             {
-                AppDiagnostics.Warning($"Failed to load '{_profilesPath}'. Falling back to legacy profile store.", ex);
-                var fallbackStore = CreateStoreFromLegacyProfile();
-                if (File.Exists(_legacyProfilePath))
-                    RefreshStartupBackupIfChanged(_legacyProfilePath);
-                return fallbackStore;
+                AppDiagnostics.Warning($"Failed to load '{_profilesPath}'. Trying the backup.", ex);
+                // Moving the unreadable file aside also stops the next save from
+                // copying it over the backup we are about to restore from.
+                CorruptFileQuarantine.MoveAside(_profilesPath);
             }
         }
 
+        var backupStore = TryRestoreStoreFromBackup();
+        if (backupStore != null)
+            return backupStore;
+
         var migratedStore = CreateStoreFromLegacyProfile();
-        if (File.Exists(_legacyProfilePath))
-            RefreshStartupBackupIfChanged(_legacyProfilePath);
+        RefreshStartupBackupFromLegacyProfile();
         return migratedStore;
     }
 
-    private void RefreshStartupBackupIfChanged(string sourcePath)
+    private void RefreshStartupBackupFromLegacyProfile()
+    {
+        if (!File.Exists(_legacyProfilePath))
+            return;
+
+        try
+        {
+            RefreshStartupBackupIfChanged(File.ReadAllText(_legacyProfilePath));
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning($"Failed to read '{_legacyProfilePath}' for the startup backup.", ex);
+        }
+    }
+
+    private DeckProfileStore? TryRestoreStoreFromBackup()
+    {
+        if (!File.Exists(_profilesBackupPath))
+            return null;
+
+        DeckProfileStore store;
+        try
+        {
+            var json = File.ReadAllText(_profilesBackupPath);
+            // The backup mirrors whichever file was live at startup: a store, or on
+            // installs that never migrated, the single legacy profile.
+            store = IsStoreJson(json)
+                ? DeserializeStoreJson(json)
+                : WrapLegacyProfileInStore(DeserializeProfileJson(json));
+            AppDiagnostics.Info($"Restored the profile store from '{_profilesBackupPath}'.");
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning($"Failed to load the backup '{_profilesBackupPath}'. Falling back to legacy profile store.", ex);
+            return null;
+        }
+
+        // Put the restored data back on disk now. A session that ends without
+        // edits never saves, and the next start must not fall through to defaults.
+        try
+        {
+            WriteTextAtomically(_profilesPath, SerializeStoreJson(store));
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning($"Restored the profile store in memory but could not write it to '{_profilesPath}'.", ex);
+        }
+
+        return store;
+    }
+
+    private static bool IsStoreJson(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.ValueKind == JsonValueKind.Object
+            && document.RootElement.TryGetProperty(nameof(DeckProfileStore.Profiles), out var profiles)
+            && profiles.ValueKind == JsonValueKind.Array;
+    }
+
+    private void RefreshStartupBackupIfChanged(string sourceJson)
     {
         try
         {
-            if (!File.Exists(sourcePath))
-                return;
-
             Directory.CreateDirectory(_appDataFolder);
 
-            var sourceJson = File.ReadAllText(sourcePath);
             if (File.Exists(_profilesBackupPath))
             {
                 var backupJson = File.ReadAllText(_profilesBackupPath);
@@ -112,7 +169,7 @@ public class ProfileService
         }
         catch (Exception ex)
         {
-            AppDiagnostics.Warning($"Failed to refresh startup backup from '{sourcePath}'.", ex);
+            AppDiagnostics.Warning($"Failed to refresh startup backup '{_profilesBackupPath}'.", ex);
         }
     }
 
@@ -158,7 +215,11 @@ public class ProfileService
 
     private DeckProfileStore CreateStoreFromLegacyProfile()
     {
-        var profile = LoadLegacyProfile();
+        return WrapLegacyProfileInStore(LoadLegacyProfile());
+    }
+
+    private static DeckProfileStore WrapLegacyProfileInStore(DeckProfile profile)
+    {
         profile.Name = string.IsNullOrWhiteSpace(profile.Name) ? "Standard" : profile.Name;
 
         var store = new DeckProfileStore
@@ -312,14 +373,14 @@ public class ProfileService
     private void WriteTextAtomically(string destinationPath, string content)
     {
         string tempPath = Path.Combine(_appDataFolder, $"{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.tmp");
-        File.WriteAllText(tempPath, content);
+        DurableFile.WriteAllText(tempPath, content);
         ReplaceFile(tempPath, destinationPath);
     }
 
     private async Task WriteTextAtomicallyAsync(string destinationPath, string content, CancellationToken cancellationToken)
     {
         string tempPath = Path.Combine(_appDataFolder, $"{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.tmp");
-        await File.WriteAllTextAsync(tempPath, content, cancellationToken);
+        await DurableFile.WriteAllTextAsync(tempPath, content, cancellationToken);
         ReplaceFile(tempPath, destinationPath);
     }
 

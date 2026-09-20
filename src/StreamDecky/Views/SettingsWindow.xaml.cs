@@ -46,6 +46,11 @@ public partial class SettingsWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
         InitializeComponent();
+
+        // The window is a fixed size the user cannot resize, so on a short screen or at
+        // high display scaling it would hang off the desktop. The pages scroll instead.
+        MaxWidth = SystemParameters.WorkArea.Width;
+        MaxHeight = SystemParameters.WorkArea.Height;
         _gamepadRecordTimer.Tick += GamepadRecordTimer_Tick;
 
         // Closing the window with the caret still in a key box must not lose the key.
@@ -59,6 +64,11 @@ public partial class SettingsWindow : Window
     private void DeepSeekApiKeyBox_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not System.Windows.Controls.PasswordBox box)
+            return;
+
+        // Switching settings pages unloads and reloads this box, so an edit that has not
+        // been committed yet must win over re-seeding the stored key.
+        if (_hasPendingDeepSeekApiKey)
             return;
 
         // PasswordBox cannot be bound, so the stored key is pushed in once on load
@@ -99,6 +109,9 @@ public partial class SettingsWindow : Window
     private void BraveApiKeyBox_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not System.Windows.Controls.PasswordBox box)
+            return;
+
+        if (_hasPendingBraveApiKey)
             return;
 
         // Same one-way seeding as the DeepSeek box: PasswordBox cannot be bound, and
@@ -146,6 +159,19 @@ public partial class SettingsWindow : Window
     private void SettingsClose_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    /// <summary>
+    /// Both recorders live on the Input page and show that they are armed on their own
+    /// button. Leaving the page would hide that, and the hotkey recorder would go on
+    /// swallowing keystrokes typed into another page.
+    /// </summary>
+    private void InputPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        StopRecordingHotkey();
+
+        if (_isRecordingGamepadCombo)
+            StopRecordingGamepadCombo();
     }
 
     private void BgImageBrowse_Click(object sender, RoutedEventArgs e)

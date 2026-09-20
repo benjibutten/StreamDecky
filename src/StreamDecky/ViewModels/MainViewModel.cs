@@ -73,6 +73,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         StickyNotesVisible = true;
         LoadQuickTextCollections();
         LoadQuickTextActionSteps();
+        LoadTextHelperActionSteps();
         LoadFormTemplates();
 
         RebuildProfileOptions();
@@ -379,6 +380,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void OnButtonPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        // Selection is view state; gamepad navigation flips it several times a
+        // second and must not mark the profile dirty or rewrite it to disk.
+        if (e.PropertyName == nameof(ButtonViewModel.IsSelected))
+            return;
+
         ScheduleAutoSave();
 
         if (e.PropertyName is nameof(ButtonViewModel.IsConfigured)
@@ -739,10 +745,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // and their continuations do not require the UI thread while holding the
         // semaphore. Once the semaphore is ours, no older snapshot can overwrite
         // this final one.
-        _autoSaveSemaphore.Wait();
+        // Bounded so a stalled disk cannot hang shutdown on the UI thread forever.
+        // On timeout the final snapshot is skipped rather than written unlocked: the
+        // stalled save could still land afterwards and replace newer data with older.
+        bool hasSaveLock = _autoSaveSemaphore.Wait(TimeSpan.FromSeconds(5));
+        if (!hasSaveLock)
+            AppDiagnostics.Warning("Timed out waiting for an in-flight save during shutdown; the final snapshot was skipped.");
+
         try
         {
-            if (HasUnsavedChanges)
+            if (hasSaveLock && HasUnsavedChanges)
                 _profileService.SaveStore(_profileStore);
         }
         catch (Exception ex)
@@ -751,7 +763,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         finally
         {
-            _autoSaveSemaphore.Release();
+            if (hasSaveLock)
+                _autoSaveSemaphore.Release();
             _autoSaveCancellation.Dispose();
             _autoSaveSemaphore.Dispose();
         }

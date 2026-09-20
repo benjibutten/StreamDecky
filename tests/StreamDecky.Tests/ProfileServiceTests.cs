@@ -47,6 +47,75 @@ public sealed class ProfileServiceTests
     }
 
     [Fact]
+    public void LoadStore_WhenProfilesFileIsCorrupt_RestoresFromBackupAndKeepsCorruptFile()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        string profilesPath = System.IO.Path.Combine(tempDirectory.Path, "profiles.json");
+        string backupPath = System.IO.Path.Combine(tempDirectory.Path, "profiles.backup.json");
+        var service = new ProfileService(tempDirectory.Path);
+
+        var backupStore = new DeckProfileStore
+        {
+            Profiles = new List<DeckProfile> { new() { Name = "FromBackup" } }
+        };
+        backupStore.Initialize();
+        string backupJson = service.SerializeStore(backupStore);
+        System.IO.File.WriteAllText(backupPath, backupJson);
+        System.IO.File.WriteAllText(profilesPath, "{ truncated");
+
+        DeckProfileStore store = service.LoadStore();
+
+        Assert.Equal("FromBackup", store.GetActiveProfile().Name);
+        string corruptCopy = Assert.Single(System.IO.Directory.GetFiles(tempDirectory.Path, "profiles.corrupt-*.json"));
+        Assert.Equal("{ truncated", System.IO.File.ReadAllText(corruptCopy));
+
+        // The restored data is written straight back so a session without edits
+        // still starts from it next time.
+        Assert.Equal(service.SerializeStore(store), System.IO.File.ReadAllText(profilesPath));
+        Assert.Equal("FromBackup", new ProfileService(tempDirectory.Path).LoadStore().GetActiveProfile().Name);
+
+        // The first save after recovery must not replace the good backup with the corrupt file.
+        service.SaveStore(store);
+        Assert.Equal(backupJson, System.IO.File.ReadAllText(backupPath));
+        Assert.Equal(service.SerializeStore(store), System.IO.File.ReadAllText(profilesPath));
+    }
+
+    [Fact]
+    public void LoadStore_WhenProfilesFileIsMissingButBackupExists_RestoresFromBackup()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        string backupPath = System.IO.Path.Combine(tempDirectory.Path, "profiles.backup.json");
+        var service = new ProfileService(tempDirectory.Path);
+
+        var backupStore = new DeckProfileStore
+        {
+            Profiles = new List<DeckProfile> { new() { Name = "FromBackup" } }
+        };
+        backupStore.Initialize();
+        System.IO.File.WriteAllText(backupPath, service.SerializeStore(backupStore));
+
+        Assert.Equal("FromBackup", service.LoadStore().GetActiveProfile().Name);
+    }
+
+    [Fact]
+    public void LoadStore_WhenBackupHoldsLegacyProfile_RestoresItAsStore()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        string profilesPath = System.IO.Path.Combine(tempDirectory.Path, "profiles.json");
+        string backupPath = System.IO.Path.Combine(tempDirectory.Path, "profiles.backup.json");
+        var service = new ProfileService(tempDirectory.Path);
+
+        System.IO.File.WriteAllText(backupPath, service.Serialize(new DeckProfile { Name = "LegacyBackup" }));
+        System.IO.File.WriteAllText(profilesPath, "{ truncated");
+
+        DeckProfileStore store = service.LoadStore();
+
+        Assert.Equal("LegacyBackup", store.GetActiveProfile().Name);
+        Assert.Equal(store.GetActiveProfile().Id, store.ActiveProfileId);
+        Assert.Equal(ProfileSchemaVersion.Current, store.SchemaVersion);
+    }
+
+    [Fact]
     public void SaveStore_WhenProfilesChange_CreatesBackupAndCleansTempFiles()
     {
         using var tempDirectory = new TemporaryDirectory();

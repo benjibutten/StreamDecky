@@ -1,3 +1,6 @@
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StreamDecky.Models;
@@ -444,6 +447,99 @@ public partial class MainViewModel
             OnPropertyChanged();
             ScheduleAutoSave();
         }
+    }
+
+    /// <summary>
+    /// Steps run with the text in the box, like the clipboard action but for what the
+    /// user just wrote or had corrected. Typical use: open a game chat, type a command
+    /// prefix plus the text, press Enter.
+    /// </summary>
+    public ObservableCollection<ActionStep> TextHelperActionSteps { get; private set; } = new();
+
+    public bool HasTextHelperAction => _profile.TextHelperActionSteps.Count > 0;
+
+    private void LoadTextHelperActionSteps()
+    {
+        TextHelperActionSteps.CollectionChanged -= OnTextHelperActionStepsCollectionChanged;
+
+        foreach (var step in TextHelperActionSteps)
+            step.PropertyChanged -= OnTextHelperActionStepPropertyChanged;
+
+        TextHelperActionSteps = new ObservableCollection<ActionStep>(_profile.TextHelperActionSteps);
+        TextHelperActionSteps.CollectionChanged += OnTextHelperActionStepsCollectionChanged;
+
+        foreach (var step in TextHelperActionSteps)
+            step.PropertyChanged += OnTextHelperActionStepPropertyChanged;
+
+        OnPropertyChanged(nameof(TextHelperActionSteps));
+        OnPropertyChanged(nameof(HasTextHelperAction));
+    }
+
+    private void OnTextHelperActionStepsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        _profile.TextHelperActionSteps.Clear();
+        foreach (var step in TextHelperActionSteps)
+            _profile.TextHelperActionSteps.Add(step);
+
+        if (e.OldItems != null)
+            foreach (var item in e.OldItems.OfType<ActionStep>())
+                item.PropertyChanged -= OnTextHelperActionStepPropertyChanged;
+
+        if (e.NewItems != null)
+            foreach (var item in e.NewItems.OfType<ActionStep>())
+                item.PropertyChanged += OnTextHelperActionStepPropertyChanged;
+
+        OnPropertyChanged(nameof(HasTextHelperAction));
+        ScheduleAutoSave();
+    }
+
+    private void OnTextHelperActionStepPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        ScheduleAutoSave();
+    }
+
+    [RelayCommand]
+    private void AddTextHelperActionStep()
+    {
+        TextHelperActionSteps.Add(new ActionStep());
+    }
+
+    [RelayCommand]
+    private void RemoveTextHelperActionStep(ActionStep? step)
+    {
+        if (step != null)
+            TextHelperActionSteps.Remove(step);
+    }
+
+    [RelayCommand]
+    private void MoveTextHelperActionStepUp(ActionStep? step)
+    {
+        if (step == null)
+            return;
+
+        int index = TextHelperActionSteps.IndexOf(step);
+        if (index > 0)
+            TextHelperActionSteps.Move(index, index - 1);
+    }
+
+    [RelayCommand]
+    private void MoveTextHelperActionStepDown(ActionStep? step)
+    {
+        if (step == null)
+            return;
+
+        int index = TextHelperActionSteps.IndexOf(step);
+        if (index >= 0 && index < TextHelperActionSteps.Count - 1)
+            TextHelperActionSteps.Move(index, index + 1);
+    }
+
+    public void ExecuteTextHelperAction()
+    {
+        string text = TextHelperWidget.Text.Trim();
+        if (string.IsNullOrWhiteSpace(text) || _profile.TextHelperActionSteps.Count == 0)
+            return;
+
+        _multiActionService.ExecuteWithItemText(_profile.TextHelperActionSteps, text, NaturalTypingEnabled);
     }
 
     [RelayCommand]

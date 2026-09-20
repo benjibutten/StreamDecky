@@ -59,6 +59,7 @@ public class FormDataService
         catch (Exception ex)
         {
             AppDiagnostics.Warning($"Failed to load form data '{_dataPath}'. Starting with an empty store.", ex);
+            CorruptFileQuarantine.MoveAside(_dataPath);
             return new FormDataStore();
         }
     }
@@ -512,7 +513,7 @@ public class FormDataService
             Directory.CreateDirectory(_appDataFolder);
             var json = JsonSerializer.Serialize(Store, JsonOptions);
             string tempPath = Path.Combine(_appDataFolder, $"form-data.json.{Guid.NewGuid():N}.tmp");
-            File.WriteAllText(tempPath, json);
+            DurableFile.WriteAllText(tempPath, json);
 
             if (File.Exists(_dataPath))
             {

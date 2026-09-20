@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using StreamDecky.Helpers;
 using StreamDecky.Models;
 
 namespace StreamDecky.ViewModels;
@@ -797,7 +798,7 @@ public partial class MainViewModel
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
         string json = JsonSerializer.Serialize(export, options);
-        System.Windows.Clipboard.SetText(json);
+        ClipboardHelper.TrySetText(json);
     }
 
     [RelayCommand]

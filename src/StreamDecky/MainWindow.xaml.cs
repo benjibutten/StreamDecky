@@ -158,6 +158,7 @@ public partial class MainWindow : Window
 
         var contextMenu = new System.Windows.Forms.ContextMenuStrip();
         contextMenu.Items.Add("Show", null, (_, _) => ShowFromTray());
+        contextMenu.Items.Add("Open log folder", null, (_, _) => OpenLogFolder());
         contextMenu.Items.Add("-");
         contextMenu.Items.Add("Exit", null, (_, _) => ExitApplication());
         _trayIcon.ContextMenuStrip = contextMenu;
@@ -186,11 +187,50 @@ public partial class MainWindow : Window
         ShowAndActivate();
     }
 
+    private static void OpenLogFolder()
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(AppDiagnostics.LogDirectory);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AppDiagnostics.LogDirectory)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Failed to open the log folder.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Registration fails silently at the Win32 level when another app owns the
+    /// combination; without this the overlay just looks broken.
+    /// </summary>
+    private void NotifyIfHotkeyUnavailable()
+    {
+        if (_globalHotkeyRegistered || _trayIcon == null)
+            return;
+
+        _trayIcon.ShowBalloonTip(
+            5000,
+            "StreamDecky hotkey unavailable",
+            "Another application already uses the overlay hotkey. Choose a different combination in Settings.",
+            System.Windows.Forms.ToolTipIcon.Warning);
+    }
+
     public void ShowAndActivate()
     {
+        // An open overlay re-asserts topmost on deactivation and would sit as a
+        // dimmed, click-eating sheet over the editor we are about to show.
+        if (_overlayController.IsOpen)
+            _overlayController.Toggle();
+
+        // Restore before Show so a window hidden while minimized does not first
+        // appear minimized and then animate up.
+        WindowState = WindowState.Normal;
         ShowInTaskbar = true;
         Show();
-        WindowState = WindowState.Normal;
         Activate();
 
         // Toggle Topmost once to bring a hidden/minimized window to the foreground reliably.
@@ -201,8 +241,10 @@ public partial class MainWindow : Window
 
     private void HideToTray()
     {
-        ShowInTaskbar = false;
+        // Hide first: WPF applies a ShowInTaskbar change to a visible window by
+        // hiding and re-showing it, which flashes the window on its way out.
         Hide();
+        ShowInTaskbar = false;
     }
 
     private void ExitApplication()
@@ -228,7 +270,10 @@ public partial class MainWindow : Window
         if (e.PropertyName is nameof(MainViewModel.HotkeyModifiers) or nameof(MainViewModel.HotkeyVk))
         {
             if (_hwndSource != null)
+            {
                 _globalHotkeyRegistered = _hotkeyController.ReRegister(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+                NotifyIfHotkeyUnavailable();
+            }
 
             ConfigureRawInputHotkeyMatcher();
             return;
@@ -327,6 +372,7 @@ public partial class MainWindow : Window
         _hwndSource = HwndSource.FromHwnd(hwnd);
         _hwndSource?.AddHook(WndProc);
         _globalHotkeyRegistered = _hotkeyController.Register(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+        NotifyIfHotkeyUnavailable();
 
         // Fallback path: some games (raw-input titles like Doom: The Dark Ages)
         // suppress WM_HOTKEY delivery while they have focus. The raw-input sink
