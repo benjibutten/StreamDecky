@@ -90,7 +90,7 @@ public static class InputSimulator
         ["NUMLOCK"] = 0x90,
         ["SCROLLLOCK"] = 0x91,
         ["PRTSC"] = 0x2C,
-        ["BREAK"] = 0x13,
+        ["BREAK"] = 0x13, ["PAUSE"] = 0x13,
         [" "] = 0x20,
     };
 
@@ -183,14 +183,6 @@ public static class InputSimulator
     }
 
     /// <summary>
-    /// Synchronous wrapper for backward compatibility.
-    /// </summary>
-    public static void SendKeyPress(string sendKeysFormat)
-    {
-        SendKeyPressAsync(sendKeysFormat).GetAwaiter().GetResult();
-    }
-
-    /// <summary>
     /// Type text character-by-character using scan-code key events for better game compatibility.
     /// </summary>
     public static async Task SendTextAsync(string text, int keyHoldMs = 12, int interKeyDelayMs = 6, bool useNaturalCadence = false)
@@ -241,14 +233,6 @@ public static class InputSimulator
     }
 
     /// <summary>
-    /// Synchronous wrapper for backward compatibility.
-    /// </summary>
-    public static void SendText(string text)
-    {
-        SendTextAsync(text).GetAwaiter().GetResult();
-    }
-
-    /// <summary>
     /// Send Enter key via SendInput (scan code mode).
     /// </summary>
     public static async Task SendEnterAsync()
@@ -256,25 +240,23 @@ public static class InputSimulator
         await PressKeyAsync(0x0D);
     }
 
-    public static void SendEnter()
-    {
-        SendEnterAsync().GetAwaiter().GetResult();
-    }
-
     /// <summary>
     /// Send Ctrl+V (paste) via SendInput (scan code mode).
     /// </summary>
     public static async Task SendPasteAsync()
     {
+        // Injected modifier state outlives the process, so an exception between
+        // down and up would leave the user's Ctrl key stuck.
         SendScanCodeDown(VK_CONTROL);
-        await Task.Delay(30);
-        await PressKeyAsync(0x56 /* V */);
-        SendScanCodeUp(VK_CONTROL);
-    }
-
-    public static void SendPaste()
-    {
-        SendPasteAsync().GetAwaiter().GetResult();
+        try
+        {
+            await Task.Delay(30);
+            await PressKeyAsync(0x56 /* V */);
+        }
+        finally
+        {
+            SendScanCodeUp(VK_CONTROL);
+        }
     }
 
     /// <summary>
@@ -335,11 +317,16 @@ public static class InputSimulator
         if (needAlt) SendScanCodeDown(VK_MENU);
         if (needShift) SendScanCodeDown(VK_SHIFT);
 
-        await PressKeyAsync(vk, holdMs);
-
-        if (needShift) SendScanCodeUp(VK_SHIFT);
-        if (needAlt) SendScanCodeUp(VK_MENU);
-        if (needCtrl) SendScanCodeUp(VK_CONTROL);
+        try
+        {
+            await PressKeyAsync(vk, holdMs);
+        }
+        finally
+        {
+            if (needShift) SendScanCodeUp(VK_SHIFT);
+            if (needAlt) SendScanCodeUp(VK_MENU);
+            if (needCtrl) SendScanCodeUp(VK_CONTROL);
+        }
     }
 
     private static void SendModifiersDown(bool ctrl, bool shift, bool alt)
@@ -362,23 +349,7 @@ public static class InputSimulator
     /// </summary>
     private static void SendScanCodeDown(ushort vk)
     {
-        ushort scan = (ushort)(MapVirtualKey(vk, MAPVK_VK_TO_VSC) & 0xFF);
-        var input = new INPUT
-        {
-            type = INPUT_KEYBOARD,
-            u = new INPUTUNION
-            {
-                ki = new KEYBDINPUT
-                {
-                    wVk = 0,
-                    wScan = scan,
-                    dwFlags = KEYEVENTF_SCANCODE | (IsExtendedKey(vk) ? KEYEVENTF_EXTENDEDKEY : 0),
-                    time = 0,
-                    dwExtraInfo = IntPtr.Zero
-                }
-            }
-        };
-        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+        SendInput(1, [BuildKeyInput(vk, keyUp: false)], Marshal.SizeOf<INPUT>());
     }
 
     /// <summary>
@@ -386,8 +357,27 @@ public static class InputSimulator
     /// </summary>
     private static void SendScanCodeUp(ushort vk)
     {
+        SendInput(1, [BuildKeyInput(vk, keyUp: true)], Marshal.SizeOf<INPUT>());
+    }
+
+    private static INPUT BuildKeyInput(ushort vk, bool keyUp)
+    {
+        uint flags = keyUp ? KEYEVENTF_KEYUP : 0;
         ushort scan = (ushort)(MapVirtualKey(vk, MAPVK_VK_TO_VSC) & 0xFF);
-        var input = new INPUT
+
+        // Pause has no single-byte scan code (its make code is the E1-prefixed
+        // sequence E1 1D 45), so MapVirtualKey returns 0 and a scan-code event
+        // would send nothing. Fall back to the virtual key for such keys.
+        if (scan == 0)
+        {
+            return new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                u = new INPUTUNION { ki = new KEYBDINPUT { wVk = vk, wScan = 0, dwFlags = flags } }
+            };
+        }
+
+        return new INPUT
         {
             type = INPUT_KEYBOARD,
             u = new INPUTUNION
@@ -396,15 +386,12 @@ public static class InputSimulator
                 {
                     wVk = 0,
                     wScan = scan,
-                    dwFlags = KEYEVENTF_SCANCODE
-                        | KEYEVENTF_KEYUP
-                        | (IsExtendedKey(vk) ? KEYEVENTF_EXTENDEDKEY : 0),
+                    dwFlags = flags | KEYEVENTF_SCANCODE | (IsExtendedKey(vk) ? KEYEVENTF_EXTENDEDKEY : 0),
                     time = 0,
                     dwExtraInfo = IntPtr.Zero
                 }
             }
         };
-        SendInput(1, [input], Marshal.SizeOf<INPUT>());
     }
 
     private static bool IsExtendedKey(ushort vk) => vk is
@@ -412,6 +399,6 @@ public static class InputSimulator
         or 0x25 or 0x26 or 0x27 or 0x28 // Arrow keys
         or 0x2D or 0x2E // Insert, Delete
         or 0x6F // Numpad Divide
-        or 0x90 // Num Lock
+        or 0x90 // Num Lock needs the extended flag to distinguish it from Pause
         or 0xA3 or 0xA5; // Right Ctrl, Right Alt
 }
