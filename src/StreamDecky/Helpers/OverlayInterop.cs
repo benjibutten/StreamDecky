@@ -107,6 +107,15 @@ public static class OverlayInterop
         return GetForegroundWindow();
     }
 
+    public static bool BelongsToThisProcess(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero)
+            return false;
+
+        GetWindowThreadProcessId(hwnd, out uint processId);
+        return processId == (uint)Environment.ProcessId;
+    }
+
     /// <summary>
     /// Aggressively sets the foreground window using AttachThreadInput trick.
     /// This bypasses Windows' restrictions on SetForegroundWindow.
