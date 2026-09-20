@@ -118,10 +118,10 @@ public class MultiActionService
 
         if (step.TextMode == TextMode.PasteFromClipboard)
         {
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                Clipboard.SetText(step.Text);
-            });
+            bool copied = await Application.Current.Dispatcher.InvokeAsync(() => ClipboardHelper.TrySetText(step.Text));
+            if (!copied)
+                throw new InvalidOperationException("The clipboard is in use by another application; the multi-action was stopped before pasting.");
+
             await InputSimulator.SendPasteAsync();
         }
         else
