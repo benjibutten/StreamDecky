@@ -312,14 +312,14 @@ public class ProfileService
     private void WriteTextAtomically(string destinationPath, string content)
     {
         string tempPath = Path.Combine(_appDataFolder, $"{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.tmp");
-        File.WriteAllText(tempPath, content);
+        DurableFile.WriteAllText(tempPath, content);
         ReplaceFile(tempPath, destinationPath);
     }
 
     private async Task WriteTextAtomicallyAsync(string destinationPath, string content, CancellationToken cancellationToken)
     {
         string tempPath = Path.Combine(_appDataFolder, $"{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.tmp");
-        await File.WriteAllTextAsync(tempPath, content, cancellationToken);
+        await DurableFile.WriteAllTextAsync(tempPath, content, cancellationToken);
         ReplaceFile(tempPath, destinationPath);
     }
 

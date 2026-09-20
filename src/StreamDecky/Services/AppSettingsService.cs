@@ -283,6 +283,7 @@ public class AppSettingsService
         catch (Exception ex)
         {
             AppDiagnostics.Warning($"Failed to load app settings '{_settingsPath}'. Falling back to defaults.", ex);
+            CorruptFileQuarantine.MoveAside(_settingsPath);
             var fallback = new AppSettings();
             fallback.Initialize();
             return fallback;
@@ -304,7 +305,7 @@ public class AppSettingsService
             Settings.SchemaVersion = AppSettings.CurrentSchemaVersion;
             string json = JsonSerializer.Serialize(Settings, JsonOptions);
             string tempPath = Path.Combine(_appDataFolder, $"app-settings.json.{Guid.NewGuid():N}.tmp");
-            File.WriteAllText(tempPath, json);
+            DurableFile.WriteAllText(tempPath, json);
 
             if (File.Exists(_settingsPath))
                 File.Move(tempPath, _settingsPath, overwrite: true);
