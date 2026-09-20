@@ -522,10 +522,14 @@ public partial class OverlayWindow : Window
         if (XInputInterop.IsButtonPressed(buttons, XInputInterop.GamepadDPadRight))
             return OverlayNavigationDirection.Right;
 
-        if (Math.Abs(thumbLX) < LeftStickNavigationDeadZone && Math.Abs(thumbLY) < LeftStickNavigationDeadZone)
+        // Widen before Math.Abs: a stick pushed fully left/down reports short.MinValue,
+        // and Math.Abs(short.MinValue) throws OverflowException.
+        int absX = Math.Abs((int)thumbLX);
+        int absY = Math.Abs((int)thumbLY);
+        if (absX < LeftStickNavigationDeadZone && absY < LeftStickNavigationDeadZone)
             return OverlayNavigationDirection.None;
 
-        if (Math.Abs(thumbLX) > Math.Abs(thumbLY))
+        if (absX > absY)
             return thumbLX > 0 ? OverlayNavigationDirection.Right : OverlayNavigationDirection.Left;
 
         return thumbLY > 0 ? OverlayNavigationDirection.Up : OverlayNavigationDirection.Down;
