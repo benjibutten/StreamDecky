@@ -203,6 +203,22 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Registration fails silently at the Win32 level when another app owns the
+    /// combination; without this the overlay just looks broken.
+    /// </summary>
+    private void NotifyIfHotkeyUnavailable()
+    {
+        if (_globalHotkeyRegistered || _trayIcon == null)
+            return;
+
+        _trayIcon.ShowBalloonTip(
+            5000,
+            "StreamDecky hotkey unavailable",
+            "Another application already uses the overlay hotkey. Choose a different combination in Settings.",
+            System.Windows.Forms.ToolTipIcon.Warning);
+    }
+
     public void ShowAndActivate()
     {
         // An open overlay re-asserts topmost on deactivation and would sit as a
@@ -254,7 +270,10 @@ public partial class MainWindow : Window
         if (e.PropertyName is nameof(MainViewModel.HotkeyModifiers) or nameof(MainViewModel.HotkeyVk))
         {
             if (_hwndSource != null)
+            {
                 _globalHotkeyRegistered = _hotkeyController.ReRegister(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+                NotifyIfHotkeyUnavailable();
+            }
 
             ConfigureRawInputHotkeyMatcher();
             return;
@@ -353,6 +372,7 @@ public partial class MainWindow : Window
         _hwndSource = HwndSource.FromHwnd(hwnd);
         _hwndSource?.AddHook(WndProc);
         _globalHotkeyRegistered = _hotkeyController.Register(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
+        NotifyIfHotkeyUnavailable();
 
         // Fallback path: some games (raw-input titles like Doom: The Dark Ages)
         // suppress WM_HOTKEY delivery while they have focus. The raw-input sink
