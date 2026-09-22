@@ -55,6 +55,31 @@ public partial class MainViewModel
         : $"{CurrentPageIndex + 1} / {PageCount}";
     public bool HasMultiplePages => !IsViewingVirtualLayout && _profile.Pages.Count > 1;
 
+    public bool OverlayPageTabsEnabled
+    {
+        get => _profile.OverlayPageTabsEnabled;
+        set
+        {
+            if (_profile.OverlayPageTabsEnabled == value)
+                return;
+
+            _profile.OverlayPageTabsEnabled = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowOverlayPageTabs));
+            OnPropertyChanged(nameof(ShowOverlayPageArrows));
+            ScheduleAutoSave();
+        }
+    }
+
+    // Also shown from inside a virtual layout, where the arrows are hidden, so the tabs
+    // always offer a way back to the regular pages.
+    public bool ShowOverlayPageTabs => OverlayPageTabsEnabled && (HasMultiplePages || IsViewingVirtualLayout);
+    public bool ShowOverlayPageArrows => HasMultiplePages && !OverlayPageTabsEnabled;
+
+    public IReadOnlyList<PageTab> PageTabs => _profile.Pages
+        .Select((page, index) => new PageTab(page.Id, page.Name, !IsViewingVirtualLayout && index == CurrentPageIndex))
+        .ToList();
+
     private DeckPage CurrentRegularPage => _profile.Pages[Math.Clamp(CurrentPageIndex, 0, _profile.Pages.Count - 1)];
 
     private DeckPage CurrentVirtualLayout
@@ -80,15 +105,25 @@ public partial class MainViewModel
         int? selectedIndex = preferredSelectedIndex ?? SelectedButton?.Index;
 
         CurrentLayout.EnsureButtonCount(Rows, Columns);
-        var buttonViewModels = new List<ButtonViewModel>(CurrentLayout.Buttons.Count);
-        for (int i = 0; i < CurrentLayout.Buttons.Count; i++)
+        var configs = CurrentLayout.Buttons;
+        if (Buttons.Count == configs.Count)
         {
-            var bvm = new ButtonViewModel(CurrentLayout.Buttons[i], i);
-            AttachButtonHandlers(bvm);
-            buttonViewModels.Add(bvm);
+            // Replacing Buttons makes the deck regenerate every cell; rebinding keeps them.
+            // Handlers are detached while the slots switch over, so this doesn't count as an edit.
+            for (int i = 0; i < configs.Count; i++)
+                Buttons[i].ShowConfig(configs[i]);
+        }
+        else
+        {
+            var buttonViewModels = new List<ButtonViewModel>(configs.Count);
+            for (int i = 0; i < configs.Count; i++)
+                buttonViewModels.Add(new ButtonViewModel(configs[i], i));
+
+            Buttons = new ObservableCollection<ButtonViewModel>(buttonViewModels);
         }
 
-        Buttons = new ObservableCollection<ButtonViewModel>(buttonViewModels);
+        foreach (var bvm in Buttons)
+            AttachButtonHandlers(bvm);
 
         ButtonVisualVersion++;
 
@@ -202,8 +237,9 @@ public partial class MainViewModel
         _profile.Pages.Add(newPage);
         SetVirtualLayoutIndex(-1);
         CurrentPageIndex = _profile.Pages.Count - 1;
-        LoadCurrentLayout();
+        // Targets first: the page dropdown can only select the new page once it's in the list.
         RebuildLayoutTargets();
+        LoadCurrentLayout();
         NotifyPageChanged();
         ScheduleAutoSave();
     }
@@ -312,6 +348,9 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(CanGoToNextPage));
         OnPropertyChanged(nameof(PageIndicator));
         OnPropertyChanged(nameof(HasMultiplePages));
+        OnPropertyChanged(nameof(ShowOverlayPageTabs));
+        OnPropertyChanged(nameof(ShowOverlayPageArrows));
+        OnPropertyChanged(nameof(PageTabs));
 
         SyncSelectedLayoutId();
         NotifyLayoutChanged();
@@ -381,6 +420,7 @@ public partial class MainViewModel
         }
 
         OnPropertyChanged(nameof(HasVirtualLayouts));
+        OnPropertyChanged(nameof(PageTabs));
         SyncSelectedLayoutId();
     }
 

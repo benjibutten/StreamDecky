@@ -1085,7 +1085,7 @@
                         Padding="8,4"
                         Background="#16000000"
                         CornerRadius="7"
-                        Visibility="{Binding HasMultiplePages, Converter={StaticResource BoolToVisibility}}">
+                        Visibility="{Binding ShowOverlayPageArrows, Converter={StaticResource BoolToVisibility}}">
                     <Border.Style>
                         <Style TargetType="Border">
                             <Setter Property="Opacity"
@@ -1177,6 +1177,67 @@
                             </Button.Style>
                         </Button>
                     </StackPanel>
+                </Border>
+
+                <!-- Page tabs: opt-in replacement for the arrows, so any page is one click away -->
+                <Border Margin="2,9,0,0"
+                        HorizontalAlignment="Left"
+                        Padding="4"
+                        Background="#66000000"
+                        CornerRadius="7"
+                        Visibility="{Binding ShowOverlayPageTabs, Converter={StaticResource BoolToVisibility}}">
+                    <ItemsControl ItemsSource="{Binding PageTabs}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding Name}"
+                                        Tag="{Binding Id}"
+                                        Click="OverlayPageTab_Click"
+                                        Foreground="#F2F2F2"
+                                        FontSize="12"
+                                        Padding="10,4"
+                                        Margin="1"
+                                        Cursor="Hand">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Background"
+                                                    Value="Transparent"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bd"
+                                                                Background="{TemplateBinding Background}"
+                                                                CornerRadius="5"
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center"
+                                                                    VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <!-- The later trigger wins, so the current tab keeps its colour on hover -->
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver"
+                                                        Value="True">
+                                                    <Setter Property="Background"
+                                                            Value="#48FFFFFF"/>
+                                                </Trigger>
+                                                <DataTrigger Binding="{Binding IsCurrent}"
+                                                        Value="True">
+                                                    <Setter Property="Background"
+                                                            Value="#6C5CE7"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </Border>
             </StackPanel>
         </Border>

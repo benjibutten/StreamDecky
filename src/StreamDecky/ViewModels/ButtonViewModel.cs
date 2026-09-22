@@ -7,13 +7,24 @@ namespace StreamDecky.ViewModels;
 
 public partial class ButtonViewModel : ObservableObject
 {
-    private readonly ButtonConfig _config;
+    private ButtonConfig _config;
     private readonly int _index;
 
     public ButtonViewModel(ButtonConfig config, int index)
     {
         _config = config;
         _index = index;
+    }
+
+    /// <summary>
+    /// Rebinds this slot to <paramref name="config"/> and raises change notifications
+    /// for every property, so the existing view updates in place.
+    /// </summary>
+    public void ShowConfig(ButtonConfig config)
+    {
+        _config = config;
+        _steps = null;
+        OnPropertyChanged(string.Empty);
     }
 
     public int Index => _index;
@@ -152,11 +163,11 @@ public partial class ButtonViewModel : ObservableObject
         {
             if (_steps == null)
             {
-                _steps = new ObservableCollection<ActionStep>(_config.Steps);
-                _steps.CollectionChanged += (_, _) =>
-                {
-                    _config.Steps = [.. _steps];
-                };
+                // Captured so a collection handed out before ShowConfig can't write into the next page's button.
+                var config = _config;
+                var steps = new ObservableCollection<ActionStep>(config.Steps);
+                steps.CollectionChanged += (_, _) => config.Steps = [.. steps];
+                _steps = steps;
             }
             return _steps;
         }

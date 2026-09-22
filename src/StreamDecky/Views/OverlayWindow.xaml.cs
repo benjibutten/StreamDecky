@@ -414,6 +414,28 @@ public partial class OverlayWindow : Window
         HideOverlay();
     }
 
+    /// <summary>
+    /// Closes the overlay and gives the keyboard back to the window that had it
+    /// before the overlay opened. The editor is moved out of the way only when
+    /// that window belongs to another application: minimizing it hides it to
+    /// the tray, and restoring it through Win32 afterwards would show a window
+    /// WPF still considers hidden, which renders black.
+    /// </summary>
+    private void HandOffToPreviousWindow()
+    {
+        var prevHwnd = _previousForegroundWindow;
+        CloseOverlay();
+
+        if (!OverlayInterop.BelongsToThisProcess(prevHwnd))
+        {
+            var mainWindow = System.Windows.Application.Current.MainWindow;
+            if (mainWindow != null)
+                mainWindow.WindowState = WindowState.Minimized;
+        }
+
+        OverlayInterop.ForceSetForegroundWindow(prevHwnd);
+    }
+
     private void OverlayPrevPage_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.PreviousPageCommand.Execute(null);
@@ -423,6 +445,15 @@ public partial class OverlayWindow : Window
     private void OverlayNextPage_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.NextPageCommand.Execute(null);
+        EnsureOverlaySelection();
+    }
+
+    private void OverlayPageTab_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: string layoutId })
+            return;
+
+        _viewModel.SelectedLayoutId = layoutId;
         EnsureOverlaySelection();
     }
 
@@ -438,15 +469,7 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        var prevHwnd = _previousForegroundWindow;
-        _viewModel.CloseOverlayCommand.Execute(null);
-        HideOverlay();
-
-        var mainWindow = System.Windows.Application.Current.MainWindow;
-        if (mainWindow != null)
-            mainWindow.WindowState = WindowState.Minimized;
-
-        OverlayInterop.ForceSetForegroundWindow(prevHwnd);
+        HandOffToPreviousWindow();
         _viewModel.ExecuteButtonCommand.Execute(buttonVm);
     }
 
@@ -1250,15 +1273,7 @@ public partial class OverlayWindow : Window
         if (!await _viewModel.RecordFormSubmissionAsync(renderedText))
             return;
 
-        var prevHwnd = _previousForegroundWindow;
-        _viewModel.CloseOverlayCommand.Execute(null);
-        HideOverlay();
-
-        var mainWindow = System.Windows.Application.Current.MainWindow;
-        if (mainWindow != null)
-            mainWindow.WindowState = WindowState.Minimized;
-
-        OverlayInterop.ForceSetForegroundWindow(prevHwnd);
+        HandOffToPreviousWindow();
         _viewModel.ExecuteFormSendAction(renderedText);
     }
 
@@ -1741,17 +1756,7 @@ public partial class OverlayWindow : Window
         if (!_viewModel.HasTextHelperAction || !_viewModel.TextHelperWidget.HasText)
             return;
 
-        // Same hand-off as a clipboard action: the steps type into whatever had
-        // focus before the overlay opened, so give that window the foreground back.
-        var prevHwnd = _previousForegroundWindow;
-        _viewModel.CloseOverlayCommand.Execute(null);
-        HideOverlay();
-
-        var mainWindow = System.Windows.Application.Current.MainWindow;
-        if (mainWindow != null)
-            mainWindow.WindowState = WindowState.Minimized;
-
-        OverlayInterop.ForceSetForegroundWindow(prevHwnd);
+        HandOffToPreviousWindow();
         _viewModel.ExecuteTextHelperAction();
     }
 
@@ -1764,15 +1769,7 @@ public partial class OverlayWindow : Window
         if (string.IsNullOrWhiteSpace(itemText))
             return;
 
-        var prevHwnd = _previousForegroundWindow;
-        _viewModel.CloseOverlayCommand.Execute(null);
-        HideOverlay();
-
-        var mainWindow = System.Windows.Application.Current.MainWindow;
-        if (mainWindow != null)
-            mainWindow.WindowState = WindowState.Minimized;
-
-        OverlayInterop.ForceSetForegroundWindow(prevHwnd);
+        HandOffToPreviousWindow();
         _viewModel.ExecuteQuickTextAction(itemText);
     }
 
