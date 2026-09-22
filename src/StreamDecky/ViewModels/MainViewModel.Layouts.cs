@@ -202,8 +202,9 @@ public partial class MainViewModel
         _profile.Pages.Add(newPage);
         SetVirtualLayoutIndex(-1);
         CurrentPageIndex = _profile.Pages.Count - 1;
-        LoadCurrentLayout();
+        // Targets first: the page dropdown can only select the new page once it's in the list.
         RebuildLayoutTargets();
+        LoadCurrentLayout();
         NotifyPageChanged();
         ScheduleAutoSave();
     }
