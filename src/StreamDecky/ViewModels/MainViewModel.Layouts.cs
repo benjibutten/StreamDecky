@@ -80,15 +80,25 @@ public partial class MainViewModel
         int? selectedIndex = preferredSelectedIndex ?? SelectedButton?.Index;
 
         CurrentLayout.EnsureButtonCount(Rows, Columns);
-        var buttonViewModels = new List<ButtonViewModel>(CurrentLayout.Buttons.Count);
-        for (int i = 0; i < CurrentLayout.Buttons.Count; i++)
+        var configs = CurrentLayout.Buttons;
+        if (Buttons.Count == configs.Count)
         {
-            var bvm = new ButtonViewModel(CurrentLayout.Buttons[i], i);
-            AttachButtonHandlers(bvm);
-            buttonViewModels.Add(bvm);
+            // Replacing Buttons makes the deck regenerate every cell; rebinding keeps them.
+            // Handlers are detached while the slots switch over, so this doesn't count as an edit.
+            for (int i = 0; i < configs.Count; i++)
+                Buttons[i].ShowConfig(configs[i]);
+        }
+        else
+        {
+            var buttonViewModels = new List<ButtonViewModel>(configs.Count);
+            for (int i = 0; i < configs.Count; i++)
+                buttonViewModels.Add(new ButtonViewModel(configs[i], i));
+
+            Buttons = new ObservableCollection<ButtonViewModel>(buttonViewModels);
         }
 
-        Buttons = new ObservableCollection<ButtonViewModel>(buttonViewModels);
+        foreach (var bvm in Buttons)
+            AttachButtonHandlers(bvm);
 
         ButtonVisualVersion++;
 
