@@ -448,6 +448,15 @@ public partial class OverlayWindow : Window
         EnsureOverlaySelection();
     }
 
+    private void OverlayPageTab_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: string layoutId })
+            return;
+
+        _viewModel.SelectedLayoutId = layoutId;
+        EnsureOverlaySelection();
+    }
+
     private void ExecuteOverlayButton(ButtonViewModel buttonVm)
     {
         if (!buttonVm.HasAction)

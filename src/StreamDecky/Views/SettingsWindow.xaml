@@ -347,6 +347,12 @@
                         IsSnapToTickEnabled="False"/>
                 </DockPanel>
 
+                <CheckBox IsChecked="{Binding OverlayPageTabsEnabled, Mode=TwoWay}"
+                          Content="Show page tabs in the overlay"
+                          Foreground="#CCC" FontSize="13" Margin="0,0,0,4" Cursor="Hand"/>
+                <TextBlock Text="Replaces the ◀ ▶ arrows under the buttons with one tab per page, so any page is one click away. Also shown inside a virtual layout, as a way back."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,14"/>
+
                         <Expander Header="Profile Grid — All Pages"
                       IsExpanded="True"
                       Margin="0,0,0,14"

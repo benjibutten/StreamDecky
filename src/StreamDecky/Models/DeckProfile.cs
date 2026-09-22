@@ -43,6 +43,7 @@ public class DeckProfile
     public bool NaturalTypingEnabled { get; set; } = false;
     public bool GamepadSupportEnabled { get; set; } = false;
     public ushort GamepadToggleButtons { get; set; } = 0x0030; // Back + Start
+    public bool OverlayPageTabsEnabled { get; set; }
     public bool StickyNotesVisible { get; set; }
     public double StickyNoteFontSize { get; set; } = 13;
     public List<QuickTextCollection> QuickTextCollections { get; set; } = new();

@@ -225,6 +225,7 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(GamepadSupportEnabled));
         OnPropertyChanged(nameof(GamepadToggleButtons));
         OnPropertyChanged(nameof(GamepadToggleDisplayText));
+        OnPropertyChanged(nameof(OverlayPageTabsEnabled));
 
         RebuildProfileOptions();
         SyncSelectedProfileId();

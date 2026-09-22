@@ -55,6 +55,31 @@ public partial class MainViewModel
         : $"{CurrentPageIndex + 1} / {PageCount}";
     public bool HasMultiplePages => !IsViewingVirtualLayout && _profile.Pages.Count > 1;
 
+    public bool OverlayPageTabsEnabled
+    {
+        get => _profile.OverlayPageTabsEnabled;
+        set
+        {
+            if (_profile.OverlayPageTabsEnabled == value)
+                return;
+
+            _profile.OverlayPageTabsEnabled = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowOverlayPageTabs));
+            OnPropertyChanged(nameof(ShowOverlayPageArrows));
+            ScheduleAutoSave();
+        }
+    }
+
+    // Also shown from inside a virtual layout, where the arrows are hidden, so the tabs
+    // always offer a way back to the regular pages.
+    public bool ShowOverlayPageTabs => OverlayPageTabsEnabled && (HasMultiplePages || IsViewingVirtualLayout);
+    public bool ShowOverlayPageArrows => HasMultiplePages && !OverlayPageTabsEnabled;
+
+    public IReadOnlyList<PageTab> PageTabs => _profile.Pages
+        .Select((page, index) => new PageTab(page.Id, page.Name, !IsViewingVirtualLayout && index == CurrentPageIndex))
+        .ToList();
+
     private DeckPage CurrentRegularPage => _profile.Pages[Math.Clamp(CurrentPageIndex, 0, _profile.Pages.Count - 1)];
 
     private DeckPage CurrentVirtualLayout
@@ -323,6 +348,9 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(CanGoToNextPage));
         OnPropertyChanged(nameof(PageIndicator));
         OnPropertyChanged(nameof(HasMultiplePages));
+        OnPropertyChanged(nameof(ShowOverlayPageTabs));
+        OnPropertyChanged(nameof(ShowOverlayPageArrows));
+        OnPropertyChanged(nameof(PageTabs));
 
         SyncSelectedLayoutId();
         NotifyLayoutChanged();
@@ -392,6 +420,7 @@ public partial class MainViewModel
         }
 
         OnPropertyChanged(nameof(HasVirtualLayouts));
+        OnPropertyChanged(nameof(PageTabs));
         SyncSelectedLayoutId();
     }
 

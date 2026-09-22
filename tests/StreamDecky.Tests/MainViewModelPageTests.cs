@@ -39,4 +39,36 @@ public sealed class MainViewModelPageTests
         Assert.Empty(viewModel.Profile.Pages[1].Buttons[0].Steps);
         Assert.Empty(viewModel.Buttons[0].Steps);
     }
+
+    [Fact]
+    public void PageTabs_ReplaceArrowsAndFollowTheCurrentPage()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        using var viewModel = new MainViewModel(new ProfileService(tempDirectory.Path));
+        viewModel.AddPageCommand.Execute(null);
+        Assert.True(viewModel.ShowOverlayPageArrows);
+        Assert.False(viewModel.ShowOverlayPageTabs);
+
+        viewModel.OverlayPageTabsEnabled = true;
+        viewModel.SelectedLayoutId = viewModel.PageTabs[0].Id;
+
+        Assert.False(viewModel.ShowOverlayPageArrows);
+        Assert.True(viewModel.ShowOverlayPageTabs);
+        Assert.Equal(0, viewModel.CurrentPageIndex);
+        Assert.Equal([true, false], viewModel.PageTabs.Select(tab => tab.IsCurrent));
+    }
+
+    [Fact]
+    public void PageTabs_StayVisibleInsideVirtualLayoutWithNoTabCurrent()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        using var viewModel = new MainViewModel(new ProfileService(tempDirectory.Path));
+        viewModel.OverlayPageTabsEnabled = true;
+        Assert.False(viewModel.ShowOverlayPageTabs);
+
+        viewModel.AddVirtualLayoutCommand.Execute(null);
+
+        Assert.True(viewModel.ShowOverlayPageTabs);
+        Assert.DoesNotContain(viewModel.PageTabs, tab => tab.IsCurrent);
+    }
 }
