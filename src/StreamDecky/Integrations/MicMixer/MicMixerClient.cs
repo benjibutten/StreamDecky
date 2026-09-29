@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Pipes;
+using System.Security.Principal;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using StreamDecky.Helpers;
@@ -109,9 +110,10 @@ public sealed class MicMixerClient : IMicMixerClient
                     ".",
                     _pipeName,
                     PipeDirection.InOut,
-                    PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+                    PipeOptions.Asynchronous);
 
                 await pipe.ConnectAsync(1_000, cancellationToken).ConfigureAwait(false);
+                EnsureOwnedByCurrentAccount(pipe);
                 using var reader = new StreamReader(pipe, leaveOpen: true);
                 using var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
 
@@ -188,6 +190,19 @@ public sealed class MicMixerClient : IMicMixerClient
             }
 
             retryDelayMilliseconds = Math.Min(retryDelayMilliseconds * 2, 5_000);
+        }
+    }
+
+    // PipeOptions.CurrentUserOnly compares the owner with the token's default owner, which is
+    // the Administrators group when StreamDecky runs elevated, so it would reject MicMixer's
+    // pipe. MicMixer makes the account itself the owner.
+    private static void EnsureOwnedByCurrentAccount(NamedPipeClientStream pipe)
+    {
+        using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+        IdentityReference? owner = pipe.GetAccessControl().GetOwner(typeof(SecurityIdentifier));
+        if (owner == null || !owner.Equals(identity.User))
+        {
+            throw new UnauthorizedAccessException("The MicMixer control pipe is not owned by this Windows account.");
         }
     }
 
