@@ -97,13 +97,22 @@ internal static class Elevation
     }
 
     /// <summary>
+    /// StreamDecky.Launcher.exe beside this exe, which starts StreamDecky without the
+    /// environment variables that load code into the .NET runtime. Everything that starts
+    /// StreamDecky as administrator goes through it. Missing in development builds.
+    /// </summary>
+    public static string LauncherPath { get; } = Path.Combine(AppContext.BaseDirectory, "StreamDecky.Launcher.exe");
+
+    /// <summary>
     /// Starts an elevated copy of StreamDecky that takes over once this process exits,
     /// passing it <paramref name="arguments"/>. Returns false when the UAC prompt was
     /// declined; this process should then keep running.
     /// </summary>
     public static bool TryStartElevatedCopy(IEnumerable<string> arguments)
     {
-        var startInfo = new ProcessStartInfo(Environment.ProcessPath!)
+        // Only a development build, which has no launcher, starts itself directly.
+        string target = File.Exists(LauncherPath) ? LauncherPath : Environment.ProcessPath!;
+        var startInfo = new ProcessStartInfo(target)
         {
             UseShellExecute = true,
             Verb = "runas",

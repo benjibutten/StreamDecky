@@ -397,7 +397,10 @@ approval; even a newly signed build can initially lack reputation.
   points to that setting once when a button's keys go to such a program.
   Running elevated, it opens links and folders through Explorer so the browser
   does not inherit administrator rights, refuses folder junctions made without
-  administrator rights (Windows 11), and ignores `DOTNET_STARTUP_HOOKS`.
+  administrator rights (Windows 11), and ignores `DOTNET_STARTUP_HOOKS`. It starts
+  elevated through `StreamDecky.Launcher.exe`, a small native program that removes
+  the `DOTNET_*`, `COMPlus_*` and `CORECLR_*` environment variables first, since
+  any program can set those to load a DLL, such as a profiler, into the .NET runtime.
 - `Start with Windows` writes to `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`.
   With **Run as administrator** on and StreamDecky in a folder only administrators
   can change, such as the installer's Program Files folder, it registers a Task
