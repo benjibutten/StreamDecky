@@ -70,6 +70,38 @@
   .download:hover { background: var(--accent-dark); }
   .actions .alt { font-size: 0.93rem; }
   .fineprint { color: var(--muted); font-size: 0.87rem; }
+  .winget { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 14px; font-size: 0.93rem; }
+  .winget-label { color: var(--muted); }
+  .winget-command {
+    display: inline-flex;
+    min-width: 0;
+    max-width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    overflow: hidden;
+    background: var(--bg-soft);
+  }
+  .winget-command code {
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    padding: 7px 12px;
+  }
+  .copy {
+    flex: none;
+    border: 0;
+    border-left: 1px solid var(--line);
+    background: #fff;
+    color: var(--accent-dark);
+    font: inherit;
+    font-weight: 600;
+    padding: 0 14px;
+    cursor: pointer;
+  }
+  .copy:hover { background: var(--bg-soft); }
 
   .template { border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; margin-bottom: 14px; }
   .template h3 { margin: 0 0 4px; }
@@ -116,13 +148,20 @@
     <a class="download" data-release-download href="https://github.com/benjibutten/StreamDecky/releases/latest">Download for Windows</a>
     <a class="alt" href="https://github.com/benjibutten/StreamDecky">Source on GitHub</a>
   </div>
+  <div class="winget">
+    <span class="winget-label">Or install with winget:</span>
+    <span class="winget-command">
+      <code id="winget-command">winget install --id BenjiButten.StreamDecky --exact</code>
+      <button type="button" class="copy" data-copy-target="winget-command" aria-label="Copy the winget command">Copy</button>
+    </span>
+  </div>
   <p class="fineprint">
-    Download the versioned <code>StreamDecky-&lt;version&gt;-win-x64.zip</code> from the
-    <a href="https://github.com/benjibutten/StreamDecky/releases/latest">latest release</a>.
-    Windows 10/11. Self-contained, no .NET install needed. Runs without admin rights. Apache-2.0.
+    The button downloads the installer, <code>StreamDecky-&lt;version&gt;-win-x64-setup.exe</code>.
+    The <a href="https://github.com/benjibutten/StreamDecky/releases/latest">latest release</a>
+    also has the same app as a zip, without an installer; winget installs that one, and
+    keeps it updated with <code>winget upgrade</code>.
+    Windows 10/11, x64. Self-contained, no .NET install needed. Apache-2.0.
     Every release is built automatically from the source in this repository.
-    Prefer a package manager? Run
-    <code>winget install --id BenjiButten.StreamDecky --exact</code> in a terminal.
     Windows shows a warning the first time you run it —
     <a href="#first-run">here's what to click</a>.
   </p>
@@ -204,8 +243,8 @@
 <section class="wrap" id="setup">
   <h2>Setup</h2>
   <ol class="setup">
-    <li>Download the <a data-release-download href="https://github.com/benjibutten/StreamDecky/releases/latest">versioned <code>StreamDecky-&lt;version&gt;-win-x64.zip</code></a>.</li>
-    <li>Extract it to a folder you control and run <code>StreamDecky.exe</code>.</li>
+    <li>Download the <a data-release-download href="https://github.com/benjibutten/StreamDecky/releases/latest">installer, <code>StreamDecky-&lt;version&gt;-win-x64-setup.exe</code></a>, and run it. It installs StreamDecky into Program Files and adds it to the Start menu.</li>
+    <li>If your game runs as administrator, tick <em>Run StreamDecky as administrator</em> in the installer or in Settings, or Windows drops the keys StreamDecky sends to it.</li>
     <li>Build your deck in the editor and set the overlay hotkey in Settings.</li>
     <li>Optionally enable <em>Start with Windows</em> to keep it in the tray.</li>
   </ol>
@@ -219,7 +258,7 @@
   </p>
   <p>
     If you'd rather check the download yourself first, each release ships a
-    <code>.sha256</code> checksum next to the ZIP, and the
+    <code>.sha256</code> checksum next to the installer and the ZIP, and the
     <a href="code-signing-policy.html">code signing policy</a> covers how releases are built
     and where signing currently stands.
   </p>
@@ -296,10 +335,11 @@
       .then(response => response.ok ? response.json() : Promise.reject())
       .then(release => {
         const assets = release.assets || [];
-        const zip = assets.find(asset =>
-          /^StreamDecky-\d+\.\d+\.\d+-win-x64\.zip$/i.test(asset.name))
+        const download = assets.find(asset =>
+          /^StreamDecky-\d+\.\d+\.\d+-win-x64-setup\.exe$/i.test(asset.name))
+          || assets.find(asset => /^StreamDecky-\d+\.\d+\.\d+-win-x64\.zip$/i.test(asset.name))
           || assets.find(asset => /^StreamDecky-win-x64\.zip$/i.test(asset.name));
-        return zip?.browser_download_url;
+        return download?.browser_download_url;
       })
       .catch(() => null);
 
@@ -317,6 +357,21 @@
       window.location.assign(await downloadUrl || fallbackUrl);
     }));
   })();
+
+  document.querySelectorAll('[data-copy-target]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const command = document.getElementById(button.dataset.copyTarget);
+      try {
+        await navigator.clipboard.writeText(command.textContent);
+        button.textContent = 'Copied';
+      } catch {
+        // Without clipboard access, select the command so Ctrl+C copies it.
+        window.getSelection().selectAllChildren(command);
+        button.textContent = 'Press Ctrl+C';
+      }
+      setTimeout(() => { button.textContent = 'Copy'; }, 2000);
+    });
+  });
 </script>
 
 </body>
