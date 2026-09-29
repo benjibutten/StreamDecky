@@ -6,7 +6,6 @@ This document lists the items that still remain open after the current pass and 
 
 - Any target-framework change should still be treated as a separate release decision, with the current documented recommendation to stay on `net10.0-windows` until a concrete compatibility requirement appears.
 - UI automation or broader end-to-end manual testing around fullscreen applications, focus restoration, multi-monitor DPI behavior, and anti-cheat environments is still needed before hardening the app for a wider range of real-world target environments.
-- Release packaging is still zip-based. An installer or managed update story would further reduce update friction for non-technical users.
 - Release code signing is still optional in CI. A fully production-gated release flow should eventually make signing mandatory when official public releases are cut.
 
 ## Addressed in this pass

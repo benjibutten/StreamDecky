@@ -2,11 +2,22 @@
 
 <!-- Update this list together with user-visible changes under src/. -->
 
-- New setting, "Show page tabs in the overlay": replaces the ◀ ▶ arrows with
-  one tab per page, so any page is one click away. The tabs also show inside
-  a virtual layout, as a way back to the regular pages. Off by default.
-- Switching pages is quicker: the existing buttons are updated in place
-  instead of the whole grid being rebuilt.
-- Pressing an overlay button while the StreamDecky editor itself had the
-  keyboard no longer leaves the editor as a black, unresponsive window. The
-  editor is now only moved out of the way when the target is another program.
+- **StreamDecky has an installer.** It installs StreamDecky into Program Files,
+  adds it to the Start menu and to Apps in Windows Settings, and StreamDecky
+  updates itself through it from then on. The zip is still in every release,
+  and a copy extracted from it keeps updating itself as before. To move to the
+  installer, run it and then delete the old StreamDecky folder; your profiles
+  and settings stay where they are.
+- **New setting, "Run StreamDecky as administrator"** in Settings › General.
+  While a game or program running as administrator has focus, Windows drops the
+  keys StreamDecky types and presses into it. Running StreamDecky as
+  administrator too lets them through. Installed with the installer, it also
+  starts as administrator when you sign in, without asking.
+- When a button's keys go to a program running as administrator, StreamDecky
+  says so once in a notification and points to the new setting.
+- **The MicMixer music widget connects when StreamDecky runs as
+  administrator.** It used to stay offline.
+- After an update, StreamDecky shows what's new once. **About** links to the
+  same list.
+- Every window uses the thin scrollbar, and screen readers announce the
+  icon-only buttons.

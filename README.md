@@ -7,7 +7,7 @@ something and StreamDecky hands focus back to the game and sends the keystrokes
 or text there. No Stream Deck hardware needed — it's all software.
 
 [**Download for Windows**](https://github.com/benjibutten/StreamDecky/releases/latest)
-· Windows 10/11 · self-contained, no .NET install · runs without admin · Apache-2.0
+· Windows 10/11 · installer or zip · self-contained, no .NET install · Apache-2.0
 
 ![The StreamDecky overlay with a roleplay profile: action buttons, a quick clipboard panel with /me lines, sticky notes, and the music widget.](docs/assets/streamdecky-overlay.png)
 
@@ -26,8 +26,8 @@ or text there. No Stream Deck hardware needed — it's all software.
 
 ## Quick setup
 
-1. Download and extract the latest Windows ZIP.
-2. Run `StreamDecky.exe` and build a deck in the editor.
+1. Download the latest installer and run it.
+2. Start StreamDecky from the Start menu and build a deck in the editor.
 3. Set the overlay hotkey in **Settings**, then open the overlay over your game.
 4. Optionally import one of the ready-made profiles below via **Settings →
    Import Profile**. It is added next to your own profiles, never over them.
@@ -183,14 +183,25 @@ In the overlay:
 
 ## Installation
 
+Download `StreamDecky-<version>-win-x64-setup.exe` from the
+[latest release](https://github.com/benjibutten/StreamDecky/releases/latest) and
+run it. It installs StreamDecky into Program Files, adds it to the Start menu and
+to **Apps** in Windows Settings, and offers **Run StreamDecky as administrator**.
+Uninstalling from **Apps** also removes StreamDecky's startup entries.
+
+Without the installer:
+
 1. Download the latest release zip.
 2. Extract it to a stable folder, for example `%LOCALAPPDATA%\Programs\StreamDecky` or another folder you control.
 3. Run `StreamDecky.exe`.
 4. If you want background startup, enable `Start with Windows` from Settings after the app is running from its final location.
 
 Keeping the same install path helps Windows preserve tray icon preferences and keeps the startup registry entry valid.
+To move a zip copy to the installer, run the installer and delete the old folder;
+profiles and settings live in `%LOCALAPPDATA%\StreamDecky` and stay where they are.
 
-Alternatively, install StreamDecky with Windows Package Manager:
+Alternatively, install StreamDecky with Windows Package Manager, which installs
+the zip version and updates it with `winget upgrade`:
 
 ```powershell
 winget install --id BenjiButten.StreamDecky --exact
@@ -207,8 +218,11 @@ for verification commands and details.
 Release builds check GitHub for updates at most once every 12 hours while the
 main window is open. When a newer version is available, StreamDecky can download,
 verify, install, and restart itself. A manual check is available from
-**About → Check for updates**. Installs in protected folders may trigger a UAC
-prompt, and Windows may show a security warning when a new build restarts.
+**About → Check for updates**. A copy set up by the installer updates by running
+the new installer, which asks for UAC approval; StreamDecky stays open if the
+prompt is declined. A zip copy replaces its own files, which triggers a UAC
+prompt only in a protected folder. Windows may show a security warning when a
+new build restarts. After an update, StreamDecky shows what's new once.
 Installations made through winget are updated through winget instead of the
 built-in updater. Development builds do not perform update checks.
 
@@ -333,7 +347,7 @@ dotnet publish src/StreamDecky/StreamDecky.csproj \
   -r win-x64 \
   --self-contained true \
   -p:PublishSingleFile=true \
-  -p:IncludeNativeLibrariesForSelfExtract=true \
+  -p:IncludeNativeLibrariesForSelfExtract=false \
   -p:EnableCompressionInSingleFile=false \
   -p:PublishReadyToRun=true
 ```
@@ -377,7 +391,18 @@ approval; even a newly signed build can initially lack reputation.
 ## Security and privileges
 
 - The app runs as `asInvoker`; administrator rights are not required by default.
+- While a program running as administrator has focus, Windows drops the keys a
+  non-elevated StreamDecky sends. **Settings → General → Run StreamDecky as
+  administrator** restarts it elevated (after a UAC prompt), and StreamDecky
+  points to that setting once when a button's keys go to such a program.
+  Running elevated, it opens links and folders through Explorer so the browser
+  does not inherit administrator rights, refuses folder junctions made without
+  administrator rights (Windows 11), and ignores `DOTNET_STARTUP_HOOKS`.
 - `Start with Windows` writes to `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`.
+  With **Run as administrator** on and StreamDecky in a folder only administrators
+  can change, such as the installer's Program Files folder, it registers a Task
+  Scheduler task named `StreamDecky (<user>)` instead, which starts it elevated at
+  sign-in without a prompt.
 - Profiles, backups, and logs stay under `%LOCALAPPDATA%\StreamDecky`.
 - The text helper widget is the only feature that sends user content to a third party, and only when the user has entered a key and pressed `Fix spelling` or `Ask`. `Fix spelling` sends the text to DeepSeek. `Ask` sends the question to DeepSeek, and — when a Brave key is set and the question is searched — sends a search query to Brave Search. `Test Key` for either provider sends a built-in sample, never your own text.
 - Both API keys are stored DPAPI-protected for the current Windows account and are excluded from profile exports. If Windows cannot protect a key, StreamDecky refuses to save it rather than writing it in a reversible form.
