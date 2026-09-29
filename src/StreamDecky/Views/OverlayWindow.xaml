@@ -519,6 +519,7 @@
                                VerticalAlignment="Center"
                                Margin="4,0,8,0"/>
                     <Button Content="◀"
+                            AutomationProperties.Name="Previous note page"
                             Command="{Binding PreviousNotePageCommand}"
                             IsEnabled="{Binding CanGoToPreviousNotePage}"
                             FontSize="12"
@@ -529,6 +530,7 @@
                                VerticalAlignment="Center"
                                Margin="6,0"/>
                     <Button Content="▶"
+                            AutomationProperties.Name="Next note page"
                             Command="{Binding NextNotePageCommand}"
                             IsEnabled="{Binding CanGoToNextNotePage}"
                             FontSize="12"
@@ -1104,6 +1106,7 @@
                     <StackPanel Orientation="Horizontal"
                             VerticalAlignment="Center">
                         <Button Content="◀"
+                                AutomationProperties.Name="Previous page"
                                 Click="OverlayPrevPage_Click"
                                 Background="Transparent"
                                 Foreground="#F2F2F2"
@@ -1143,6 +1146,7 @@
                                    VerticalAlignment="Center"
                                 Margin="8,0"/>
                         <Button Content="▶"
+                                AutomationProperties.Name="Next page"
                                 Click="OverlayNextPage_Click"
                                 Background="Transparent"
                                 Foreground="#F2F2F2"
@@ -1292,6 +1296,7 @@
                                             Orientation="Horizontal"
                                             VerticalAlignment="Center">
                                         <Button Tag="#F8E784"
+                                                AutomationProperties.Name="Yellow note color"
                                                 Click="StickyNoteColor_Click"
                                                 Background="#F8E784"
                                                 BorderBrush="#44000000"
@@ -1301,6 +1306,7 @@
                                                 Margin="0,0,4,0"
                                                 Cursor="Hand"/>
                                         <Button Tag="#F7B3A9"
+                                                AutomationProperties.Name="Pink note color"
                                                 Click="StickyNoteColor_Click"
                                                 Background="#F7B3A9"
                                                 BorderBrush="#44000000"
@@ -1310,6 +1316,7 @@
                                                 Margin="0,0,4,0"
                                                 Cursor="Hand"/>
                                         <Button Tag="#AEE2FF"
+                                                AutomationProperties.Name="Blue note color"
                                                 Click="StickyNoteColor_Click"
                                                 Background="#AEE2FF"
                                                 BorderBrush="#44000000"
@@ -1319,6 +1326,7 @@
                                                 Margin="0,0,4,0"
                                                 Cursor="Hand"/>
                                         <Button Tag="#D4F7B0"
+                                                AutomationProperties.Name="Green note color"
                                                 Click="StickyNoteColor_Click"
                                                 Background="#D4F7B0"
                                                 BorderBrush="#44000000"
@@ -1328,6 +1336,7 @@
                                                 Margin="0,0,8,0"
                                                 Cursor="Hand"/>
                                         <Button Click="StickyNoteMinimize_Click"
+                                                AutomationProperties.Name="Minimize or restore note"
                                                 Background="Transparent"
                                                 Foreground="#4C4C4C"
                                                 BorderThickness="0"
@@ -1352,6 +1361,7 @@
                                             </Button.Style>
                                         </Button>
                                         <Button Content="✕"
+                                                AutomationProperties.Name="Remove note"
                                                 Click="StickyNoteRemove_Click"
                                                 Background="Transparent"
                                                 Foreground="#4C4C4C"
@@ -1627,6 +1637,7 @@
                         </Grid>
 
                         <Button Grid.Column="1"
+                                AutomationProperties.Name="Clear search"
                                 Click="ClearOverlayQuickTextSearch_Click"
                                 Content="✕"
                                 Margin="6,0,0,0"
@@ -1767,6 +1778,7 @@
                                                 </Grid.ColumnDefinitions>
 
                                                 <Button Click="QuickTextToggleEdit_Click"
+                                                    AutomationProperties.Name="Temporary editing"
                                                     Background="#2B3E50"
                                                         Foreground="#DCE7F2"
                                                         BorderThickness="0"
@@ -1898,6 +1910,7 @@
                                                     </Button>
 
                                                         <Button Grid.Column="1"
+                                                            AutomationProperties.Name="Run clipboard action"
                                                             Content="➜"
                                                             Click="QuickTextAction_Click"
                                                             Background="#3D7A37"
@@ -2016,6 +2029,7 @@
                                 MouseLeftButtonUp="FormsPanelHandle_MouseLeftButtonUp">
                             <DockPanel>
                                 <Button DockPanel.Dock="Right"
+                                        AutomationProperties.Name="Hide forms panel"
                                         Content="✕"
                                         Command="{Binding HideFormsPanelCommand}"
                                         Style="{StaticResource TopMiniButton}"
@@ -2553,6 +2567,7 @@
                                                     </StackPanel>
                                                 </Border>
                                                 <CheckBox IsChecked="{Binding IsCompleted, Mode=TwoWay}"
+                                                          AutomationProperties.Name="Mark as done"
                                                           ToolTip="Mark as done — checked automatically when every field has been copied"
                                                           VerticalAlignment="Center"
                                                           Margin="0,0,8,0"
@@ -2634,6 +2649,7 @@
                                                                              KeyDown="FormHistoryFieldEditBox_KeyDown"/>
                                                                 </Grid>
                                                                 <Button Grid.Column="2"
+                                                                        AutomationProperties.Name="Copy value"
                                                                         Command="{Binding CopyCommand}"
                                                                         Style="{StaticResource TopMiniButton}"
                                                                         Padding="6,3"
@@ -2767,6 +2783,7 @@
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center">
                             <Button Command="{Binding ToggleMusicWidgetMinimizedCommand}"
+                                    AutomationProperties.Name="Toggle compact mode"
                                     Style="{StaticResource TopMiniButton}"
                                     Width="22"
                                     Height="20"
@@ -2792,6 +2809,7 @@
                                 </Path>
                             </Button>
                             <Button Command="{Binding HideMusicWidgetCommand}"
+                                    AutomationProperties.Name="Hide music widget"
                                     Style="{StaticResource TopMiniButton}"
                                     Width="22"
                                     Height="20"
@@ -2985,6 +3003,7 @@
                     <DockPanel Margin="0,8,0,0"
                             LastChildFill="False">
                         <Button DockPanel.Dock="Left"
+                                AutomationProperties.Name="Previous track"
                                 Command="{Binding MusicWidget.PreviousCommand}"
                                 Style="{StaticResource MusicTransportButton}"
                                 ToolTip="Previous / restart track">
@@ -2995,6 +3014,7 @@
                                   Fill="#E6EEF8"/>
                         </Button>
                         <Button DockPanel.Dock="Left"
+                                AutomationProperties.Name="Play or pause"
                                 Command="{Binding MusicWidget.TogglePlayPauseCommand}"
                                 Style="{StaticResource MusicPrimaryTransportButton}"
                                 Margin="6,0,0,0"
@@ -3019,6 +3039,7 @@
                             </Path>
                         </Button>
                         <Button DockPanel.Dock="Left"
+                                AutomationProperties.Name="Stop"
                                 Command="{Binding MusicWidget.StopPlaybackCommand}"
                                 Style="{StaticResource MusicTransportButton}"
                                 Margin="6,0,0,0"
@@ -3030,6 +3051,7 @@
                                   Fill="#E6EEF8"/>
                         </Button>
                         <Button DockPanel.Dock="Left"
+                                AutomationProperties.Name="Next track"
                                 Command="{Binding MusicWidget.NextCommand}"
                                 Style="{StaticResource MusicTransportButton}"
                                 Margin="6,0,0,0"
@@ -3077,6 +3099,7 @@
                             </StackPanel>
                         </Button>
                         <ToggleButton x:Name="MusicDelayMenuToggle"
+                                      AutomationProperties.Name="Choose delay length"
                                       DockPanel.Dock="Left"
                                       Width="18"
                                       Height="30"
@@ -3159,6 +3182,7 @@
                         </Popup>
 
                         <Button DockPanel.Dock="Right"
+                                AutomationProperties.Name="Single-track mode"
                                 Command="{Binding MusicWidget.CycleSingleTrackModeCommand}"
                                 Width="34"
                                 Height="30"
@@ -3288,6 +3312,7 @@
                                    Visibility="{Binding MusicWidget.HasMonitorOutput, Converter={StaticResource BoolToVisibility}}"/>
 
                         <Button Grid.Column="3"
+                                AutomationProperties.Name="Link volumes"
                                 Grid.RowSpan="2"
                                 Command="{Binding MusicWidget.ToggleVolumesLinkedCommand}"
                                 Width="26"
@@ -3605,6 +3630,7 @@
                                                            VerticalAlignment="Center"
                                                            Margin="2,0,6,0"/>
                                                 <Button Grid.Column="2"
+                                                        AutomationProperties.Name="Move up in queue"
                                                         Command="{Binding DataContext.MusicWidget.MoveQueueItemUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}"
                                                         Style="{StaticResource TopMiniButton}"
@@ -3617,6 +3643,7 @@
                                                           Fill="#DCE7F2"/>
                                                 </Button>
                                                 <Button Grid.Column="3"
+                                                        AutomationProperties.Name="Move down in queue"
                                                         Command="{Binding DataContext.MusicWidget.MoveQueueItemDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}"
                                                         Style="{StaticResource TopMiniButton}"
@@ -3629,6 +3656,7 @@
                                                           Fill="#DCE7F2"/>
                                                 </Button>
                                                 <Button Grid.Column="4"
+                                                        AutomationProperties.Name="Remove from queue"
                                                         Command="{Binding DataContext.MusicWidget.RemoveQueueItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}"
                                                         Style="{StaticResource TopMiniButton}"
@@ -3651,6 +3679,7 @@
                         <DockPanel Grid.Row="2"
                                 Margin="0,6,0,0">
                             <Button DockPanel.Dock="Right"
+                                    AutomationProperties.Name="Rescan music library"
                                     Command="{Binding MusicWidget.RefreshLibraryCommand}"
                                     Style="{StaticResource TopMiniButton}"
                                     Padding="6,2"
@@ -3714,6 +3743,7 @@
                                 </TextBlock>
                             </Grid>
                             <Button Grid.Column="1"
+                                    AutomationProperties.Name="Clear search"
                                     Command="{Binding MusicWidget.ClearSearchCommand}"
                                     Style="{StaticResource TopMiniButton}"
                                     Margin="6,0,0,0"
@@ -3845,6 +3875,7 @@
                                                 </StackPanel>
                                             </StackPanel>
                                             <Button Grid.Column="1"
+                                                    AutomationProperties.Name="Play now"
                                                     Command="{Binding DataContext.MusicWidget.PlayTrackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"
                                                     Style="{StaticResource TopMiniButton}"
@@ -3857,6 +3888,7 @@
                                                       Fill="#DCE7F2"/>
                                             </Button>
                                             <Button Grid.Column="2"
+                                                    AutomationProperties.Name="Add to queue"
                                                     Command="{Binding DataContext.MusicWidget.EnqueueTrackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"
                                                     Style="{StaticResource TopMiniButton}"
@@ -3998,6 +4030,7 @@
                     <DockPanel Margin="10,7,8,7"
                             LastChildFill="True">
                         <Button DockPanel.Dock="Right"
+                                AutomationProperties.Name="Hide text helper"
                                 Command="{Binding HideTextHelperCommand}"
                                 Style="{StaticResource TopMiniButton}"
                                 Width="22"
@@ -4128,6 +4161,7 @@
                                 LastChildFill="True"
                                 Visibility="{Binding TextHelperWidget.HasAnswer, Converter={StaticResource BoolToVisibility}}">
                             <Button DockPanel.Dock="Right"
+                                    AutomationProperties.Name="Dismiss answer"
                                     Command="{Binding TextHelperWidget.DismissAnswerCommand}"
                                     Style="{StaticResource TopMiniButton}"
                                     Width="22"

@@ -271,6 +271,7 @@
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
                     <Button x:Name="MinimizeBtn" Content="─" Click="MinimizeButton_Click"
+                            AutomationProperties.Name="Minimize"
                             Width="46" Height="36" FontSize="13"
                             Foreground="#999" Background="Transparent" BorderThickness="0" Cursor="Hand">
                         <Button.Template>
@@ -287,6 +288,7 @@
                         </Button.Template>
                     </Button>
                     <Button x:Name="MaximizeBtn" Content="☐" Click="MaximizeButton_Click"
+                            AutomationProperties.Name="Maximize"
                             Width="46" Height="36" FontSize="13"
                             Foreground="#999" Background="Transparent" BorderThickness="0" Cursor="Hand">
                         <Button.Template>
@@ -303,6 +305,7 @@
                         </Button.Template>
                     </Button>
                     <Button x:Name="CloseBtn" Content="✕" Click="TitleBarClose_Click"
+                            AutomationProperties.Name="Close"
                             Width="46" Height="36" FontSize="13"
                             Foreground="#999" Background="Transparent" BorderThickness="0" Cursor="Hand">
                         <Button.Template>
@@ -521,6 +524,7 @@
 
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Content="◀"
+                                            AutomationProperties.Name="Previous note page"
                                             Command="{Binding PreviousNotePageCommand}"
                                             IsEnabled="{Binding CanGoToPreviousNotePage}"
                                             Background="#2D2D44" Foreground="White"
@@ -549,6 +553,7 @@
                                                Margin="8,0"/>
 
                                     <Button Content="▶"
+                                            AutomationProperties.Name="Next note page"
                                             Command="{Binding NextNotePageCommand}"
                                             IsEnabled="{Binding CanGoToNextNotePage}"
                                             Background="#2D2D44" Foreground="White"
@@ -832,6 +837,7 @@
                         <!-- Left side: Navigation -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Content="◀" Click="PreviousPage_Click"
+                                AutomationProperties.Name="Previous page"
                                 IsEnabled="{Binding CanGoToPreviousPage}"
                                 Background="#2D2D44" Foreground="White"
                                 FontSize="14" Padding="10,2"
@@ -865,6 +871,7 @@
                                        VerticalAlignment="Center"/>
                         </Border>
                         <Button Content="▶" Click="NextPage_Click"
+                                AutomationProperties.Name="Next page"
                                 IsEnabled="{Binding CanGoToNextPage}"
                                 Background="#2D2D44" Foreground="White"
                                 FontSize="14" Padding="10,2"
@@ -955,6 +962,7 @@
                                            VerticalAlignment="Center"
                                            Margin="0,0,4,0"/>
                                 <Button Content="−"
+                                        AutomationProperties.Name="Remove row"
                                         Command="{Binding DecreaseRowsCommand}"
                                         Width="22" Height="22"
                                         Padding="0"
@@ -970,6 +978,7 @@
                                            TextAlignment="Center"
                                            VerticalAlignment="Center"/>
                                 <Button Content="+"
+                                        AutomationProperties.Name="Add row"
                                         Command="{Binding IncreaseRowsCommand}"
                                         Width="22" Height="22"
                                         Padding="0"
@@ -986,6 +995,7 @@
                                            VerticalAlignment="Center"
                                            Margin="0,0,4,0"/>
                                 <Button Content="−"
+                                        AutomationProperties.Name="Remove column"
                                         Command="{Binding DecreaseColumnsCommand}"
                                         Width="22" Height="22"
                                         Padding="0"
@@ -1001,6 +1011,7 @@
                                            TextAlignment="Center"
                                            VerticalAlignment="Center"/>
                                 <Button Content="+"
+                                        AutomationProperties.Name="Add column"
                                         Command="{Binding IncreaseColumnsCommand}"
                                         Width="22" Height="22"
                                         Padding="0"
@@ -1492,6 +1503,7 @@
                                      IsReadOnly="True"
                                      VerticalContentAlignment="Center"/>
                             <Button Grid.Column="1" Content="📁" Click="BrowseImage_Click"
+                                    AutomationProperties.Name="Browse for image"
                                     Background="#2D2D44" Foreground="White"
                                     FontSize="13" Padding="8,5" Margin="4,0,0,0"
                                     BorderThickness="0" Cursor="Hand">
@@ -1510,6 +1522,7 @@
                                 </Button.Style>
                             </Button>
                             <Button Grid.Column="2" Content="✕" Click="ClearImage_Click"
+                                    AutomationProperties.Name="Clear image"
                                     Background="#5A2727" Foreground="White"
                                     FontSize="13" Padding="8,5" Margin="4,0,0,0"
                                     BorderThickness="0" Cursor="Hand">
@@ -1656,6 +1669,7 @@
                                             <StackPanel>
                                                 <DockPanel Margin="0,0,0,6">
                                                     <Button Content="✕" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Remove step"
                                                             Command="{Binding DataContext.RemoveStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Background="#5A2727" Foreground="White"
@@ -1676,6 +1690,7 @@
                                                         </Button.Style>
                                                     </Button>
                                                     <Button Content="▲" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Move step up"
                                                             Command="{Binding DataContext.MoveStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Background="#2D2D44" Foreground="#AAA"
@@ -1701,6 +1716,7 @@
                                                         </Button.Style>
                                                     </Button>
                                                     <Button Content="▼" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Move step down"
                                                             Command="{Binding DataContext.MoveStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Background="#2D2D44" Foreground="#AAA"
@@ -1830,6 +1846,7 @@
                                        VerticalAlignment="Center"/>
 
                             <Button x:Name="ClipboardSettingsButton"
+                                    AutomationProperties.Name="Clipboard options"
                                     Grid.Column="1"
                                     Content="⋯"
                                     Click="ToggleClipboardSettingsPopup_Click"
@@ -1921,6 +1938,7 @@
                                                         <StackPanel>
                                                             <DockPanel Margin="0,0,0,6">
                                                                 <Button Content="✕" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Remove step"
                                                                         Command="{Binding DataContext.RemoveClipboardActionStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#5A2727" Foreground="White"
@@ -1941,6 +1959,7 @@
                                                                     </Button.Style>
                                                                 </Button>
                                                                 <Button Content="▲" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Move step up"
                                                                         Command="{Binding DataContext.MoveClipboardActionStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#2D2D44" Foreground="#AAA"
@@ -1966,6 +1985,7 @@
                                                                     </Button.Style>
                                                                 </Button>
                                                                 <Button Content="▼" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Move step down"
                                                                         Command="{Binding DataContext.MoveClipboardActionStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#2D2D44" Foreground="#AAA"
@@ -2102,12 +2122,15 @@
                                               SelectedValue="{Binding SelectedQuickTextCollectionId, Mode=TwoWay}"
                                               Style="{StaticResource DarkComboBox}"/>
                                     <Button Grid.Column="1" Content="+" Command="{Binding AddQuickTextCollectionCommand}"
+                                            AutomationProperties.Name="Add collection"
                                             Style="{StaticResource FlatActionButton}"
                                             ToolTip="Add collection" Background="#2D5A27" Width="30" Margin="6,0,0,0"/>
                                     <Button Grid.Column="2" Content="✎" Click="RenameQuickTextCollection_Click"
+                                            AutomationProperties.Name="Rename collection"
                                             Style="{StaticResource FlatActionButton}"
                                             ToolTip="Rename collection" Background="#3F4F86" Width="30" Margin="5,0,0,0"/>
                                     <Button Grid.Column="3" Content="−" Command="{Binding RemoveQuickTextCollectionCommand}"
+                                            AutomationProperties.Name="Remove collection"
                                             Style="{StaticResource FlatActionButton}"
                                             IsEnabled="{Binding HasMultipleQuickTextCollections}"
                                             ToolTip="Remove collection; its tags are moved to another collection" Background="#5A2727" Width="30" Margin="5,0,0,0"/>
@@ -2131,12 +2154,15 @@
                                               SelectedValue="{Binding SelectedQuickTextCategoryId, Mode=TwoWay}"
                                               Style="{StaticResource DarkComboBox}"/>
                                     <Button Grid.Column="1" Content="+" Command="{Binding AddQuickTextCategoryCommand}"
+                                            AutomationProperties.Name="Add tag"
                                             Style="{StaticResource FlatActionButton}"
                                             ToolTip="Add tag" Background="#2D5A27" Width="30" Margin="6,0,0,0"/>
                                     <Button Grid.Column="2" Content="✎" Click="RenameQuickTextCategory_Click"
+                                            AutomationProperties.Name="Rename tag"
                                             Style="{StaticResource FlatActionButton}"
                                             ToolTip="Rename tag" Background="#3F4F86" Width="30" Margin="5,0,0,0"/>
                                     <Button Grid.Column="3" Content="−" Command="{Binding RemoveQuickTextCategoryCommand}"
+                                            AutomationProperties.Name="Remove tag"
                                             Style="{StaticResource FlatActionButton}"
                                             IsEnabled="{Binding HasMultipleQuickTextCategories}"
                                             ToolTip="Remove tag" Background="#5A2727" Width="30" Margin="5,0,0,0"/>
@@ -2319,6 +2345,7 @@
                                        FontSize="11"
                                        VerticalAlignment="Center"/>
                             <Button DockPanel.Dock="Right"
+                                    AutomationProperties.Name="Add row"
                                     Content="+"
                                     Command="{Binding AddQuickTextItemCommand}"
                                     Background="#2D5A27"
@@ -2419,6 +2446,7 @@
                                                 </Button>
 
                                                 <Button Grid.Column="2"
+                                                        AutomationProperties.Name="Remove row"
                                                         Content="✕"
                                                         Command="{Binding DataContext.RemoveQuickTextItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}"
@@ -2549,17 +2577,21 @@
                                       ItemTemplate="{StaticResource NamedComboBoxItemTemplate}"
                                       Style="{StaticResource DarkComboBox}"/>
                             <Button Grid.Column="1" Content="+" Command="{Binding AddFormTemplateCommand}"
+                                    AutomationProperties.Name="Add form"
                                     Style="{StaticResource FlatActionButton}"
                                     ToolTip="Add form" Background="#2D5A27" Width="30" Margin="6,0,0,0"/>
                             <Button Grid.Column="2" Content="⧉" Command="{Binding DuplicateFormTemplateCommand}"
+                                    AutomationProperties.Name="Duplicate form"
                                     Style="{StaticResource FlatActionButton}"
                                     IsEnabled="{Binding HasSelectedFormTemplate}"
                                     ToolTip="Duplicate form" Background="#2A4D7A" Width="30" Margin="5,0,0,0"/>
                             <Button Grid.Column="3" Content="✎" Click="RenameFormTemplate_Click"
+                                    AutomationProperties.Name="Rename form"
                                     Style="{StaticResource FlatActionButton}"
                                     IsEnabled="{Binding HasSelectedFormTemplate}"
                                     ToolTip="Rename form" Background="#3F4F86" Width="30" Margin="5,0,0,0"/>
                             <Button Grid.Column="4" Content="−" Command="{Binding RemoveFormTemplateCommand}"
+                                    AutomationProperties.Name="Delete form"
                                     Style="{StaticResource FlatActionButton}"
                                     IsEnabled="{Binding HasSelectedFormTemplate}"
                                     ToolTip="Delete form" Background="#5A2727" Width="30" Margin="5,0,0,0"/>
@@ -2597,16 +2629,19 @@
                                             <StackPanel>
                                                 <DockPanel Margin="0,0,0,6">
                                                     <Button Content="✕" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Remove field"
                                                             Command="{Binding DataContext.RemoveFormFieldCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Style="{StaticResource FormsFlatButton}"
                                                             Background="#5A2727" FontSize="11" Padding="6,2" Margin="4,0,0,0"/>
                                                     <Button Content="▼" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Move field down"
                                                             Command="{Binding DataContext.MoveFormFieldDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Style="{StaticResource FormsFlatButton}"
                                                             Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
                                                     <Button Content="▲" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Move field up"
                                                             Command="{Binding DataContext.MoveFormFieldUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Style="{StaticResource FormsFlatButton}"
@@ -2704,6 +2739,7 @@
                                                                              BorderBrush="#444" BorderThickness="1"
                                                                              AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="60"/>
                                                                     <Button Grid.Column="3" Content="✕"
+                                                                            AutomationProperties.Name="Remove option"
                                                                             Command="{Binding DataContext.RemoveFormFieldOptionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                             CommandParameter="{Binding}"
                                                                             Style="{StaticResource FormsFlatButton}"
@@ -2792,6 +2828,7 @@
                                                            HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button Grid.Column="7" Content="✕"
+                                                    AutomationProperties.Name="Remove counter"
                                                     Command="{Binding DataContext.RemoveFormCounterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"
                                                     Style="{StaticResource FormsFlatButton}"
@@ -2862,16 +2899,19 @@
                                                         <StackPanel>
                                                             <DockPanel Margin="0,0,0,6">
                                                                 <Button Content="✕" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Remove step"
                                                                         Command="{Binding DataContext.RemoveFormActionStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Style="{StaticResource FormsFlatButton}"
                                                                         Background="#5A2727" FontSize="11" Padding="6,2" Margin="4,0,0,0"/>
                                                                 <Button Content="▲" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Move step up"
                                                                         Command="{Binding DataContext.MoveFormActionStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Style="{StaticResource FormsFlatButton}"
                                                                         Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
                                                                 <Button Content="▼" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Move step down"
                                                                         Command="{Binding DataContext.MoveFormActionStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Style="{StaticResource FormsFlatButton}"
@@ -2969,6 +3009,7 @@
                                                     <StackPanel>
                                                         <DockPanel Margin="0,0,0,4">
                                                             <Button Content="✕" DockPanel.Dock="Right"
+                                                                    AutomationProperties.Name="Delete submission"
                                                                     Command="{Binding DataContext.DeleteFormSubmissionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                     CommandParameter="{Binding}"
                                                                     Style="{StaticResource FormsFlatButton}"
