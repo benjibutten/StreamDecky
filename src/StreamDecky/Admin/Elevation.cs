@@ -97,10 +97,11 @@ internal static class Elevation
     }
 
     /// <summary>
-    /// Starts an elevated copy of StreamDecky that takes over once this process exits.
-    /// Returns false when the UAC prompt was declined; this process should then keep running.
+    /// Starts an elevated copy of StreamDecky that takes over once this process exits,
+    /// passing it <paramref name="arguments"/>. Returns false when the UAC prompt was
+    /// declined; this process should then keep running.
     /// </summary>
-    public static bool TryStartElevatedCopy()
+    public static bool TryStartElevatedCopy(IEnumerable<string> arguments)
     {
         var startInfo = new ProcessStartInfo(Environment.ProcessPath!)
         {
@@ -110,6 +111,8 @@ internal static class Elevation
         };
         startInfo.ArgumentList.Add(ProcessIdArgument);
         startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
+        foreach (string argument in arguments)
+            startInfo.ArgumentList.Add(argument);
 
         try
         {

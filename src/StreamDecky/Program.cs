@@ -66,7 +66,7 @@ public static class Program
                 return;
             }
 
-            if (ShouldRestartAsAdministrator(args) && TryHandOverToElevatedCopy())
+            if (ShouldRestartAsAdministrator(args) && TryHandOverToElevatedCopy(args))
             {
                 mutex.ReleaseMutex();
                 return;
@@ -93,11 +93,17 @@ public static class Program
         && !App.HasStartHiddenInTrayArgument(args)
         && new AppSettingsService().RunAsAdministrator;
 
-    private static bool TryHandOverToElevatedCopy()
+    private static bool TryHandOverToElevatedCopy(string[] args)
     {
         try
         {
-            return Elevation.TryStartElevatedCopy();
+            // The copy takes over this launch, including an update's --update-cleanup.
+            if (Elevation.TryStartElevatedCopy(args))
+                return true;
+
+            // Declined: leaving the setting on would ask again at every launch.
+            new AppSettingsService().RunAsAdministrator = false;
+            return false;
         }
         catch (Exception ex)
         {

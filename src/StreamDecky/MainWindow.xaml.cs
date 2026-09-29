@@ -469,7 +469,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (Elevation.TryStartElevatedCopy())
+            if (Elevation.TryStartElevatedCopy([]))
             {
                 ExitApplication();
                 return;
