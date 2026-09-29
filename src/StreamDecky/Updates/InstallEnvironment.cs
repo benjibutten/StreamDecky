@@ -4,9 +4,8 @@ using Microsoft.Win32;
 namespace StreamDecky.Updates;
 
 /// <summary>
-/// Detects how the running StreamDecky executable was installed so the update
-/// flow can defer to an external package manager instead of replacing itself in
-/// place.
+/// Detects how the running StreamDecky executable was installed, which decides how it
+/// updates: through winget, through the StreamDecky installer, or by replacing its files in place.
 /// </summary>
 internal static class InstallEnvironment
 {
@@ -24,6 +23,13 @@ internal static class InstallEnvironment
     /// version.
     /// </summary>
     public static bool IsManagedByWinget => ManagedByWinget.Value;
+
+    /// <summary>
+    /// True when StreamDecky runs from a folder the StreamDecky installer set up, which
+    /// updates by running the new installer.
+    /// </summary>
+    public static bool IsInstalledWithSetup =>
+        File.Exists(Path.Combine(AppContext.BaseDirectory, "unins000.exe"));
 
     private static bool DetectWinget()
     {

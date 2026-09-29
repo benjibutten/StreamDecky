@@ -11,6 +11,9 @@ public static class Program
 {
     private const string SingleInstanceMutexName = @"Local\StreamDecky.SingleInstance";
 
+    /// <summary>Turns on "Run as administrator" and exits; the installer passes it when that box is ticked.</summary>
+    private const string RunAsAdministratorArgument = "--run-as-administrator";
+
     // The duplicate-instance check runs before any WPF assembly is loaded or
     // App.xaml is parsed, so a second launch hands off and exits as fast as the
     // runtime allows instead of booting a whole application first.
@@ -23,6 +26,18 @@ public static class Program
         if (UpdateInstaller.IsUpdateMode(args))
         {
             RunApp();
+            return;
+        }
+
+        if (UpdateInstaller.IsCleanupMode(args))
+        {
+            UpdateInstaller.RunCleanupAsync(args).GetAwaiter().GetResult();
+            return;
+        }
+
+        if (args.Contains(RunAsAdministratorArgument, StringComparer.OrdinalIgnoreCase))
+        {
+            new AppSettingsService().RunAsAdministrator = true;
             return;
         }
 
