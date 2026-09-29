@@ -891,8 +891,17 @@
 
                 <TextBlock Text="STARTUP" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
                 <CheckBox IsChecked="{Binding StartWithWindows, Mode=TwoWay}" 
-                          Content="Start with Windows" 
+                          Content="Start with Windows"
                           Foreground="#CCC" FontSize="13" Margin="0,0,0,10" Cursor="Hand"/>
+                <CheckBox IsChecked="{Binding RunAsAdministrator, Mode=TwoWay}"
+                          IsEnabled="{Binding CanRunAsAdministrator, Mode=OneTime}"
+                          Content="Run StreamDecky as administrator"
+                          Foreground="#CCC" FontSize="13" Margin="0,0,0,4" Cursor="Hand"/>
+                <TextBlock Text="While a game or program running as administrator has focus, Windows drops the keys StreamDecky types and presses into it. Running StreamDecky as administrator too lets them through. StreamDecky restarts as administrator when you tick this."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                <TextBlock Text="{Binding StartupHint}"
+                           Visibility="{Binding StartupHint, Converter={StaticResource HasTextVisibility}}"
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
                 <Border Height="1" Background="#333" Margin="0,4,0,16"/>
 

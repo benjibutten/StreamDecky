@@ -28,7 +28,7 @@ public sealed class StartupRegistrySyncService
 
     public static string BuildStartupCommand(string exePath)
     {
-        return $"\"{exePath}\" --minimized";
+        return $"\"{exePath}\" {App.MinimizedArgument}";
     }
 
     public bool Sync(bool startWithWindows, string? exePath)

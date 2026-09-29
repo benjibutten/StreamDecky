@@ -2,6 +2,7 @@
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Navigation;
+using StreamDecky.Admin;
 using StreamDecky.Helpers;
 using StreamDecky.Services;
 using StreamDecky.ViewModels;
@@ -32,6 +33,8 @@ public partial class MainWindow : Window
     private bool _globalHotkeyRegistered;
     private bool _rawInputSinkRegistered;
     private readonly StartupRegistrySyncService _startupRegistrySyncService = new();
+    private readonly StartupTaskService _startupTaskService = new();
+    private int _lastWarnedElevatedProcessId;
     // Keep this short: it bounds the added latency between pressing the gamepad
     // combo and the overlay toggling. The packet-number check in the tick handler
     // keeps idle polling cheap.
@@ -59,6 +62,7 @@ public partial class MainWindow : Window
         InitializeTrayIcon();
         _overlayController = new OverlayWindowController(_viewModel);
         SyncStartWithWindows();
+        InputActionGate.KeysSentToElevatedProgram += OnKeysSentToElevatedProgram;
 
         if (_startHiddenInTray)
             ShowInTaskbar = false;
@@ -70,15 +74,12 @@ public partial class MainWindow : Window
 
     private static bool HasStartHiddenInTrayArgument(string[] args)
     {
-        return args.Contains("--minimized", StringComparer.OrdinalIgnoreCase);
+        return App.HasStartHiddenInTrayArgument(args);
     }
 
     private void SupportLink_RequestNavigate(object sender, RequestNavigateEventArgs e)
     {
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri)
-        {
-            UseShellExecute = true
-        });
+        ShellLauncher.Open(e.Uri.AbsoluteUri);
         e.Handled = true;
     }
 
@@ -192,10 +193,7 @@ public partial class MainWindow : Window
         try
         {
             System.IO.Directory.CreateDirectory(AppDiagnostics.LogDirectory);
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AppDiagnostics.LogDirectory)
-            {
-                UseShellExecute = true
-            });
+            ShellLauncher.Open(AppDiagnostics.LogDirectory);
         }
         catch (Exception ex)
         {
@@ -249,6 +247,7 @@ public partial class MainWindow : Window
 
     private void ExitApplication()
     {
+        InputActionGate.KeysSentToElevatedProgram -= OnKeysSentToElevatedProgram;
         DisposeGamepadTogglePolling();
         DisposeTrayIcon();
         _hotkeyController.Unregister(this, HOTKEY_ID);
@@ -281,6 +280,9 @@ public partial class MainWindow : Window
 
         if (e.PropertyName == nameof(MainViewModel.StartWithWindows))
             SyncStartWithWindows();
+
+        if (e.PropertyName == nameof(MainViewModel.RunAsAdministrator))
+            OnRunAsAdministratorChanged();
     }
 
     private void UpdateGamepadTogglePolling()
@@ -353,16 +355,126 @@ public partial class MainWindow : Window
         _trayIconImage = null;
     }
 
+    private const string StartupHintElevated =
+        "Starts as administrator when you sign in, without asking.";
+    private const string StartupHintTaskPending =
+        "Starts as administrator at sign-in once StreamDecky has run as administrator.";
+    private const string StartupHintTaskPendingRemoval =
+        "Still starts as administrator at sign-in until StreamDecky runs as administrator again.";
+    private const string StartupHintNotProtected =
+        "From this folder, StreamDecky starts without administrator rights at sign-in. Installed with the StreamDecky installer, it starts as administrator at sign-in too.";
+    private const string StartupHintNoAdministratorAccount =
+        "Running as administrator needs a Windows account with administrator rights.";
+
+    /// <summary>
+    /// Mirrors "Start with Windows" into whichever of the two startup mechanisms
+    /// applies, and never both: StreamDecky started twice at sign-in would have the
+    /// second copy hand over to the first.
+    /// </summary>
     private void SyncStartWithWindows()
     {
+        string? exePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(exePath))
+            return;
+
+        bool runAsAdministrator = _viewModel.RunAsAdministrator;
+        bool startElevated = _viewModel.StartWithWindows && runAsAdministrator;
+        // Starting as administrator with no prompt needs an exe that nothing without
+        // administrator rights can swap out; from anywhere else it would hand those
+        // rights to whoever replaced the file.
+        bool isProtected = runAsAdministrator && Elevation.IsProtectedFromNonAdministrators(exePath);
+        string hint = string.Empty;
+
         try
         {
-            _startupRegistrySyncService.Sync(_viewModel.StartWithWindows, Environment.ProcessPath);
+            if (Elevation.IsElevated)
+            {
+                bool useTask = startElevated && isProtected;
+                try
+                {
+                    _startupTaskService.Sync(useTask, exePath);
+                }
+                catch (Exception ex)
+                {
+                    // Task Scheduler can be turned off or blocked by policy; the Run key still starts StreamDecky.
+                    AppDiagnostics.Warning("Could not update the startup task; using the Run key instead.", ex);
+                    useTask = false;
+                }
+
+                SyncRunKey(_viewModel.StartWithWindows && !useTask, exePath);
+                hint = useTask ? StartupHintElevated : string.Empty;
+            }
+            else if (_startupTaskService.Exists())
+            {
+                // Registered by StreamDecky running as administrator; only such a copy may change it.
+                SyncRunKey(false, exePath);
+                hint = startElevated ? StartupHintElevated : StartupHintTaskPendingRemoval;
+            }
+            else
+            {
+                SyncRunKey(_viewModel.StartWithWindows, exePath);
+                hint = startElevated && isProtected ? StartupHintTaskPending : string.Empty;
+            }
         }
         catch (Exception ex)
         {
-            AppDiagnostics.Warning("Failed to synchronize the Start with Windows registry setting.", ex);
+            AppDiagnostics.Warning("Failed to synchronize the Start with Windows setting.", ex);
         }
+
+        if (startElevated && !isProtected)
+            hint = StartupHintNotProtected;
+
+        if (!Elevation.CanRunAsAdministrator)
+            hint = StartupHintNoAdministratorAccount;
+
+        _viewModel.StartupHint = hint;
+    }
+
+    private void SyncRunKey(bool startWithWindows, string exePath)
+    {
+        if (!_startupRegistrySyncService.Sync(startWithWindows, exePath))
+            AppDiagnostics.Warning("Could not open the Windows startup registry key.");
+    }
+
+    private void OnRunAsAdministratorChanged()
+    {
+        SyncStartWithWindows();
+        // After the checkbox has taken the new value, which RestartAsAdministrator may undo.
+        if (_viewModel.RunAsAdministrator && !Elevation.IsElevated)
+            Dispatcher.BeginInvoke(RestartAsAdministrator);
+    }
+
+    private void RestartAsAdministrator()
+    {
+        try
+        {
+            if (Elevation.TryStartElevatedCopy())
+            {
+                ExitApplication();
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Could not restart StreamDecky as administrator.", ex);
+        }
+
+        // Declined or failed: leaving the setting on would ask again at every launch.
+        _viewModel.RunAsAdministrator = false;
+    }
+
+    private void OnKeysSentToElevatedProgram(string programName, int processId)
+    {
+        // Once per program run: every button press would otherwise repeat it.
+        if (Interlocked.Exchange(ref _lastWarnedElevatedProcessId, processId) == processId)
+            return;
+
+        Dispatcher.BeginInvoke(() => _trayIcon?.ShowBalloonTip(
+            8000,
+            "Keys blocked by Windows",
+            $"{programName} is running as administrator, so Windows drops the keys StreamDecky sends to it. "
+                + "Turn on \"Run StreamDecky as administrator\" in Settings > General.",
+            System.Windows.Forms.ToolTipIcon.Warning));
     }
 
     protected override void OnSourceInitialized(EventArgs e)

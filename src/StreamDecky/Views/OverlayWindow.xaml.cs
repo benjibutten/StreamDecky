@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using StreamDecky.Admin;
 using StreamDecky.Helpers;
 using StreamDecky.Models;
 using StreamDecky.ViewModels;
@@ -1650,10 +1651,7 @@ public partial class OverlayWindow : Window
 
         try
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(parsed.AbsoluteUri)
-            {
-                UseShellExecute = true
-            });
+            ShellLauncher.Open(parsed.AbsoluteUri);
         }
         catch (Exception ex)
         {

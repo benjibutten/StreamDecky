@@ -12,6 +12,9 @@
     <RootNamespace>StreamDecky</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <StartupObject>StreamDecky.Program</StartupObject>
+    <!-- DOTNET_STARTUP_HOOKS comes from the user's environment, which any program the
+         user runs can set, and would load its code into StreamDecky running as administrator. -->
+    <StartupHookSupport>false</StartupHookSupport>
     <Authors>benjibutten</Authors>
     <Company>StreamDecky</Company>
     <Product>StreamDecky</Product>

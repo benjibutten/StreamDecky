@@ -256,6 +256,19 @@ public class AppSettingsService
         }
     }
 
+    public bool RunAsAdministrator
+    {
+        get => Settings.RunAsAdministrator;
+        set
+        {
+            if (Settings.RunAsAdministrator == value)
+                return;
+
+            Settings.RunAsAdministrator = value;
+            Save();
+        }
+    }
+
     private AppSettings Load()
     {
         if (!File.Exists(_settingsPath))

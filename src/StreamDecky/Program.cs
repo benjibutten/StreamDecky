@@ -1,4 +1,8 @@
+using System.Security.AccessControl;
 using System.Threading;
+using StreamDecky.Admin;
+using StreamDecky.Helpers;
+using StreamDecky.Services;
 using StreamDecky.Updates;
 
 namespace StreamDecky;
@@ -13,28 +17,88 @@ public static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        if (Elevation.IsElevated)
+            Elevation.RefuseUntrustedJunctions();
+
         if (UpdateInstaller.IsUpdateMode(args))
         {
             RunApp();
             return;
         }
 
-        using var mutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out bool isFirstInstance);
-        if (!isFirstInstance)
+        Elevation.WaitForPreviousInstance(args);
+
+        Mutex mutex;
+        bool isFirstInstance;
+        try
         {
-            if (!App.HasStartHiddenInTrayArgument(args))
-                App.SignalRunningInstanceToActivate();
+            mutex = MutexAcl.Create(true, SingleInstanceMutexName, out isFirstInstance, CreateMutexSecurity());
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Held by a StreamDecky running as administrator that does not grant this
+            // account access. It is still running, so this launch must not become a
+            // second instance.
             return;
         }
 
+        using (mutex)
+        {
+            if (!isFirstInstance)
+            {
+                if (!App.HasStartHiddenInTrayArgument(args))
+                    App.SignalRunningInstanceToActivate();
+                return;
+            }
+
+            if (ShouldRestartAsAdministrator(args) && TryHandOverToElevatedCopy())
+            {
+                mutex.ReleaseMutex();
+                return;
+            }
+
+            try
+            {
+                RunApp();
+            }
+            finally
+            {
+                mutex.ReleaseMutex();
+            }
+        }
+    }
+
+    /// <summary>
+    /// True when this launch should hand over to a copy running as administrator.
+    /// Never at sign-in: a UAC prompt there would stand between the user and the desktop.
+    /// </summary>
+    private static bool ShouldRestartAsAdministrator(string[] args) =>
+        !Elevation.IsElevated
+        && Elevation.CanRunAsAdministrator
+        && !App.HasStartHiddenInTrayArgument(args)
+        && new AppSettingsService().RunAsAdministrator;
+
+    private static bool TryHandOverToElevatedCopy()
+    {
         try
         {
-            RunApp();
+            return Elevation.TryStartElevatedCopy();
         }
-        finally
+        catch (Exception ex)
         {
-            mutex.ReleaseMutex();
+            AppDiagnostics.Warning("Could not restart StreamDecky as administrator; running without administrator rights.", ex);
+            return false;
         }
+    }
+
+    // The instance that creates the mutex may run as administrator, and then Windows
+    // gives it a default permission that shuts every process without administrator
+    // rights out, including a second StreamDecky launched from the Start menu.
+    private static MutexSecurity CreateMutexSecurity()
+    {
+        var security = new MutexSecurity();
+        security.AddAccessRule(new MutexAccessRule(Elevation.CurrentUser(), MutexRights.FullControl, AccessControlType.Allow));
+        return security;
     }
 
     private static void RunApp()

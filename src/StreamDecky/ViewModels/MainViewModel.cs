@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using StreamDecky.Admin;
 using StreamDecky.Helpers;
 using StreamDecky.Models;
 using StreamDecky.Services;
@@ -40,6 +41,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private ButtonConfig? _buttonClipboard;
     private int _currentVirtualLayoutIndex = -1;
     private bool _isDisposed;
+    private string _startupHint = string.Empty;
 
     public MainViewModel(
         ProfileService? profileService = null,
@@ -274,6 +276,36 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _profile.StartWithWindows = value;
             OnPropertyChanged();
             ScheduleAutoSave();
+        }
+    }
+
+    /// <summary>Machine-wide, unlike the profile settings around it.</summary>
+    public bool RunAsAdministrator
+    {
+        get => _appSettingsService.RunAsAdministrator;
+        set
+        {
+            if (_appSettingsService.RunAsAdministrator == value)
+                return;
+
+            _appSettingsService.RunAsAdministrator = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool CanRunAsAdministrator => Elevation.CanRunAsAdministrator;
+
+    /// <summary>How StreamDecky starts at sign-in given the two startup settings; empty when that needs no explaining.</summary>
+    public string StartupHint
+    {
+        get => _startupHint;
+        set
+        {
+            if (string.Equals(_startupHint, value, StringComparison.Ordinal))
+                return;
+
+            _startupHint = value;
+            OnPropertyChanged();
         }
     }
 
