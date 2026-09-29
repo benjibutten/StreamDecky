@@ -35,6 +35,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Shown by the "What's new" dialog after an update. -->
+    <EmbeddedResource Include="..\..\RELEASE_NOTES.md" LogicalName="StreamDecky.RELEASE_NOTES.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\..\INSTALLATION.txt"
           Link="INSTALLATION.txt"
           CopyToOutputDirectory="PreserveNewest"

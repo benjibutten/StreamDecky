@@ -67,6 +67,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _autoSaveTimer.Elapsed += (_, _) => _ = AutoSaveAsync();
 
         _profileStore = _profileService.LoadStore();
+        IsFirstRun = !_profileService.FoundSavedProfiles;
         _profile = _profileStore.GetActiveProfile();
         _currentPageIndex = 0;
         _currentNotePageIndex = Math.Clamp(_profile.CurrentNotePageIndex, 0, _profile.NotePages.Count - 1);
@@ -294,6 +295,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     public bool CanRunAsAdministrator => Elevation.CanRunAsAdministrator;
+
+    /// <summary>True when no profiles from an earlier run were found at startup.</summary>
+    public bool IsFirstRun { get; }
+
+    public string? WhatsNewShownForVersion
+    {
+        get => _appSettingsService.WhatsNewShownForVersion;
+        set => _appSettingsService.WhatsNewShownForVersion = value;
+    }
 
     /// <summary>How StreamDecky starts at sign-in given the two startup settings; empty when that needs no explaining.</summary>
     public string StartupHint

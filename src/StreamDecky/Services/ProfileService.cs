@@ -62,8 +62,12 @@ public class ProfileService
         return LoadLegacyProfile();
     }
 
+    /// <summary>True when the last <see cref="LoadStore"/> found profiles saved by an earlier run.</summary>
+    public bool FoundSavedProfiles { get; private set; }
+
     public DeckProfileStore LoadStore()
     {
+        FoundSavedProfiles = File.Exists(_profilesPath) || File.Exists(_legacyProfilePath);
         if (File.Exists(_profilesPath))
         {
             try

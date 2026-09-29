@@ -115,6 +115,14 @@ internal static class AboutDialog
             e.Handled = true;
         };
         sourceLink.Inlines.Add(hyperlink);
+        var whatsNewLink = new Hyperlink(new Run("What's new in this version"))
+        {
+            Foreground = Accent,
+            FontWeight = FontWeights.SemiBold
+        };
+        whatsNewLink.Click += (_, _) => WhatsNewDialog.Show(window);
+        sourceLink.Inlines.Add(new LineBreak());
+        sourceLink.Inlines.Add(whatsNewLink);
         footer.Children.Add(sourceLink);
 
         var updateButton = new Button

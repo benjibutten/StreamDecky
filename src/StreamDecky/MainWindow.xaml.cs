@@ -101,6 +101,27 @@ public partial class MainWindow : Window
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         UpdateEditorPanelLayoutConstraints();
+        // Loaded waits for the first Show, so a start hidden in the tray offers the
+        // notes when the user first opens the window.
+        Dispatcher.BeginInvoke(OfferWhatsNew, System.Windows.Threading.DispatcherPriority.ContextIdle);
+    }
+
+    /// <summary>
+    /// Shows the release notes of this version once, after an update. A first run only
+    /// records the version, so the notes wait for the next update.
+    /// </summary>
+    private void OfferWhatsNew()
+    {
+        if (AppVersion.Current is not { } current || _viewModel.WhatsNewShownForVersion == current.ToString())
+            return;
+
+        if (WhatsNewDialog.ShouldShow(current, _viewModel.WhatsNewShownForVersion, isSetUp: !_viewModel.IsFirstRun)
+            && WhatsNewDialog.ReadBuiltInItems().Count > 0)
+        {
+            WhatsNewDialog.Show(this);
+        }
+
+        _viewModel.WhatsNewShownForVersion = current.ToString();
     }
 
     private void MainWindow_StateChanged(object? sender, EventArgs e)
