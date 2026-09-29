@@ -14,6 +14,9 @@ internal static class UpdateInstaller
 
     public const string ArchiveName = "update.zip";
 
+    /// <summary>Passed to the StreamDecky an update starts, with the download folder to delete. installer/StreamDecky.iss passes it too.</summary>
+    public const string UpdateCleanupArgument = "--update-cleanup";
+
     private const int FileOperationAttempts = 20;
     private static readonly TimeSpan FileOperationDelay = TimeSpan.FromMilliseconds(250);
 
@@ -96,7 +99,7 @@ internal static class UpdateInstaller
             UseShellExecute = true,
             WorkingDirectory = installDirectory
         };
-        restart.ArgumentList.Add("--update-cleanup");
+        restart.ArgumentList.Add(UpdateCleanupArgument);
         restart.ArgumentList.Add(workDirectory);
         _ = Process.Start(restart)
             ?? throw new InvalidOperationException("The updated application could not be restarted.");
@@ -281,9 +284,13 @@ internal static class UpdateInstaller
         }
     }
 
+    /// <summary>True when an update started this launch.</summary>
+    public static bool IsRestartAfterUpdate(string[] args) =>
+        args.Contains(UpdateCleanupArgument, StringComparer.OrdinalIgnoreCase);
+
     public static void ScheduleCleanup(string[] args)
     {
-        int index = Array.FindIndex(args, value => string.Equals(value, "--update-cleanup", StringComparison.OrdinalIgnoreCase));
+        int index = Array.FindIndex(args, value => string.Equals(value, UpdateCleanupArgument, StringComparison.OrdinalIgnoreCase));
         if (index < 0 || index + 1 >= args.Length)
             return;
 

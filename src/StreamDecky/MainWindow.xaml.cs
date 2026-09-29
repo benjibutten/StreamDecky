@@ -5,6 +5,7 @@ using System.Windows.Navigation;
 using StreamDecky.Admin;
 using StreamDecky.Helpers;
 using StreamDecky.Services;
+using StreamDecky.Updates;
 using StreamDecky.ViewModels;
 using StreamDecky.Views;
 
@@ -115,7 +116,10 @@ public partial class MainWindow : Window
         if (AppVersion.Current is not { } current || _viewModel.WhatsNewShownForVersion == current.ToString())
             return;
 
-        if (WhatsNewDialog.ShouldShow(current, _viewModel.WhatsNewShownForVersion, isSetUp: !_viewModel.IsFirstRun)
+        // Profiles are saved only once something changes, so a launch by an update also
+        // counts as set up.
+        bool isSetUp = !_viewModel.IsFirstRun || UpdateInstaller.IsRestartAfterUpdate(Environment.GetCommandLineArgs());
+        if (WhatsNewDialog.ShouldShow(current, _viewModel.WhatsNewShownForVersion, isSetUp)
             && WhatsNewDialog.ReadBuiltInItems().Count > 0)
         {
             WhatsNewDialog.Show(this);
