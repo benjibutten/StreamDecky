@@ -309,6 +309,21 @@ public sealed class MusicWidgetViewModelTests
         Assert.Empty(viewModel.PlaybackBlockedReason);
     }
 
+    [Theory]
+    [InlineData("empty_library", "MicMixer's music library is empty. Add music in MicMixer to play it from here.")]
+    [InlineData("no_playback_clock", "Start routing or turn on monitoring in MicMixer to play music.")]
+    [InlineData("some_future_reason", "MicMixer can't start music right now.")]
+    public void BlockedPlayback_ShowsAReadableReason(string reason, string expected)
+    {
+        var client = new FakeMicMixerClient();
+        using var viewModel = new MusicWidgetViewModel(client);
+        client.RaiseConnected();
+
+        client.RaiseState(CreateState() with { CanStartPlayback = false, PlaybackBlockedReason = reason });
+
+        Assert.Equal(expected, viewModel.PlaybackBlockedReason);
+    }
+
     private static MicMixerTrack CreateTrack(string id, string name) =>
         new(id, name, "f1", "Music", @"C:\Music", false, Array.Empty<int>());
 

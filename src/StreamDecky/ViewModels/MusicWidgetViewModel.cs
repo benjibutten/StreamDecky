@@ -314,7 +314,7 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
         // the playback gate's machine-readable reason below it is redundant.
         PlaybackBlockedReason = state.CanStartPlayback || state.IsExternalMode
             ? string.Empty
-            : state.PlaybackBlockedReason ?? string.Empty;
+            : DescribePlaybackBlockedReason(state.PlaybackBlockedReason);
         ShowRoutingHint = !state.IsRouting && !state.IsExternalMode;
 
         IsDelayedStartActive = state.IsDelayedStartActive;
@@ -727,6 +727,18 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
             ReportCommandError(ex);
         }
     }
+
+    /// <summary>
+    /// What the user can do about MicMixer's machine-readable reason for refusing to start
+    /// music. A reason this version does not know still gets a readable sentence.
+    /// </summary>
+    internal static string DescribePlaybackBlockedReason(string? reason) => reason switch
+    {
+        null or "" => string.Empty,
+        "empty_library" => "MicMixer's music library is empty. Add music in MicMixer to play it from here.",
+        "no_playback_clock" => "Start routing or turn on monitoring in MicMixer to play music.",
+        _ => "MicMixer can't start music right now."
+    };
 
     private void ReportCommandError(Exception exception)
     {
