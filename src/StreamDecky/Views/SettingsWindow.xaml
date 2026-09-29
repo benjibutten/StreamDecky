@@ -36,41 +36,6 @@
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
 
-        <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Thumb">
-                        <Border Background="#55FFFFFF" CornerRadius="3" Margin="1"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="ThinScrollBar" TargetType="ScrollBar">
-            <Setter Property="Width" Value="6"/>
-            <Setter Property="MinWidth" Value="6"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ScrollBar">
-                        <Grid Background="Transparent">
-                            <Track x:Name="PART_Track" IsDirectionReversed="True">
-                                <Track.Thumb>
-                                    <Thumb Style="{StaticResource ThinScrollBarThumb}"/>
-                                </Track.Thumb>
-                            </Track>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="Orientation" Value="Horizontal">
-                    <Setter Property="Height" Value="6"/>
-                    <Setter Property="MinHeight" Value="6"/>
-                    <Setter Property="Width" Value="Auto"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
         <Style x:Key="DarkScrollViewer" TargetType="ScrollViewer">
             <Setter Property="Template">
                 <Setter.Value>
@@ -691,9 +656,6 @@
                          FontSize="12" Padding="8,6"
                          BorderBrush="#444" BorderThickness="1"
                          Margin="0,0,0,4">
-                    <TextBox.Resources>
-                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
-                    </TextBox.Resources>
                 </TextBox>
                 <TextBlock Text="This is the instruction sent with every spell fix. The text from the widget is sent separately, so keep the prompt about how to correct it."
                            Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
@@ -873,9 +835,6 @@
                          FontSize="12" Padding="8,6"
                          BorderBrush="#444" BorderThickness="1"
                          Margin="0,0,0,4">
-                    <TextBox.Resources>
-                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
-                    </TextBox.Resources>
                 </TextBox>
                 <TextBlock Text="This is the instruction sent with every question. The question, today's date and any search results are sent separately, so keep the prompt about how to answer. The rules about only using the search results, and about saying so when they do not answer the question, are what keep the answer card honest — edit those last."
                            Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>

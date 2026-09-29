@@ -105,43 +105,6 @@
                TargetType="Button"
                BasedOn="{StaticResource FlatActionButton}"/>
 
-        <!-- Thin ScrollBar Thumb -->
-        <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Thumb">
-                        <Border Background="#55FFFFFF" CornerRadius="3" Margin="1"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Thin vertical ScrollBar -->
-        <Style x:Key="ThinScrollBar" TargetType="ScrollBar">
-            <Setter Property="Width" Value="6"/>
-            <Setter Property="MinWidth" Value="6"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ScrollBar">
-                        <Grid Background="Transparent">
-                            <Track x:Name="PART_Track" IsDirectionReversed="True">
-                                <Track.Thumb>
-                                    <Thumb Style="{StaticResource ThinScrollBarThumb}"/>
-                                </Track.Thumb>
-                            </Track>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="Orientation" Value="Horizontal">
-                    <Setter Property="Height" Value="6"/>
-                    <Setter Property="MinHeight" Value="6"/>
-                    <Setter Property="Width" Value="Auto"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
         <!-- Dark ScrollViewer with thin scrollbar -->
         <Style x:Key="DarkScrollViewer" TargetType="ScrollViewer">
             <Setter Property="Template">
@@ -2426,9 +2389,6 @@
                                                          MaxHeight="56"
                                                          VerticalScrollBarVisibility="Auto"
                                                          Margin="0,0,8,0">
-                                                    <TextBox.Resources>
-                                                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
-                                                    </TextBox.Resources>
                                                 </TextBox>
 
                                                 <Button Grid.Column="1"
