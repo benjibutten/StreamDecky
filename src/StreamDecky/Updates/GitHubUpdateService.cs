@@ -214,7 +214,6 @@ internal sealed class GitHubUpdateService
         string expectedHash,
         IProgress<UpdateProgress>? progress)
     {
-        bool requiresElevation = !CanWriteToDirectory(installDirectory);
         string updaterPath = Path.Combine(workDirectory, "StreamDecky.Update.exe");
 
         progress?.Report(new UpdateProgress("Preparing installer…"));
@@ -229,9 +228,6 @@ internal sealed class GitHubUpdateService
             WindowStyle = ProcessWindowStyle.Hidden,
             WorkingDirectory = workDirectory
         };
-        if (requiresElevation)
-            startInfo.Verb = "runas";
-
         startInfo.ArgumentList.Add("--apply-update");
         startInfo.ArgumentList.Add("--process-id");
         startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
@@ -243,8 +239,7 @@ internal sealed class GitHubUpdateService
         startInfo.ArgumentList.Add(installDirectory);
         startInfo.ArgumentList.Add("--executable-path");
         startInfo.ArgumentList.Add(executablePath);
-        progress?.Report(new UpdateProgress(
-            requiresElevation ? "Waiting for Windows approval…" : "Starting installer…"));
+        progress?.Report(new UpdateProgress("Starting installer…"));
         _ = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Windows could not start the update installer.");
     }
@@ -330,6 +325,13 @@ internal sealed class GitHubUpdateService
         }
         catch { }
     }
+
+    /// <summary>
+    /// True when this copy can install <paramref name="update"/>: through the installer, or by
+    /// replacing its own files in a folder it may write to.
+    /// </summary>
+    internal static bool CanInstall(UpdateInfo update) =>
+        update.IsInstaller || CanWriteToDirectory(AppContext.BaseDirectory);
 
     private static bool CanWriteToDirectory(string directory)
     {

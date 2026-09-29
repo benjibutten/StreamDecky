@@ -1,4 +1,5 @@
 using System.Windows;
+using StreamDecky.Admin;
 using StreamDecky.Helpers;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
@@ -55,6 +56,22 @@ internal static class UpdateCoordinator
                     "StreamDecky Update Available",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
+                return;
+            }
+
+            // Updating a zip copy in such a folder would mean running the updater and the
+            // libraries it copies to a user-writable folder as administrator, where any
+            // program could swap them before the UAC prompt is approved.
+            if (!GitHubUpdateService.CanInstall(update))
+            {
+                var openReleasePage = MessageBox.Show(
+                    owner,
+                    $"StreamDecky {update.TagName} is available. You have {AppVersion.DisplayText}.\n\nThis copy of StreamDecky is in a folder only administrators can change, so it cannot update itself. Install StreamDecky with its installer instead, which keeps it up to date from then on.\n\nOpen the release page to download the installer?",
+                    "StreamDecky Update Available",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
+                if (openReleasePage == MessageBoxResult.Yes)
+                    ShellLauncher.Open(update.ReleasePageUri.AbsoluteUri);
                 return;
             }
 

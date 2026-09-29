@@ -220,8 +220,8 @@ main window is open. When a newer version is available, StreamDecky can download
 verify, install, and restart itself. A manual check is available from
 **About → Check for updates**. A copy set up by the installer updates by running
 the new installer, which asks for UAC approval; StreamDecky stays open if the
-prompt is declined. A zip copy replaces its own files, which triggers a UAC
-prompt only in a protected folder. Windows may show a security warning when a
+prompt is declined. A zip copy replaces its own files; in a folder only
+administrators can change, it points to the installer instead. Windows may show a security warning when a
 new build restarts. After an update, StreamDecky shows what's new once.
 Installations made through winget are updated through winget instead of the
 built-in updater. Development builds do not perform update checks.

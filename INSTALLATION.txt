@@ -54,10 +54,10 @@ app, even when it was downloaded from the official project.
 - Windows 11 Smart App Control is separate from SmartScreen and can completely
   block unknown unsigned apps without a "Run anyway" choice. Do not turn off a
   security feature only to run a file whose source or hash you cannot verify.
-- A UAC prompt during an automatic update comes from the StreamDecky installer,
-  or, for a zip copy, means that its folder requires administrator permission.
+- A UAC prompt during an automatic update comes from the StreamDecky installer.
   Check that the prompt refers to the app you intended to update before
-  approving it.
+  approving it. A zip copy in a folder only administrators can change does not
+  update itself; install StreamDecky with the installer instead.
 
 Automatic updates are downloaded from the official GitHub release and checked
 against its SHA-256 file before installation. A valid checksum detects a damaged
