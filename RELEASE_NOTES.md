@@ -42,7 +42,8 @@
 - Colors are picked in a dark color picker of StreamDecky's own, with a
   gradient, presets and a hex field, instead of the Windows dialog. It keeps
   the last ten colors you chose until StreamDecky closes, so several buttons
-  are quick to give the same color.
+  are quick to give the same color. The color swatches work with the keyboard
+  and screen readers.
 - **The text helper stays readable over any background.** Only its backdrop
   follows the overlay opacity; the writing box and buttons are solid, and the
   button row has the same tint as the rest of the widget.

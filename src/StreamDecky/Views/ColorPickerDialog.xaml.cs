@@ -1,8 +1,10 @@
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
+using Button = System.Windows.Controls.Button;
 using Color = System.Windows.Media.Color;
 using ColorConverter = System.Windows.Media.ColorConverter;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -69,22 +71,17 @@ public partial class ColorPickerDialog : Window
         return dialog.ShowDialog() == true ? dialog.SelectedHex : null;
     }
 
-    private Border CreateSwatch(string hex)
+    private Button CreateSwatch(string hex)
     {
         var color = (Color)ColorConverter.ConvertFromString(hex);
-        var swatch = new Border
+        var swatch = new Button
         {
-            Width = 26,
-            Height = 26,
-            Margin = new Thickness(0, 0, 5, 5),
-            CornerRadius = new CornerRadius(4),
+            Style = (Style)FindResource("SwatchButton"),
             Background = new SolidColorBrush(color),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF)),
-            BorderThickness = new Thickness(1),
-            Cursor = System.Windows.Input.Cursors.Hand,
             ToolTip = hex
         };
-        swatch.MouseLeftButtonDown += (_, _) => SelectColor(color);
+        AutomationProperties.SetName(swatch, hex);
+        swatch.Click += (_, _) => SelectColor(color);
         return swatch;
     }
 

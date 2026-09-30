@@ -41,6 +41,29 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="SwatchButton" TargetType="Button">
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Margin" Value="0,0,5,5"/>
+            <Setter Property="BorderBrush" Value="#55FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsKeyboardFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="White"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Border BorderBrush="#3B3B5C" BorderThickness="1">
@@ -139,10 +162,12 @@
 
                 <StackPanel x:Name="RecentSection" Visibility="Collapsed" Margin="0,12,0,0">
                     <TextBlock Text="Recent" Foreground="#AAA" FontSize="12" Margin="0,0,0,6"/>
-                    <WrapPanel x:Name="RecentColors" Width="312" HorizontalAlignment="Left"/>
+                    <WrapPanel x:Name="RecentColors" Width="312" HorizontalAlignment="Left"
+                               KeyboardNavigation.TabNavigation="Once" KeyboardNavigation.DirectionalNavigation="Cycle"/>
                 </StackPanel>
 
-                <WrapPanel x:Name="Presets" Width="312" HorizontalAlignment="Left" Margin="0,12,0,0"/>
+                <WrapPanel x:Name="Presets" Width="312" HorizontalAlignment="Left" Margin="0,12,0,0"
+                           KeyboardNavigation.TabNavigation="Once" KeyboardNavigation.DirectionalNavigation="Cycle"/>
 
                 <Grid Margin="0,12,0,0" Width="312" HorizontalAlignment="Left">
                     <Grid.ColumnDefinitions>
@@ -151,7 +176,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Hex" Foreground="#AAA" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBox x:Name="HexBox" Grid.Column="1"
+                    <TextBox x:Name="HexBox" Grid.Column="1" AutomationProperties.Name="Hex color"
                              Background="#2D2D44" Foreground="White" FontSize="13" Padding="8,5"
                              BorderBrush="#444" BorderThickness="1" CaretBrush="White"
                              MaxLength="9"
