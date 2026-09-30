@@ -60,7 +60,9 @@ public sealed class MicMixerClient : IMicMixerClient
 
         lock (_lifecycleLock)
         {
-            if (_runTask is { IsCompleted: false })
+            // A loop that has given up raises Unavailable just before it returns, so it can
+            // still look unfinished to a Start() made in response.
+            if (_runTask is { IsCompleted: false } && ConnectionState != MicMixerConnectionState.Unavailable)
             {
                 return;
             }
