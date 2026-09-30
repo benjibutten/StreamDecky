@@ -51,7 +51,7 @@ internal static class WhatsNewDialog
             Foreground = MutedInk
         });
 
-        var list = new StackPanel();
+        var list = new StackPanel { Margin = new Thickness(0, 0, 14, 0) };
         foreach (string item in ReadBuiltInItems())
             list.Children.Add(CreateItem(item));
 
