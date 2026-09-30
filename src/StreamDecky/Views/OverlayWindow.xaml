@@ -3855,12 +3855,23 @@
                                             MouseLeftButtonDown="MusicTrackRow_MouseLeftButtonDown">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}"
+                                            <!-- Green rather than the accent purple, so the current track
+                                                 stands out on any overlay background colour. -->
+                                            <Border x:Name="CurrentTrackBar"
+                                                    Width="3"
+                                                    CornerRadius="1.5"
+                                                    Margin="-3,1,7,1"
+                                                    Background="#8FD0A8"
+                                                    Visibility="Collapsed"/>
+                                            <StackPanel Grid.Column="1"
+                                                        VerticalAlignment="Center">
+                                                <TextBlock x:Name="TrackName"
+                                                           Text="{Binding Name}"
                                                            Foreground="#ECF3FA"
                                                            FontSize="12"
                                                            TextTrimming="CharacterEllipsis"
@@ -3877,20 +3888,22 @@
                                                                Visibility="{Binding QueueBadgeText, Converter={StaticResource HasTextVisibility}}"/>
                                                 </StackPanel>
                                             </StackPanel>
-                                            <Button Grid.Column="1"
+                                            <Button x:Name="PlayTrackButton"
+                                                    Grid.Column="2"
                                                     AutomationProperties.Name="Play now"
                                                     Command="{Binding DataContext.MusicWidget.PlayTrackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"
                                                     Style="{StaticResource TopMiniButton}"
                                                     VerticalAlignment="Center"
                                                     ToolTip="Play now">
-                                                <Path Data="{StaticResource MusicIconPlay}"
+                                                <Path x:Name="PlayTrackIcon"
+                                                      Data="{StaticResource MusicIconPlay}"
                                                       Width="10"
                                                       Height="10"
                                                       Stretch="Uniform"
                                                       Fill="#DCE7F2"/>
                                             </Button>
-                                            <Button Grid.Column="2"
+                                            <Button Grid.Column="3"
                                                     AutomationProperties.Name="Add to queue"
                                                     Command="{Binding DataContext.MusicWidget.EnqueueTrackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"
@@ -3924,6 +3937,27 @@
                                             <Setter TargetName="TrackRow"
                                                     Property="BorderBrush"
                                                     Value="#886C5CE7"/>
+                                            <Setter TargetName="CurrentTrackBar"
+                                                    Property="Visibility"
+                                                    Value="Visible"/>
+                                            <Setter TargetName="TrackName"
+                                                    Property="Foreground"
+                                                    Value="White"/>
+                                            <Setter TargetName="TrackName"
+                                                    Property="FontWeight"
+                                                    Value="SemiBold"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsPlaying}"
+                                                Value="True">
+                                            <Setter TargetName="PlayTrackIcon"
+                                                    Property="Data"
+                                                    Value="{StaticResource MusicIconPause}"/>
+                                            <Setter TargetName="PlayTrackButton"
+                                                    Property="ToolTip"
+                                                    Value="Pause"/>
+                                            <Setter TargetName="PlayTrackButton"
+                                                    Property="AutomationProperties.Name"
+                                                    Value="Pause"/>
                                         </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>

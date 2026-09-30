@@ -17,6 +17,9 @@
   says so once in a notification and points to the new setting.
 - **The MicMixer music widget connects when StreamDecky runs as
   administrator.** It used to stay offline.
+- **The music library shows what is playing.** The current track has a green
+  mark and a bold title, and its button pauses and resumes it instead of
+  starting it over.
 - The music widget explains why MicMixer cannot start music, such as an empty
   music library, instead of showing a code like `empty_library`.
 - After an update, StreamDecky shows what's new once. **About** links to the
