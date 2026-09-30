@@ -1,7 +1,7 @@
 # Build a FiveM roleplay deck
 
 This guide sets up StreamDecky for a roleplay server: one-press emotes, ready
-`/me` and `/do` lines, and a dispatch form — all on an overlay that opens on top
+`/me` and `/do` lines, and a dispatch form, all on an overlay that opens on top
 of the game and types back into the chat box.
 
 If you just want a working starting point, import the
@@ -11,9 +11,10 @@ The rest of this guide explains how it is built so you can extend it.
 
 ## Before you start
 
-- Install and run StreamDecky, and set an overlay hotkey you can reach mid-scene
-  (**Settings → overlay hotkey**). Something like `Ctrl+F12` or a spare mouse
-  button works well.
+- Install and run StreamDecky. Its [setup section](https://benjibutten.github.io/StreamDecky/#setup)
+  covers the download and the Windows warnings you'll click past.
+- Set an overlay hotkey you can reach mid-scene (**Settings → overlay hotkey**).
+  Something like `Ctrl+F12` or a spare mouse button works well.
 - Know your server's chat key. On most FiveM servers it is `T`. The examples
   below assume `T`; change it if your server differs.
 - Know how your server's emotes are triggered. Many use an emote resource with
@@ -23,14 +24,14 @@ The rest of this guide explains how it is built so you can extend it.
 
 ## 1. One button that plays an emote
 
-The core trick is a **Multi-Action** button that opens the chat, types a
-command, and presses Enter:
+Each emote is a **Multi-Action** button that opens the chat, types a command,
+and presses Enter:
 
 1. Select an empty slot and set **Action** to *Multi-Action*.
 2. Add three steps:
-   - **Key Press** — `t` (opens the chat box).
-   - **Delay** — `150` ms (gives the chat box time to focus).
-   - **Text Input** — text `/e handsup`, mode *Paste from clipboard*, and tick
+   - **Key Press**: `t` (opens the chat box).
+   - **Delay**: `150` ms (gives the chat box time to focus).
+   - **Text Input**: text `/e handsup`, mode *Paste from clipboard*, and tick
      *Press Enter after*.
 3. Give it a title (`Hands Up`), an icon (🙌), and a color.
 
@@ -38,13 +39,13 @@ Press your overlay hotkey in-game, click the button, and the character raises
 their hands. Duplicate the button (`Ctrl+C` / `Ctrl+V`) and change only the
 command text to build out `Point`, `Wave`, `Sit`, `Kneel`, and so on.
 
-> Prefer *Paste from clipboard* for chat commands — it is instant and reliable.
+> Use *Paste from clipboard* for chat commands; it is instant and reliable.
 > Switch a button to *Simulate typing* only if your server blocks pasted text.
 
 ## 2. A hidden page of extra emotes
 
 A full deck of dances would crowd the main page. Put them on a **virtual
-layout** — a hidden page you reach by button:
+layout**, a hidden page you reach with a button:
 
 1. Create a new virtual layout (call it `Emotes`).
 2. Fill it with more Multi-Action emote buttons (`/e dance`, `/e dance2`,
@@ -72,12 +73,12 @@ Typed roleplay is faster from the **quick-text** panel than from the keyboard.
    Enter after*.
 
 In the overlay, the quick-text panel is searchable, so even a long list stays
-usable mid-scene. Need a one-off variation? Edit the line inline in the overlay
-— it won't change the saved version.
+usable mid-scene. For a one-off variation, edit the line in the overlay; the
+saved version stays as it was.
 
 ## 4. A dispatch form for repeated reports
 
-For structured text — dispatch entries, reports, invoices — use a **form**:
+For structured text such as dispatch entries, reports and invoices, use a **form**:
 
 1. In the forms editor, create a form (`Dispatch report`).
 2. Add fields: a **Choice** field `Call type` (traffic stop, robbery, medical,
@@ -105,14 +106,13 @@ put while you flip between decks.
 
 ## Adapt it to your server
 
-- **Emotes do nothing?** Open the button and change `/e <name>` to the command
+- **Emotes do nothing.** Open the button and change `/e <name>` to the command
   your server actually uses, or the chat key from `t` to your server's key.
-- **Pasting is blocked?** Switch that button's Text Input step to *Simulate
+- **Pasting is blocked.** Switch that button's Text Input step to *Simulate
   typing*.
 - **Different roles.** Duplicate the profile per character or job (police, EMS,
   civilian) from **Settings**, and export/import to share a deck with friends.
 
-Want music on the same overlay without alt-tabbing? If you also run
-[MicMixer](https://benjibutten.github.io/MicMixer/), the overlay's music widget
-remote-controls its player — see the MicMixer guides for routing music into the
-game.
+If you also run [MicMixer](https://benjibutten.github.io/MicMixer/), the
+overlay's music widget remote-controls its player, so you get music without
+alt-tabbing. The MicMixer guides cover routing music into the game.

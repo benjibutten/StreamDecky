@@ -156,13 +156,14 @@
     </span>
   </div>
   <p class="fineprint">
-    The button downloads the installer, <code>StreamDecky-&lt;version&gt;-win-x64-setup.exe</code>.
+    The button downloads the installer, <code>StreamDecky-&lt;version&gt;-win-x64-setup.exe</code>,
+    which needs administrator approval to install.
     The <a href="https://github.com/benjibutten/StreamDecky/releases/latest">latest release</a>
-    also has the same app as a zip, without an installer; winget installs that one, and
-    keeps it updated with <code>winget upgrade</code>.
+    also has the same app as a zip that runs from any folder without administrator rights.
+    winget installs the zip and keeps it updated with <code>winget upgrade</code>.
     Windows 10/11, x64. Self-contained, no .NET install needed. Apache-2.0.
     Every release is built automatically from the source in this repository.
-    Windows shows a warning the first time you run it —
+    Your browser and Windows will warn you about the download:
     <a href="#first-run">here's what to click</a>.
   </p>
 
@@ -186,8 +187,8 @@
     quickly, mid-scene. StreamDecky keeps them as clipboard items, organized in categories
     and collections and searchable from the overlay. One click copies the line. Or let an
     action pipeline deliver it whole: press <code>T</code> to open the chat, paste
-    <code>/me checks pulse and breathing</code>, press Enter. Need a one-off variation?
-    Edit the line inline in the overlay without touching the saved version.
+    <code>/me checks pulse and breathing</code>, press Enter. For a one-off variation,
+    edit the line in the overlay; the saved version stays as it was.
   </p>
 
   <h3>Emotes and animations as buttons</h3>
@@ -248,19 +249,46 @@
     <li>Build your deck in the editor and set the overlay hotkey in Settings.</li>
     <li>Optionally enable <em>Start with Windows</em> to keep it in the tray.</li>
   </ol>
-  <h3 id="first-run">The Windows warning on first run</h3>
+  <h3 id="first-run">The warnings on the way in</h3>
   <p>
-    StreamDecky is not code-signed yet, so the first time you run it Windows shows a blue or red
-    <em>"Windows protected your PC"</em> box with the Run button hidden. Click
-    <em>More info</em>, then <em>Run anyway</em>. Any new app from a small publisher gets
-    this: it means Windows hasn't seen the file often enough yet, not that it found
-    anything wrong with it.
+    StreamDecky is not code-signed yet, so you'll click past up to three warnings before it
+    is installed. None of them means something was found in the file.
+  </p>
+  <ol class="setup">
+    <li>The browser may say the file <em>isn't commonly downloaded</em>. In Edge, open the
+      download's <em>…</em> menu, choose <em>Keep</em>, then <em>Show more › Keep anyway</em>.
+      In Chrome, choose to keep the file.</li>
+    <li>When you open it, Windows shows a blue <em>"Windows protected your PC"</em> box with
+      the Run button hidden. Click <em>More info</em>, then <em>Run anyway</em>.</li>
+    <li>Windows asks for permission to install into Program Files and lists the publisher
+      as unknown. Click <em>Yes</em>.</li>
+  </ol>
+  <p>
+    The first two are about reputation: Windows and the browser haven't seen this exact
+    file often enough yet. Each release is a new file, so they can come back for a while
+    after every release. The zip skips the third, since it doesn't install anything.
+    Updates from inside StreamDecky never go through the browser. They only ask for the
+    permission in step 3, and not even that when StreamDecky runs as administrator.
   </p>
   <p>
     If you'd rather check the download yourself first, each release ships a
     <code>.sha256</code> checksum next to the installer and the ZIP, and the
     <a href="code-signing-policy.html">code signing policy</a> covers how releases are built
     and where signing currently stands.
+  </p>
+
+  <h3 id="installed">Moving from the zip, and uninstalling</h3>
+  <p>
+    Your profiles, settings and logs live in <code>%LocalAppData%\StreamDecky</code>, not
+    next to the app, so the installed copy picks up where a zip copy left off. Close the
+    zip copy with <em>Exit</em> in its tray menu, run the installer and let it start
+    StreamDecky. <em>Start with Windows</em> then points at the installed copy, and you can
+    delete the old folder.
+  </p>
+  <p>
+    To uninstall, use <em>Apps</em> in Windows Settings. That also removes StreamDecky's
+    startup entries for your account. Your profiles stay in
+    <code>%LocalAppData%\StreamDecky</code> until you delete that folder yourself.
   </p>
 
   <p>
@@ -273,9 +301,9 @@
 <section class="wrap" id="templates">
   <h2>Templates and guides</h2>
   <p>
-    Don't want to start from an empty grid? Import a ready-made profile and adapt
-    it. In StreamDecky, open <b>Settings → Import Profile</b> and pick the file —
-    it is added as a new profile without touching your existing decks.
+    Instead of starting from an empty grid, you can import a ready-made profile and
+    adapt it. In StreamDecky, open <b>Settings → Import Profile</b> and pick the file.
+    It is added as a new profile and leaves your existing decks alone.
   </p>
 
   <div class="template">
