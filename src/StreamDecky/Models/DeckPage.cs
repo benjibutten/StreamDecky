@@ -12,6 +12,8 @@ public class DeckPage
     public string Name { get; set; } = "Page 1";
     public int Rows { get; set; } = 3;
     public int Columns { get; set; } = 5;
+    /// <summary>The page's own colour on its overlay tab; empty for the profile's tab colours.</summary>
+    public string TabColor { get; set; } = string.Empty;
     public List<ButtonConfig> Buttons { get; set; } = new();
     // Legacy field kept for profile backward compatibility. Notes now live in DeckProfile.NotePages.
     public List<StickyNote> StickyNotes { get; set; } = new();
@@ -24,6 +26,7 @@ public class DeckPage
         Rows = Math.Clamp(rows ?? Rows, MinRows, MaxRows);
         Columns = Math.Clamp(columns ?? Columns, MinColumns, MaxColumns);
         StickyNotes ??= new List<StickyNote>();
+        TabColor ??= string.Empty;
 
         int total = Rows * Columns;
         if (total > MaxButtonsPerPage)

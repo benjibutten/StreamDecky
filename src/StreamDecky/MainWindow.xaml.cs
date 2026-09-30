@@ -11,7 +11,7 @@ using StreamDecky.Views;
 
 namespace StreamDecky;
 
-using Popup = System.Windows.Controls.Primitives.Popup;
+using PlacementMode = System.Windows.Controls.Primitives.PlacementMode;
 
 public partial class MainWindow : Window
 {
@@ -579,11 +579,16 @@ public partial class MainWindow : Window
         ToggleOverlay();
     }
 
-    private void ToggleNotesAreasPopup_Click(object sender, RoutedEventArgs e)
+    /// <summary>Opens the ⋯ button's context menu under the button, as a left click.</summary>
+    private void OpenMoreMenu_Click(object sender, RoutedEventArgs e)
     {
-        var popup = GetNotesAreasPopup();
-        if (popup != null)
-            popup.IsOpen = !popup.IsOpen;
+        if (sender is not FrameworkElement { ContextMenu: { } menu } button)
+            return;
+
+        menu.PlacementTarget = button;
+        menu.Placement = PlacementMode.Bottom;
+        menu.DataContext = button.DataContext;
+        menu.IsOpen = true;
     }
 
     private void ToggleClipboardSettingsPopup_Click(object sender, RoutedEventArgs e)
@@ -753,6 +758,29 @@ public partial class MainWindow : Window
             _viewModel.RemovePageCommand.Execute(null);
     }
 
+    private void SetPageTabColor_Click(object sender, RoutedEventArgs e)
+    {
+        string current = _viewModel.HasCurrentPageTabColor
+            ? _viewModel.CurrentPageTabColor
+            : _viewModel.PageTabActiveColor;
+        var color = ColorPickerDialog.Show(this, current);
+        if (color != null)
+            _viewModel.CurrentPageTabColor = color;
+    }
+
+    private void ClearPageTabColor_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.CurrentPageTabColor = string.Empty;
+    }
+
+    private void RemoveLayout_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.IsViewingVirtualLayout)
+            RemoveVirtualLayout_Click(sender, e);
+        else
+            RemovePage_Click(sender, e);
+    }
+
     private void AddVirtualLayout_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.AddVirtualLayoutCommand.Execute(null);
@@ -778,48 +806,6 @@ public partial class MainWindow : Window
     private void ExitVirtualLayout_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.ExitVirtualLayoutCommand.Execute(null);
-    }
-
-    private void AddNotePage_Click(object sender, RoutedEventArgs e)
-    {
-        _viewModel.AddNotePageCommand.Execute(null);
-
-        var popup = GetNotesAreasPopup();
-        if (popup != null)
-            popup.IsOpen = false;
-    }
-
-    private void RemoveNotePage_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_viewModel.CanRemoveNotePage)
-            return;
-
-        int noteCount = _viewModel.CurrentNotePageNoteCount;
-        string message = noteCount > 0
-            ? $"Remove notes area \"{_viewModel.CurrentNotePageName}\"?\n\nThis will permanently delete {noteCount} sticky note(s) in this area."
-            : $"Remove notes area \"{_viewModel.CurrentNotePageName}\"?";
-
-        var result = System.Windows.MessageBox.Show(
-            this,
-            message,
-            "Remove Notes Area",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning,
-            MessageBoxResult.No);
-
-        if (result == MessageBoxResult.Yes)
-        {
-            _viewModel.RemoveNotePageCommand.Execute(null);
-
-            var popup = GetNotesAreasPopup();
-            if (popup != null)
-                popup.IsOpen = false;
-        }
-    }
-
-    private Popup? GetNotesAreasPopup()
-    {
-        return FindName("NotesAreasPopup") as Popup;
     }
 
     private void RenameLayout_Click(object sender, RoutedEventArgs e)

@@ -226,6 +226,12 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(GamepadToggleButtons));
         OnPropertyChanged(nameof(GamepadToggleDisplayText));
         OnPropertyChanged(nameof(OverlayPageTabsEnabled));
+        OnPropertyChanged(nameof(PageTabActiveColor));
+        OnPropertyChanged(nameof(PageTabTextColor));
+        OnPropertyChanged(nameof(PageTabBarColor));
+        OnPropertyChanged(nameof(PageTabBarOpacity));
+        OnPropertyChanged(nameof(PageTabBarBackground));
+        OnPropertyChanged(nameof(PageTabFontSize));
 
         RebuildProfileOptions();
         SyncSelectedProfileId();

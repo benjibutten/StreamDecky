@@ -25,6 +25,7 @@ public partial class MainViewModel
     public bool HasVirtualLayouts => _profile.VirtualLayouts.Count > 0;
     public string CurrentLayoutKindLabel => IsViewingVirtualLayout ? "Virtual Layout" : "Page";
     public bool CanRemoveCurrentVirtualLayout => IsViewingVirtualLayout && _profile.VirtualLayouts.Count > 0;
+    public bool CanRemoveCurrentLayout => IsViewingVirtualLayout ? CanRemoveCurrentVirtualLayout : PageCount > 1;
 
     public int Rows
     {
@@ -71,13 +72,154 @@ public partial class MainViewModel
         }
     }
 
+    public string PageTabActiveColor
+    {
+        get => _profile.PageTabActiveColor;
+        set
+        {
+            if (string.Equals(_profile.PageTabActiveColor, value, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _profile.PageTabActiveColor = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PageTabs));
+            ScheduleAutoSave();
+        }
+    }
+
+    public string PageTabTextColor
+    {
+        get => _profile.PageTabTextColor;
+        set
+        {
+            if (string.Equals(_profile.PageTabTextColor, value, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _profile.PageTabTextColor = value;
+            OnPropertyChanged();
+            ScheduleAutoSave();
+        }
+    }
+
+    public string PageTabBarColor
+    {
+        get => _profile.PageTabBarColor;
+        set
+        {
+            if (string.Equals(_profile.PageTabBarColor, value, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _profile.PageTabBarColor = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PageTabBarBackground));
+            ScheduleAutoSave();
+        }
+    }
+
+    public double PageTabBarOpacity
+    {
+        get => _profile.PageTabBarOpacity;
+        set
+        {
+            value = Math.Clamp(value, 0, 1);
+            if (_profile.PageTabBarOpacity == value)
+                return;
+
+            _profile.PageTabBarOpacity = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PageTabBarBackground));
+            ScheduleAutoSave();
+        }
+    }
+
+    public double PageTabFontSize
+    {
+        get => _profile.PageTabFontSize;
+        set
+        {
+            value = Math.Clamp(value, DeckProfile.MinPageTabFontSize, DeckProfile.MaxPageTabFontSize);
+            if (_profile.PageTabFontSize == value)
+                return;
+
+            _profile.PageTabFontSize = value;
+            OnPropertyChanged();
+            ScheduleAutoSave();
+        }
+    }
+
+    public double MinPageTabFontSize => DeckProfile.MinPageTabFontSize;
+    public double MaxPageTabFontSize => DeckProfile.MaxPageTabFontSize;
+
+    /// <summary>
+    /// <see cref="PageTabBarColor"/> with <see cref="PageTabBarOpacity"/> applied, as #AARRGGBB,
+    /// or "Transparent" while the colour cannot be parsed.
+    /// </summary>
+    public string PageTabBarBackground => WithOpacity(PageTabBarColor, PageTabBarOpacity);
+
+    /// <summary>The current regular page's own tab colour; empty when it has none or a virtual layout is shown.</summary>
+    public string CurrentPageTabColor
+    {
+        get => IsViewingVirtualLayout ? string.Empty : CurrentRegularPage.TabColor;
+        set
+        {
+            value ??= string.Empty;
+            if (IsViewingVirtualLayout || string.Equals(CurrentRegularPage.TabColor, value, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            CurrentRegularPage.TabColor = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasCurrentPageTabColor));
+            OnPropertyChanged(nameof(PageTabs));
+            ScheduleAutoSave();
+        }
+    }
+
+    public bool HasCurrentPageTabColor => !string.IsNullOrWhiteSpace(CurrentPageTabColor);
+    public bool CanColorCurrentPage => !IsViewingVirtualLayout;
+
+    // Faint enough that the current tab, drawn at full strength, still stands out.
+    private const double InactivePageTabOpacity = 0.35;
+
+    private string PageTabBackground(DeckPage page, bool isCurrent)
+    {
+        if (string.IsNullOrWhiteSpace(page.TabColor))
+            return isCurrent ? PageTabActiveColor : "Transparent";
+
+        return isCurrent ? page.TabColor : WithOpacity(page.TabColor, InactivePageTabOpacity);
+    }
+
+    /// <summary>
+    /// <paramref name="color"/> with <paramref name="opacity"/> applied, as #AARRGGBB, or
+    /// "Transparent" when the colour cannot be parsed.
+    /// </summary>
+    private static string WithOpacity(string color, double opacity)
+    {
+        if (string.IsNullOrWhiteSpace(color))
+            return "Transparent";
+
+        try
+        {
+            var parsed = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(color);
+            byte alpha = (byte)Math.Round(opacity * 255);
+            return $"#{alpha:X2}{parsed.R:X2}{parsed.G:X2}{parsed.B:X2}";
+        }
+        catch (FormatException)
+        {
+            return "Transparent";
+        }
+    }
+
     // Also shown from inside a virtual layout, where the arrows are hidden, so the tabs
     // always offer a way back to the regular pages.
     public bool ShowOverlayPageTabs => OverlayPageTabsEnabled && (HasMultiplePages || IsViewingVirtualLayout);
     public bool ShowOverlayPageArrows => HasMultiplePages && !OverlayPageTabsEnabled;
 
     public IReadOnlyList<PageTab> PageTabs => _profile.Pages
-        .Select((page, index) => new PageTab(page.Id, page.Name, !IsViewingVirtualLayout && index == CurrentPageIndex))
+        .Select((page, index) =>
+        {
+            bool isCurrent = !IsViewingVirtualLayout && index == CurrentPageIndex;
+            return new PageTab(page.Id, page.Name, isCurrent, PageTabBackground(page, isCurrent));
+        })
         .ToList();
 
     private DeckPage CurrentRegularPage => _profile.Pages[Math.Clamp(CurrentPageIndex, 0, _profile.Pages.Count - 1)];
@@ -342,6 +484,10 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(CurrentLayoutKindLabel));
         OnPropertyChanged(nameof(HasVirtualLayouts));
         OnPropertyChanged(nameof(CanRemoveCurrentVirtualLayout));
+        OnPropertyChanged(nameof(CanRemoveCurrentLayout));
+        OnPropertyChanged(nameof(CurrentPageTabColor));
+        OnPropertyChanged(nameof(HasCurrentPageTabColor));
+        OnPropertyChanged(nameof(CanColorCurrentPage));
         OnPropertyChanged(nameof(CurrentPageName));
         OnPropertyChanged(nameof(PageCount));
         OnPropertyChanged(nameof(CanGoToPreviousPage));

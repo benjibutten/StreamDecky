@@ -36,6 +36,27 @@ public sealed class DeckProfileTests
     }
 
     [Fact]
+    public void Initialize_RepairsPageTabStyle()
+    {
+        var profile = new DeckProfile
+        {
+            PageTabActiveColor = "",
+            PageTabTextColor = null!,
+            PageTabBarColor = " ",
+            PageTabBarOpacity = 3,
+            PageTabFontSize = 0
+        };
+
+        profile.Initialize();
+
+        Assert.Equal(DeckProfile.DefaultPageTabActiveColor, profile.PageTabActiveColor);
+        Assert.Equal(DeckProfile.DefaultPageTabTextColor, profile.PageTabTextColor);
+        Assert.Equal(DeckProfile.DefaultPageTabBarColor, profile.PageTabBarColor);
+        Assert.Equal(1, profile.PageTabBarOpacity);
+        Assert.Equal(DeckProfile.MinPageTabFontSize, profile.PageTabFontSize);
+    }
+
+    [Fact]
     public void Initialize_RepairsTextHelperDefaults()
     {
         var profile = new DeckProfile

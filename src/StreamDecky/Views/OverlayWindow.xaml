@@ -1187,7 +1187,7 @@
                 <Border Margin="2,9,0,0"
                         HorizontalAlignment="Left"
                         Padding="4"
-                        Background="#66000000"
+                        Background="{Binding PageTabBarBackground, Converter={StaticResource StringToBrush}}"
                         CornerRadius="7"
                         Visibility="{Binding ShowOverlayPageTabs, Converter={StaticResource BoolToVisibility}}">
                     <ItemsControl ItemsSource="{Binding PageTabs}">
@@ -1201,15 +1201,15 @@
                                 <Button Content="{Binding Name}"
                                         Tag="{Binding Id}"
                                         Click="OverlayPageTab_Click"
-                                        Foreground="#F2F2F2"
-                                        FontSize="12"
+                                        Foreground="{Binding DataContext.PageTabTextColor, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource StringToBrush}}"
+                                        FontSize="{Binding DataContext.PageTabFontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                         Padding="10,4"
                                         Margin="1"
                                         Cursor="Hand">
                                     <Button.Style>
                                         <Style TargetType="Button">
                                             <Setter Property="Background"
-                                                    Value="Transparent"/>
+                                                    Value="{Binding Background, Converter={StaticResource StringToBrush}}"/>
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate TargetType="Button">
@@ -1233,7 +1233,9 @@
                                                 <DataTrigger Binding="{Binding IsCurrent}"
                                                         Value="True">
                                                     <Setter Property="Background"
-                                                            Value="#6C5CE7"/>
+                                                            Value="{Binding Background, Converter={StaticResource StringToBrush}}"/>
+                                                    <Setter Property="FontWeight"
+                                                            Value="SemiBold"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>

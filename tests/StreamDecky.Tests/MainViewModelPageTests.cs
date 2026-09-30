@@ -71,4 +71,64 @@ public sealed class MainViewModelPageTests
         Assert.True(viewModel.ShowOverlayPageTabs);
         Assert.DoesNotContain(viewModel.PageTabs, tab => tab.IsCurrent);
     }
+
+    [Theory]
+    [InlineData("#102030", 0.4, "#66102030")]
+    [InlineData("Red", 1.0, "#FFFF0000")]
+    [InlineData("not a colour", 0.4, "Transparent")]
+    public void PageTabBarBackground_AppliesOpacityToTheBarColour(string color, double opacity, string expected)
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        using var viewModel = new MainViewModel(new ProfileService(tempDirectory.Path));
+
+        viewModel.PageTabBarColor = color;
+        viewModel.PageTabBarOpacity = opacity;
+
+        Assert.Equal(expected, viewModel.PageTabBarBackground);
+    }
+
+    [Fact]
+    public void PageTabs_UseThePageColourFadedAndInFullWhenCurrent()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        using var viewModel = new MainViewModel(new ProfileService(tempDirectory.Path));
+        viewModel.PageTabActiveColor = "#6C5CE7";
+        viewModel.CurrentPageTabColor = "#FF0000";
+        viewModel.AddPageCommand.Execute(null);
+
+        Assert.Equal(["#59FF0000", "#6C5CE7"], viewModel.PageTabs.Select(tab => tab.Background));
+
+        viewModel.PreviousPageCommand.Execute(null);
+
+        Assert.Equal(["#FF0000", "Transparent"], viewModel.PageTabs.Select(tab => tab.Background));
+    }
+
+    [Fact]
+    public void CurrentPageTabColor_IsNotSetFromAVirtualLayout()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        using var viewModel = new MainViewModel(new ProfileService(tempDirectory.Path));
+        viewModel.AddVirtualLayoutCommand.Execute(null);
+
+        viewModel.CurrentPageTabColor = "#FF0000";
+
+        Assert.False(viewModel.CanColorCurrentPage);
+        Assert.Equal(string.Empty, viewModel.CurrentPageTabColor);
+        Assert.All(viewModel.Profile.Pages, page => Assert.Equal(string.Empty, page.TabColor));
+    }
+
+    [Fact]
+    public void CanRemoveCurrentLayout_KeepsTheLastPageButAllowsAVirtualLayout()
+    {
+        using var tempDirectory = new TemporaryDirectory();
+        using var viewModel = new MainViewModel(new ProfileService(tempDirectory.Path));
+        Assert.False(viewModel.CanRemoveCurrentLayout);
+
+        viewModel.AddVirtualLayoutCommand.Execute(null);
+        Assert.True(viewModel.CanRemoveCurrentLayout);
+
+        viewModel.ExitVirtualLayoutCommand.Execute(null);
+        viewModel.AddPageCommand.Execute(null);
+        Assert.True(viewModel.CanRemoveCurrentLayout);
+    }
 }

@@ -47,7 +47,7 @@ command text to build out `Point`, `Wave`, `Sit`, `Kneel`, and so on.
 A full deck of dances would crowd the main page. Put them on a **virtual
 layout**, a hidden page you reach with a button:
 
-1. Create a new virtual layout (call it `Emotes`).
+1. Create a new virtual layout from the page row's **⋯** menu (call it `Emotes`).
 2. Fill it with more Multi-Action emote buttons (`/e dance`, `/e dance2`,
    `/e lean`, `/e clap`, …).
 3. Add a **Switch Layout** button on it that targets your main page, titled

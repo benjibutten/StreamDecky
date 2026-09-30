@@ -150,6 +150,54 @@ public partial class SettingsWindow : Window
             _viewModel.OverlayBackgroundColor = color;
     }
 
+    private void PageTabActiveColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        var color = ColorPickerDialog.Show(this, _viewModel.PageTabActiveColor);
+        if (color != null)
+            _viewModel.PageTabActiveColor = color;
+    }
+
+    private void PageTabTextColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        var color = ColorPickerDialog.Show(this, _viewModel.PageTabTextColor);
+        if (color != null)
+            _viewModel.PageTabTextColor = color;
+    }
+
+    private void PageTabBarColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        var color = ColorPickerDialog.Show(this, _viewModel.PageTabBarColor);
+        if (color != null)
+            _viewModel.PageTabBarColor = color;
+    }
+
+    private void AddNotesArea_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.AddNotePageCommand.Execute(null);
+    }
+
+    private void RemoveNotesArea_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.CanRemoveNotePage)
+            return;
+
+        int noteCount = _viewModel.CurrentNotePageNoteCount;
+        string message = noteCount > 0
+            ? $"Remove notes area \"{_viewModel.CurrentNotePageName}\"?\n\nThis will permanently delete {noteCount} sticky note(s) in this area."
+            : $"Remove notes area \"{_viewModel.CurrentNotePageName}\"?";
+
+        var result = System.Windows.MessageBox.Show(
+            this,
+            message,
+            "Remove Notes Area",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        if (result == MessageBoxResult.Yes)
+            _viewModel.RemoveNotePageCommand.Execute(null);
+    }
+
     private void SettingsTitleBar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)

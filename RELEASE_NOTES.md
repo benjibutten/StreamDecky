@@ -21,11 +21,22 @@
   music library, instead of showing a code like `empty_library`.
 - After an update, StreamDecky shows what's new once. **About** links to the
   same list.
+- **Page tabs can be styled.** Settings › Overlay sets the color of the
+  current tab, the tab text and the tab bar, the bar's opacity and the text
+  size, with a preview. Each page can also have its own tab color, set from
+  the page row's ⋯ menu: its tab shows it faded, and in full while the page
+  is open.
+- **A tidier main window.** Each of the profile and page rows keeps its add
+  button and moves the rest into a ⋯ menu, including new and deleted virtual
+  layouts, which could only be deleted while one was open. The page dropdown
+  sits between the arrows, and the grid size lives in Settings › Overlay only.
 - Right-click menus are dark, like the rest of StreamDecky, and buttons no longer
   turn pale blue with unreadable text when you point at them.
 - Colors are picked in a dark color picker of StreamDecky's own, with a
   gradient, presets and a hex field, instead of the Windows dialog. It keeps
   the last ten colors you chose until StreamDecky closes, so several buttons
   are quick to give the same color.
+- Notes areas and the note text size moved from the main window to their own
+  page in Settings.
 - Every window uses the thin scrollbar, and screen readers announce the
   icon-only buttons.
