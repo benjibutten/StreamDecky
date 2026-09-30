@@ -41,6 +41,11 @@ SetupIconFile=..\src\StreamDecky\StreamDecky.ico
 UninstallDisplayIcon={app}\StreamDecky.exe
 UninstallDisplayName=StreamDecky
 WizardStyle=modern
+; Setup picks the image that best fits the display scaling.
+WizardImageFile=WizardImage100.png,WizardImage150.png,WizardImage200.png
+WizardSmallImageFile=WizardSmallImage100.png,WizardSmallImage150.png,WizardSmallImage200.png
+DisableWelcomePage=no
+InfoBeforeFile=BeforeInstall.txt
 Compression=lzma2
 SolidCompression=yes
 ; The Finished page and the update both start StreamDecky again. Restart Manager must
@@ -51,6 +56,12 @@ UsePreviousTasks=no
 ; Signs the installer and the uninstaller it writes into {app}.
 SignTool=streamdecky
 #endif
+
+[Messages]
+WelcomeLabel2=This will install [name/ver] on your computer.%n%nStreamDecky opens a deck of buttons, chat lines, forms and notes on top of your game with a hotkey, and sends what you click back into the game.%n%nIt is free and open source, and every release is built from the public code on GitHub.
+WizardInfoBefore=Before you install
+InfoBeforeLabel=What gets installed, what StreamDecky connects to, and its license.
+FinishedLabel=Setup has finished installing [name] on your computer.%n%nBuild your deck in the editor and set the overlay hotkey in Settings.
 
 [Tasks]
 ; Ticking it turns the setting on; unticked leaves the setting as it is in StreamDecky.
