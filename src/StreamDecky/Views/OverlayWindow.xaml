@@ -3990,8 +3990,6 @@
                 VerticalAlignment="Top"
                 Panel.ZIndex="11"
                 Visibility="{Binding TextHelperVisible, Converter={StaticResource BoolToVisibility}}"
-                Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
-                Opacity="{Binding ButtonOverlayOpacity}"
                 BorderBrush="#44FFFFFF"
                 BorderThickness="1"
                 CornerRadius="10">
@@ -4009,18 +4007,24 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Rectangle Grid.RowSpan="4"
-                           Opacity="0.78"
-                           Visibility="{Binding OverlayBackgroundImagePath, Converter={StaticResource HasTextVisibility}}">
-                    <Rectangle.Fill>
-                        <ImageBrush ImageSource="{Binding OverlayBackgroundImagePath, Converter={StaticResource PathToImageSource}}"
-                                    Stretch="UniformToFill"/>
-                    </Rectangle.Fill>
-                </Rectangle>
-
-                <Border Grid.RowSpan="3"
-                        Background="#A810141D"
-                        CornerRadius="10"/>
+                <!-- Only the backdrop follows the overlay opacity. The writing box and the
+                     buttons stay solid, or whatever is behind the overlay shows through them. -->
+                <Grid Grid.RowSpan="4"
+                      Opacity="{Binding ButtonOverlayOpacity}">
+                    <Border Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
+                            CornerRadius="10"/>
+                    <Rectangle Opacity="0.78"
+                               RadiusX="10"
+                               RadiusY="10"
+                               Visibility="{Binding OverlayBackgroundImagePath, Converter={StaticResource HasTextVisibility}}">
+                        <Rectangle.Fill>
+                            <ImageBrush ImageSource="{Binding OverlayBackgroundImagePath, Converter={StaticResource PathToImageSource}}"
+                                        Stretch="UniformToFill"/>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <Border Background="#A810141D"
+                            CornerRadius="10"/>
+                </Grid>
 
                 <!-- Header / drag handle -->
                 <Border Grid.Row="0"

@@ -36,6 +36,9 @@
   gradient, presets and a hex field, instead of the Windows dialog. It keeps
   the last ten colors you chose until StreamDecky closes, so several buttons
   are quick to give the same color.
+- **The text helper stays readable over any background.** Only its backdrop
+  follows the overlay opacity; the writing box and buttons are solid, and the
+  button row has the same tint as the rest of the widget.
 - Notes areas and the note text size moved from the main window to their own
   page in Settings.
 - Every window uses the thin scrollbar, and screen readers announce the
