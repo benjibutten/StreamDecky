@@ -12,6 +12,9 @@
     <RootNamespace>StreamDecky</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <StartupObject>StreamDecky.Program</StartupObject>
+    <!-- DOTNET_STARTUP_HOOKS comes from the user's environment, which any program the
+         user runs can set, and would load its code into StreamDecky running as administrator. -->
+    <StartupHookSupport>false</StartupHookSupport>
     <Authors>benjibutten</Authors>
     <Company>StreamDecky</Company>
     <Product>StreamDecky</Product>
@@ -29,6 +32,11 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="StreamDecky.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Shown by the "What's new" dialog after an update. -->
+    <EmbeddedResource Include="..\..\RELEASE_NOTES.md" LogicalName="StreamDecky.RELEASE_NOTES.md" />
   </ItemGroup>
 
   <ItemGroup>

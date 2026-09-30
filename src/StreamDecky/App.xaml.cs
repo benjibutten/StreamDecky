@@ -1,6 +1,8 @@
-﻿using System.Threading;
+﻿using System.Security.AccessControl;
+using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
+using StreamDecky.Admin;
 using StreamDecky.Helpers;
 using StreamDecky.Updates;
 
@@ -11,6 +13,9 @@ namespace StreamDecky;
 public partial class App : Application
 {
     private const string ActivateExistingInstanceEventName = @"Local\StreamDecky.ActivateExistingInstance";
+
+    /// <summary>Starts StreamDecky hidden in the tray, as Windows does at sign-in.</summary>
+    internal const string MinimizedArgument = "--minimized";
 
     private EventWaitHandle? _activateExistingInstanceEvent;
     private RegisteredWaitHandle? _activationWaitHandle;
@@ -32,10 +37,12 @@ public partial class App : Application
 
         bool startHiddenInTray = HasStartHiddenInTrayArgument(e.Args);
 
-        _activateExistingInstanceEvent = new EventWaitHandle(
+        _activateExistingInstanceEvent = EventWaitHandleAcl.Create(
             initialState: false,
             mode: EventResetMode.AutoReset,
-            name: ActivateExistingInstanceEventName);
+            name: ActivateExistingInstanceEventName,
+            createdNew: out _,
+            eventSecurity: CreateActivationEventSecurity());
 
         _activationWaitHandle = ThreadPool.RegisterWaitForSingleObject(
             _activateExistingInstanceEvent,
@@ -144,11 +151,25 @@ public partial class App : Application
         {
             // The first instance is still starting and has not created its activation signal yet.
         }
+        catch (UnauthorizedAccessException)
+        {
+            // The first instance runs as administrator and does not let this one signal it.
+        }
     }
 
     internal static bool HasStartHiddenInTrayArgument(string[] args)
     {
-        return args.Contains("--minimized", StringComparer.OrdinalIgnoreCase);
+        return args.Contains(MinimizedArgument, StringComparer.OrdinalIgnoreCase);
+    }
+
+    // The instance that creates the event may run as administrator, whose default
+    // permission would keep a second launch without those rights from signalling it.
+    private static EventWaitHandleSecurity CreateActivationEventSecurity()
+    {
+        var security = new EventWaitHandleSecurity();
+        security.AddAccessRule(new EventWaitHandleAccessRule(
+            Elevation.CurrentUser(), EventWaitHandleRights.FullControl, AccessControlType.Allow));
+        return security;
     }
 
     private void CreateMainWindow(bool startHiddenInTray)

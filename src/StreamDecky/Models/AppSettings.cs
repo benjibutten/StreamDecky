@@ -112,6 +112,15 @@ public class AppSettings
     /// <summary>One of <see cref="SearchModes"/>.</summary>
     public string QuickAnswerSearchMode { get; set; } = SearchModeAuto;
 
+    /// <summary>
+    /// Runs StreamDecky as administrator, so the keys it sends also reach programs
+    /// running as administrator.
+    /// </summary>
+    public bool RunAsAdministrator { get; set; }
+
+    /// <summary>The version whose "What's new" notes were last shown, or recorded on a first run.</summary>
+    public string? WhatsNewShownForVersion { get; set; }
+
     public void Initialize()
     {
         if (SchemaVersion <= 0)

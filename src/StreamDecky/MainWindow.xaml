@@ -105,43 +105,6 @@
                TargetType="Button"
                BasedOn="{StaticResource FlatActionButton}"/>
 
-        <!-- Thin ScrollBar Thumb -->
-        <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Thumb">
-                        <Border Background="#55FFFFFF" CornerRadius="3" Margin="1"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Thin vertical ScrollBar -->
-        <Style x:Key="ThinScrollBar" TargetType="ScrollBar">
-            <Setter Property="Width" Value="6"/>
-            <Setter Property="MinWidth" Value="6"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ScrollBar">
-                        <Grid Background="Transparent">
-                            <Track x:Name="PART_Track" IsDirectionReversed="True">
-                                <Track.Thumb>
-                                    <Thumb Style="{StaticResource ThinScrollBarThumb}"/>
-                                </Track.Thumb>
-                            </Track>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="Orientation" Value="Horizontal">
-                    <Setter Property="Height" Value="6"/>
-                    <Setter Property="MinHeight" Value="6"/>
-                    <Setter Property="Width" Value="Auto"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
         <!-- Dark ScrollViewer with thin scrollbar -->
         <Style x:Key="DarkScrollViewer" TargetType="ScrollViewer">
             <Setter Property="Template">
@@ -308,6 +271,7 @@
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
                     <Button x:Name="MinimizeBtn" Content="─" Click="MinimizeButton_Click"
+                            AutomationProperties.Name="Minimize"
                             Width="46" Height="36" FontSize="13"
                             Foreground="#999" Background="Transparent" BorderThickness="0" Cursor="Hand">
                         <Button.Template>
@@ -324,6 +288,7 @@
                         </Button.Template>
                     </Button>
                     <Button x:Name="MaximizeBtn" Content="☐" Click="MaximizeButton_Click"
+                            AutomationProperties.Name="Maximize"
                             Width="46" Height="36" FontSize="13"
                             Foreground="#999" Background="Transparent" BorderThickness="0" Cursor="Hand">
                         <Button.Template>
@@ -340,6 +305,7 @@
                         </Button.Template>
                     </Button>
                     <Button x:Name="CloseBtn" Content="✕" Click="TitleBarClose_Click"
+                            AutomationProperties.Name="Close"
                             Width="46" Height="36" FontSize="13"
                             Foreground="#999" Background="Transparent" BorderThickness="0" Cursor="Hand">
                         <Button.Template>
@@ -456,291 +422,43 @@
                         </Style>
                     </Button.Style>
                 </Button>
-
-                <Button x:Name="NotesAreasButton"
-                        Content="🗂 Notes Areas"
-                        DockPanel.Dock="Right"
-                        HorizontalAlignment="Right"
-                        Click="ToggleNotesAreasPopup_Click"
-                        Background="#2D2D44"
-                        Foreground="#AAAAAA"
-                        FontSize="14"
-                        Padding="14,8"
-                        Cursor="Hand"
-                        BorderThickness="0"
-                        Margin="0,0,8,0">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Background="{TemplateBinding Background}"
-                                                CornerRadius="6"
-                                                Padding="{TemplateBinding Padding}">
-                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#3D3D54"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-
-                <Popup x:Name="NotesAreasPopup"
-                       DockPanel.Dock="Right"
-                       PlacementTarget="{Binding ElementName=NotesAreasButton}"
-                       Placement="Bottom"
-                       VerticalOffset="8"
-                       StaysOpen="False"
-                       AllowsTransparency="True"
-                       PopupAnimation="Fade">
-                    <Border DataContext="{Binding DataContext, ElementName=MainRootWindow}"
-                            Background="#2A2A42"
-                            BorderBrush="#4C4C70"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            Padding="12"
-                            Width="360">
-                        <StackPanel>
-                            <TextBlock Text="Notes Areas"
-                                       Foreground="White"
-                                       FontSize="13"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,10"/>
-
-                            <DockPanel>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Content="+ Add" Click="AddNotePage_Click"
-                                            Background="#2D5A27" Foreground="White"
-                                            FontSize="11" Padding="9,4" Margin="4,0,0,0"
-                                            BorderThickness="0" Cursor="Hand">
-                                        <Button.Style>
-                                            <Style TargetType="Button">
-                                                <Setter Property="Template">
-                                                    <Setter.Value>
-                                                        <ControlTemplate TargetType="Button">
-                                                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                            </Border>
-                                                        </ControlTemplate>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-
-                                    <Button Content="− Remove" Click="RemoveNotePage_Click"
-                                            IsEnabled="{Binding CanRemoveNotePage}"
-                                            Background="#5A2727" Foreground="White"
-                                            FontSize="11" Padding="9,4" Margin="4,0,0,0"
-                                            BorderThickness="0" Cursor="Hand">
-                                        <Button.Style>
-                                            <Style TargetType="Button">
-                                                <Setter Property="Template">
-                                                    <Setter.Value>
-                                                        <ControlTemplate TargetType="Button">
-                                                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                                                    Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
-                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                            </Border>
-                                                        </ControlTemplate>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Content="◀"
-                                            Command="{Binding PreviousNotePageCommand}"
-                                            IsEnabled="{Binding CanGoToPreviousNotePage}"
-                                            Background="#2D2D44" Foreground="White"
-                                            FontSize="12" Padding="8,2"
-                                            BorderThickness="0" Cursor="Hand">
-                                        <Button.Style>
-                                            <Style TargetType="Button">
-                                                <Setter Property="Template">
-                                                    <Setter.Value>
-                                                        <ControlTemplate TargetType="Button">
-                                                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                                                    Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
-                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                            </Border>
-                                                        </ControlTemplate>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-
-                                    <TextBlock Text="{Binding NotePageIndicator}"
-                                               Foreground="#B9C7D6"
-                                               FontSize="12"
-                                               VerticalAlignment="Center"
-                                               Margin="8,0"/>
-
-                                    <Button Content="▶"
-                                            Command="{Binding NextNotePageCommand}"
-                                            IsEnabled="{Binding CanGoToNextNotePage}"
-                                            Background="#2D2D44" Foreground="White"
-                                            FontSize="12" Padding="8,2"
-                                            BorderThickness="0" Cursor="Hand">
-                                        <Button.Style>
-                                            <Style TargetType="Button">
-                                                <Setter Property="Template">
-                                                    <Setter.Value>
-                                                        <ControlTemplate TargetType="Button">
-                                                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                                                    Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
-                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                            </Border>
-                                                        </ControlTemplate>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-                                </StackPanel>
-                            </DockPanel>
-
-                            <TextBlock Text="Text Size (all notes)"
-                                       Foreground="#AAB8CC"
-                                       FontSize="11"
-                                       Margin="0,10,0,2"/>
-                            <DockPanel Margin="0,0,0,2">
-                                <TextBlock DockPanel.Dock="Right"
-                                           Text="{Binding StickyNoteFontSize, StringFormat={}{0:0}}"
-                                           Foreground="#B9C7D6"
-                                           FontSize="11"
-                                           Width="28"
-                                           TextAlignment="Right"
-                                           VerticalAlignment="Center"/>
-                                <Slider Value="{Binding StickyNoteFontSize, Mode=TwoWay}"
-                                        Minimum="10"
-                                        Maximum="30"
-                                        TickFrequency="1"
-                                        IsSnapToTickEnabled="True"/>
-                            </DockPanel>
-
-                            <TextBlock Text="The overlay can browse note areas directly, but add/remove lives here to avoid popup issues while the overlay is active."
-                                       Foreground="#8D9BAF"
-                                       FontSize="10"
-                                       TextWrapping="Wrap"
-                                       Margin="0,10,0,0"/>
-                        </StackPanel>
-                    </Border>
-                </Popup>
             </DockPanel>
 
-            <!-- Page Navigation -->
+            <!-- Profile and page navigation. Adding stays on the row; the rest is in each ⋯ menu. -->
             <Border Grid.Row="1" Background="#252536" CornerRadius="8" Padding="8,6" Margin="0,0,0,10">
-                <Grid>
+                <Grid Grid.IsSharedSizeScope="True">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                    <DockPanel Grid.Row="0" Margin="0,0,0,6">
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Content="+ Profile" Click="AddProfile_Click"
-                                    Background="#2D5A27" Foreground="White"
-                                    FontSize="12" Padding="10,4" Margin="4,0,0,0"
-                                    BorderThickness="0" Cursor="Hand">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button Content="⧉ Duplicate" Click="DuplicateProfile_Click"
-                                    Background="#2A4D7A" Foreground="White"
-                                    FontSize="12" Padding="10,4" Margin="4,0,0,0"
-                                    BorderThickness="0" Cursor="Hand">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button Content="✎ Rename" Click="RenameProfile_Click"
-                                    Background="#3F4F86" Foreground="White"
-                                    FontSize="12" Padding="10,4" Margin="4,0,0,0"
-                                    BorderThickness="0" Cursor="Hand">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button Content="− Profile" Click="RemoveProfile_Click"
-                                    IsEnabled="{Binding CanRemoveProfile}"
-                                    Background="#5A2727" Foreground="White"
-                                    FontSize="12" Padding="10,4" Margin="4,0,0,0"
-                                    BorderThickness="0" Cursor="Hand">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                                            Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                        </StackPanel>
+                    <TextBlock Text="Profile"
+                               Foreground="#8C93AA"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Margin="2,0,10,0"/>
 
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="Profile"
-                                       Foreground="#8C93AA"
-                                       FontSize="11"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"
-                                       Margin="2,0,8,0"/>
+                    <Grid Grid.Column="1" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <!-- Shared with the page row, so both dropdowns get the same width. -->
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="AfterDropdown"/>
+                        </Grid.ColumnDefinitions>
+                        <ComboBox MinWidth="220"
+                                  Margin="0,0,8,0"
+                                  ItemsSource="{Binding ProfileOptions}"
+                                  ItemTemplate="{StaticResource LabeledComboBoxItemTemplate}"
+                                  SelectedValuePath="Id"
+                                  SelectedValue="{Binding SelectedProfileId, Mode=TwoWay}"
+                                  Style="{StaticResource DarkComboBox}"/>
 
-                            <ComboBox MinWidth="180"
-                                      Margin="0,0,8,0"
-                                      ItemsSource="{Binding ProfileOptions}"
-                                      ItemTemplate="{StaticResource LabeledComboBoxItemTemplate}"
-                                      SelectedValuePath="Id"
-                                      SelectedValue="{Binding SelectedProfileId, Mode=TwoWay}"
-                                      Style="{StaticResource DarkComboBox}"/>
-
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
                             <TextBlock Text="{Binding ProfileIndicator}"
                                        Foreground="#AFC0D4"
                                        FontSize="11"
@@ -768,286 +486,95 @@
                                 </Grid>
                             </Border>
                         </StackPanel>
-                    </DockPanel>
+                    </Grid>
 
-                    <DockPanel Grid.Row="1">
-                        <!-- Right side: Add/Remove page + virtual layout -->
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Content="+ Page" Click="AddPage_Click"
-                                Background="#2D5A27" Foreground="White"
-                                FontSize="12" Padding="10,4" Margin="4,0,0,0"
-                                BorderThickness="0" Cursor="Hand">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                        <Button Content="+ Profile" Click="AddProfile_Click"
+                                Style="{StaticResource FlatActionButton}"
+                                Background="#2D5A27" FontSize="12" Padding="10,4"/>
+                        <Button Content="⋯" Click="OpenMoreMenu_Click"
+                                AutomationProperties.Name="More profile actions"
+                                ToolTip="More profile actions"
+                                Style="{StaticResource FlatActionButton}"
+                                Background="#2D2D44" FontSize="12" Padding="10,4" Margin="4,0,0,0">
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Rename profile…" Click="RenameProfile_Click"/>
+                                    <MenuItem Header="Duplicate profile" Click="DuplicateProfile_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="Delete profile…" Click="RemoveProfile_Click"
+                                              IsEnabled="{Binding CanRemoveProfile}"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
                         </Button>
-                        <Button Content="− Page" Click="RemovePage_Click"
-                                Background="#5A2727" Foreground="White"
-                                FontSize="12" Padding="10,4" Margin="4,0,0,0"
-                                BorderThickness="0" Cursor="Hand">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                        <Button Content="+ Virtual" Click="AddVirtualLayout_Click"
-                                Background="#285A74" Foreground="White"
-                                FontSize="12" Padding="10,4" Margin="4,0,0,0"
-                                BorderThickness="0" Cursor="Hand">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                        <Button Content="− Virtual" Click="RemoveVirtualLayout_Click"
-                                Background="#744628" Foreground="White"
-                                FontSize="12" Padding="10,4" Margin="4,0,0,0"
-                                BorderThickness="0" Cursor="Hand"
-                                Visibility="{Binding IsViewingVirtualLayout, Converter={StaticResource BoolToVisibility}}">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                        <Button Content="✎ Rename" Click="RenameLayout_Click"
-                                Background="#3F4F86" Foreground="White"
-                                FontSize="12" Padding="10,4" Margin="4,0,0,0"
-                                BorderThickness="0" Cursor="Hand">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                        </StackPanel>
+                    </StackPanel>
 
-                        <!-- Left side: Navigation -->
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Content="◀" Click="PreviousPage_Click"
-                                IsEnabled="{Binding CanGoToPreviousPage}"
-                                Background="#2D2D44" Foreground="White"
-                                FontSize="14" Padding="10,2"
-                                BorderThickness="0" Cursor="Hand">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                                        Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                        <TextBlock Text="{Binding CurrentPageName}" 
-                                   Foreground="White" FontSize="14" FontWeight="SemiBold"
-                                   VerticalAlignment="Center" Margin="12,0"/>
-                        <TextBlock Text="{Binding PageIndicator}" 
-                                   Foreground="#666" FontSize="12"
-                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <Border Background="#303048" CornerRadius="4" Padding="7,2" Margin="0,0,10,0">
-                            <TextBlock Text="{Binding CurrentLayoutKindLabel}"
-                                       Foreground="#D4D4E4"
-                                       FontSize="11"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"/>
-                        </Border>
-                        <Button Content="▶" Click="NextPage_Click"
-                                IsEnabled="{Binding CanGoToNextPage}"
-                                Background="#2D2D44" Foreground="White"
-                                FontSize="14" Padding="10,2"
-                                BorderThickness="0" Cursor="Hand">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                                        Opacity="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static helpers:OpacityConverter.Instance}}">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                        </StackPanel>
-                    </DockPanel>
+                    <TextBlock Grid.Row="1"
+                               Text="Page"
+                               Foreground="#8C93AA"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Margin="2,6,10,0"/>
 
-                    <Grid Grid.Row="2" Margin="0,6,0,0">
+                    <Grid Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,6,0,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="AfterDropdown"/>
                         </Grid.ColumnDefinitions>
-
-                        <TextBlock Text="Go To Layout"
-                                   Foreground="#8C93AA"
-                                   FontSize="11"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"
-                                   Margin="2,0,8,0"/>
-
-                        <ComboBox Grid.Column="1"
-                                  MinWidth="140"
+                        <ComboBox MinWidth="220"
                                   Margin="0,0,8,0"
-                                  HorizontalAlignment="Stretch"
                                   ItemsSource="{Binding LayoutTargets}"
                                   ItemTemplate="{StaticResource LabeledComboBoxItemTemplate}"
                                   SelectedValuePath="Id"
                                   SelectedValue="{Binding SelectedLayoutId, Mode=TwoWay}"
                                   Style="{StaticResource DarkComboBox}"/>
-
-                        <Button Content="↩ Main" Click="ExitVirtualLayout_Click"
-                                Grid.Column="2"
-                                Margin="0,0,8,0"
-                                Background="#3E3E5E" Foreground="White"
-                                FontSize="12" Padding="10,4"
-                                BorderThickness="0" Cursor="Hand"
-                                Visibility="{Binding IsViewingVirtualLayout, Converter={StaticResource BoolToVisibility}}">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-
-                        <Border Grid.Column="3"
-                                Background="#20263A"
-                                BorderBrush="#3B4664"
-                                BorderThickness="1"
-                                CornerRadius="6"
-                                Padding="8,4"
-                                ToolTip="Changes every regular page and virtual layout in the selected profile only.">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="Profile grid"
-                                           Foreground="#AFC0D4"
-                                           FontSize="11"
-                                           FontWeight="SemiBold"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,8,0"/>
-
-                                <TextBlock Text="Rows"
-                                           Foreground="#8C93AA"
-                                           FontSize="10"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,4,0"/>
-                                <Button Content="−"
-                                        Command="{Binding DecreaseRowsCommand}"
-                                        Width="22" Height="22"
-                                        Padding="0"
-                                        Background="#2D2D44" Foreground="White"
-                                        BorderBrush="#4C4C70" BorderThickness="1"
-                                        Cursor="Hand"
-                                        ToolTip="Remove one row from all layouts in this profile"/>
-                                <TextBlock Text="{Binding Rows}"
-                                           Foreground="White"
-                                           FontSize="12"
-                                           FontWeight="SemiBold"
-                                           MinWidth="22"
-                                           TextAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                                <Button Content="+"
-                                        Command="{Binding IncreaseRowsCommand}"
-                                        Width="22" Height="22"
-                                        Padding="0"
-                                        Background="#2D2D44" Foreground="White"
-                                        BorderBrush="#4C4C70" BorderThickness="1"
-                                        Cursor="Hand"
-                                        ToolTip="Add one row to all layouts in this profile"/>
-
-                                <Border Width="1" Height="18" Background="#3B4664" Margin="8,0"/>
-
-                                <TextBlock Text="Columns"
-                                           Foreground="#8C93AA"
-                                           FontSize="10"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,4,0"/>
-                                <Button Content="−"
-                                        Command="{Binding DecreaseColumnsCommand}"
-                                        Width="22" Height="22"
-                                        Padding="0"
-                                        Background="#2D2D44" Foreground="White"
-                                        BorderBrush="#4C4C70" BorderThickness="1"
-                                        Cursor="Hand"
-                                        ToolTip="Remove one column from all layouts in this profile"/>
-                                <TextBlock Text="{Binding Columns}"
-                                           Foreground="White"
-                                           FontSize="12"
-                                           FontWeight="SemiBold"
-                                           MinWidth="22"
-                                           TextAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                                <Button Content="+"
-                                        Command="{Binding IncreaseColumnsCommand}"
-                                        Width="22" Height="22"
-                                        Padding="0"
-                                        Background="#2D2D44" Foreground="White"
-                                        BorderBrush="#4C4C70" BorderThickness="1"
-                                        Cursor="Hand"
-                                        ToolTip="Add one column to all layouts in this profile"/>
-                            </StackPanel>
-                        </Border>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Ellipse Width="10" Height="10"
+                                     Margin="0,0,8,0"
+                                     VerticalAlignment="Center"
+                                     Fill="{Binding CurrentPageTabColor, Converter={StaticResource StringToBrush}}"
+                                     ToolTip="This page's tab color"
+                                     Visibility="{Binding HasCurrentPageTabColor, Converter={StaticResource BoolToVisibility}}"/>
+                            <TextBlock Text="{Binding PageIndicator}"
+                                       Foreground="#AFC0D4"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <Button Content="↩ Main" Click="ExitVirtualLayout_Click"
+                                    ToolTip="Back to the regular pages"
+                                    Style="{StaticResource FlatActionButton}"
+                                    Background="#3E3E5E" FontSize="12" Padding="10,4"
+                                    Visibility="{Binding IsViewingVirtualLayout, Converter={StaticResource BoolToVisibility}}"/>
+                        </StackPanel>
                     </Grid>
+
+                    <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,6,0,0">
+                        <Button Content="+ Page" Click="AddPage_Click"
+                                Style="{StaticResource FlatActionButton}"
+                                Background="#2D5A27" FontSize="12" Padding="10,4"/>
+                        <Button Content="⋯" Click="OpenMoreMenu_Click"
+                                AutomationProperties.Name="More page actions"
+                                ToolTip="More page actions"
+                                Style="{StaticResource FlatActionButton}"
+                                Background="#2D2D44" FontSize="12" Padding="10,4" Margin="4,0,0,0">
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Rename…" Click="RenameLayout_Click"/>
+                                    <MenuItem Header="Tab color…" Click="SetPageTabColor_Click"
+                                              IsEnabled="{Binding CanColorCurrentPage}"
+                                              ToolTip="The colour of this page's tab in the overlay"/>
+                                    <MenuItem Header="Clear tab color" Click="ClearPageTabColor_Click"
+                                              IsEnabled="{Binding HasCurrentPageTabColor}"/>
+                                    <MenuItem Header="Delete…" Click="RemoveLayout_Click"
+                                              IsEnabled="{Binding CanRemoveCurrentLayout}"/>
+                                    <Separator/>
+                                    <MenuItem Header="New virtual layout" Click="AddVirtualLayout_Click"
+                                              ToolTip="A hidden page that buttons open with Switch Layout"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -1529,6 +1056,7 @@
                                      IsReadOnly="True"
                                      VerticalContentAlignment="Center"/>
                             <Button Grid.Column="1" Content="📁" Click="BrowseImage_Click"
+                                    AutomationProperties.Name="Browse for image"
                                     Background="#2D2D44" Foreground="White"
                                     FontSize="13" Padding="8,5" Margin="4,0,0,0"
                                     BorderThickness="0" Cursor="Hand">
@@ -1547,6 +1075,7 @@
                                 </Button.Style>
                             </Button>
                             <Button Grid.Column="2" Content="✕" Click="ClearImage_Click"
+                                    AutomationProperties.Name="Clear image"
                                     Background="#5A2727" Foreground="White"
                                     FontSize="13" Padding="8,5" Margin="4,0,0,0"
                                     BorderThickness="0" Cursor="Hand">
@@ -1693,6 +1222,7 @@
                                             <StackPanel>
                                                 <DockPanel Margin="0,0,0,6">
                                                     <Button Content="✕" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Remove step"
                                                             Command="{Binding DataContext.RemoveStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Background="#5A2727" Foreground="White"
@@ -1713,6 +1243,7 @@
                                                         </Button.Style>
                                                     </Button>
                                                     <Button Content="▲" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Move step up"
                                                             Command="{Binding DataContext.MoveStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Background="#2D2D44" Foreground="#AAA"
@@ -1738,6 +1269,7 @@
                                                         </Button.Style>
                                                     </Button>
                                                     <Button Content="▼" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Move step down"
                                                             Command="{Binding DataContext.MoveStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Background="#2D2D44" Foreground="#AAA"
@@ -1867,6 +1399,7 @@
                                        VerticalAlignment="Center"/>
 
                             <Button x:Name="ClipboardSettingsButton"
+                                    AutomationProperties.Name="Clipboard options"
                                     Grid.Column="1"
                                     Content="⋯"
                                     Click="ToggleClipboardSettingsPopup_Click"
@@ -1958,6 +1491,7 @@
                                                         <StackPanel>
                                                             <DockPanel Margin="0,0,0,6">
                                                                 <Button Content="✕" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Remove step"
                                                                         Command="{Binding DataContext.RemoveClipboardActionStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#5A2727" Foreground="White"
@@ -1978,6 +1512,7 @@
                                                                     </Button.Style>
                                                                 </Button>
                                                                 <Button Content="▲" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Move step up"
                                                                         Command="{Binding DataContext.MoveClipboardActionStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#2D2D44" Foreground="#AAA"
@@ -2003,6 +1538,7 @@
                                                                     </Button.Style>
                                                                 </Button>
                                                                 <Button Content="▼" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Move step down"
                                                                         Command="{Binding DataContext.MoveClipboardActionStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#2D2D44" Foreground="#AAA"
@@ -2139,12 +1675,15 @@
                                               SelectedValue="{Binding SelectedQuickTextCollectionId, Mode=TwoWay}"
                                               Style="{StaticResource DarkComboBox}"/>
                                     <Button Grid.Column="1" Content="+" Command="{Binding AddQuickTextCollectionCommand}"
+                                            AutomationProperties.Name="Add collection"
                                             Style="{StaticResource FlatActionButton}"
                                             ToolTip="Add collection" Background="#2D5A27" Width="30" Margin="6,0,0,0"/>
                                     <Button Grid.Column="2" Content="✎" Click="RenameQuickTextCollection_Click"
+                                            AutomationProperties.Name="Rename collection"
                                             Style="{StaticResource FlatActionButton}"
                                             ToolTip="Rename collection" Background="#3F4F86" Width="30" Margin="5,0,0,0"/>
                                     <Button Grid.Column="3" Content="−" Command="{Binding RemoveQuickTextCollectionCommand}"
+                                            AutomationProperties.Name="Remove collection"
                                             Style="{StaticResource FlatActionButton}"
                                             IsEnabled="{Binding HasMultipleQuickTextCollections}"
                                             ToolTip="Remove collection; its tags are moved to another collection" Background="#5A2727" Width="30" Margin="5,0,0,0"/>
@@ -2168,12 +1707,15 @@
                                               SelectedValue="{Binding SelectedQuickTextCategoryId, Mode=TwoWay}"
                                               Style="{StaticResource DarkComboBox}"/>
                                     <Button Grid.Column="1" Content="+" Command="{Binding AddQuickTextCategoryCommand}"
+                                            AutomationProperties.Name="Add tag"
                                             Style="{StaticResource FlatActionButton}"
                                             ToolTip="Add tag" Background="#2D5A27" Width="30" Margin="6,0,0,0"/>
                                     <Button Grid.Column="2" Content="✎" Click="RenameQuickTextCategory_Click"
+                                            AutomationProperties.Name="Rename tag"
                                             Style="{StaticResource FlatActionButton}"
                                             ToolTip="Rename tag" Background="#3F4F86" Width="30" Margin="5,0,0,0"/>
                                     <Button Grid.Column="3" Content="−" Command="{Binding RemoveQuickTextCategoryCommand}"
+                                            AutomationProperties.Name="Remove tag"
                                             Style="{StaticResource FlatActionButton}"
                                             IsEnabled="{Binding HasMultipleQuickTextCategories}"
                                             ToolTip="Remove tag" Background="#5A2727" Width="30" Margin="5,0,0,0"/>
@@ -2356,6 +1898,7 @@
                                        FontSize="11"
                                        VerticalAlignment="Center"/>
                             <Button DockPanel.Dock="Right"
+                                    AutomationProperties.Name="Add row"
                                     Content="+"
                                     Command="{Binding AddQuickTextItemCommand}"
                                     Background="#2D5A27"
@@ -2426,9 +1969,6 @@
                                                          MaxHeight="56"
                                                          VerticalScrollBarVisibility="Auto"
                                                          Margin="0,0,8,0">
-                                                    <TextBox.Resources>
-                                                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
-                                                    </TextBox.Resources>
                                                 </TextBox>
 
                                                 <Button Grid.Column="1"
@@ -2459,6 +1999,7 @@
                                                 </Button>
 
                                                 <Button Grid.Column="2"
+                                                        AutomationProperties.Name="Remove row"
                                                         Content="✕"
                                                         Command="{Binding DataContext.RemoveQuickTextItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}"
@@ -2589,17 +2130,21 @@
                                       ItemTemplate="{StaticResource NamedComboBoxItemTemplate}"
                                       Style="{StaticResource DarkComboBox}"/>
                             <Button Grid.Column="1" Content="+" Command="{Binding AddFormTemplateCommand}"
+                                    AutomationProperties.Name="Add form"
                                     Style="{StaticResource FlatActionButton}"
                                     ToolTip="Add form" Background="#2D5A27" Width="30" Margin="6,0,0,0"/>
                             <Button Grid.Column="2" Content="⧉" Command="{Binding DuplicateFormTemplateCommand}"
+                                    AutomationProperties.Name="Duplicate form"
                                     Style="{StaticResource FlatActionButton}"
                                     IsEnabled="{Binding HasSelectedFormTemplate}"
                                     ToolTip="Duplicate form" Background="#2A4D7A" Width="30" Margin="5,0,0,0"/>
                             <Button Grid.Column="3" Content="✎" Click="RenameFormTemplate_Click"
+                                    AutomationProperties.Name="Rename form"
                                     Style="{StaticResource FlatActionButton}"
                                     IsEnabled="{Binding HasSelectedFormTemplate}"
                                     ToolTip="Rename form" Background="#3F4F86" Width="30" Margin="5,0,0,0"/>
                             <Button Grid.Column="4" Content="−" Command="{Binding RemoveFormTemplateCommand}"
+                                    AutomationProperties.Name="Delete form"
                                     Style="{StaticResource FlatActionButton}"
                                     IsEnabled="{Binding HasSelectedFormTemplate}"
                                     ToolTip="Delete form" Background="#5A2727" Width="30" Margin="5,0,0,0"/>
@@ -2637,16 +2182,19 @@
                                             <StackPanel>
                                                 <DockPanel Margin="0,0,0,6">
                                                     <Button Content="✕" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Remove field"
                                                             Command="{Binding DataContext.RemoveFormFieldCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Style="{StaticResource FormsFlatButton}"
                                                             Background="#5A2727" FontSize="11" Padding="6,2" Margin="4,0,0,0"/>
                                                     <Button Content="▼" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Move field down"
                                                             Command="{Binding DataContext.MoveFormFieldDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Style="{StaticResource FormsFlatButton}"
                                                             Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
                                                     <Button Content="▲" DockPanel.Dock="Right"
+                                                            AutomationProperties.Name="Move field up"
                                                             Command="{Binding DataContext.MoveFormFieldUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"
                                                             Style="{StaticResource FormsFlatButton}"
@@ -2744,6 +2292,7 @@
                                                                              BorderBrush="#444" BorderThickness="1"
                                                                              AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="60"/>
                                                                     <Button Grid.Column="3" Content="✕"
+                                                                            AutomationProperties.Name="Remove option"
                                                                             Command="{Binding DataContext.RemoveFormFieldOptionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                             CommandParameter="{Binding}"
                                                                             Style="{StaticResource FormsFlatButton}"
@@ -2832,6 +2381,7 @@
                                                            HorizontalAlignment="Center"/>
                                             </Border>
                                             <Button Grid.Column="7" Content="✕"
+                                                    AutomationProperties.Name="Remove counter"
                                                     Command="{Binding DataContext.RemoveFormCounterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"
                                                     Style="{StaticResource FormsFlatButton}"
@@ -2902,16 +2452,19 @@
                                                         <StackPanel>
                                                             <DockPanel Margin="0,0,0,6">
                                                                 <Button Content="✕" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Remove step"
                                                                         Command="{Binding DataContext.RemoveFormActionStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Style="{StaticResource FormsFlatButton}"
                                                                         Background="#5A2727" FontSize="11" Padding="6,2" Margin="4,0,0,0"/>
                                                                 <Button Content="▲" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Move step up"
                                                                         Command="{Binding DataContext.MoveFormActionStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Style="{StaticResource FormsFlatButton}"
                                                                         Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
                                                                 <Button Content="▼" DockPanel.Dock="Right"
+                                                                        AutomationProperties.Name="Move step down"
                                                                         Command="{Binding DataContext.MoveFormActionStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Style="{StaticResource FormsFlatButton}"
@@ -3009,6 +2562,7 @@
                                                     <StackPanel>
                                                         <DockPanel Margin="0,0,0,4">
                                                             <Button Content="✕" DockPanel.Dock="Right"
+                                                                    AutomationProperties.Name="Delete submission"
                                                                     Command="{Binding DataContext.DeleteFormSubmissionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                     CommandParameter="{Binding}"
                                                                     Style="{StaticResource FormsFlatButton}"

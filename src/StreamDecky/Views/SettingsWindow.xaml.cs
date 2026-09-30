@@ -145,9 +145,57 @@ public partial class SettingsWindow : Window
 
     private void OverlayBgColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        var color = ShowColorDialog(_viewModel.OverlayBackgroundColor);
+        var color = ColorPickerDialog.Show(this, _viewModel.OverlayBackgroundColor);
         if (color != null)
             _viewModel.OverlayBackgroundColor = color;
+    }
+
+    private void PageTabActiveColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        var color = ColorPickerDialog.Show(this, _viewModel.PageTabActiveColor);
+        if (color != null)
+            _viewModel.PageTabActiveColor = color;
+    }
+
+    private void PageTabTextColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        var color = ColorPickerDialog.Show(this, _viewModel.PageTabTextColor);
+        if (color != null)
+            _viewModel.PageTabTextColor = color;
+    }
+
+    private void PageTabBarColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        var color = ColorPickerDialog.Show(this, _viewModel.PageTabBarColor);
+        if (color != null)
+            _viewModel.PageTabBarColor = color;
+    }
+
+    private void AddNotesArea_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.AddNotePageCommand.Execute(null);
+    }
+
+    private void RemoveNotesArea_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.CanRemoveNotePage)
+            return;
+
+        int noteCount = _viewModel.CurrentNotePageNoteCount;
+        string message = noteCount > 0
+            ? $"Remove notes area \"{_viewModel.CurrentNotePageName}\"?\n\nThis will permanently delete {noteCount} sticky note(s) in this area."
+            : $"Remove notes area \"{_viewModel.CurrentNotePageName}\"?";
+
+        var result = System.Windows.MessageBox.Show(
+            this,
+            message,
+            "Remove Notes Area",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        if (result == MessageBoxResult.Yes)
+            _viewModel.RemoveNotePageCommand.Execute(null);
     }
 
     private void SettingsTitleBar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -384,28 +432,6 @@ public partial class SettingsWindow : Window
         _gamepadRecordTimer.Stop();
         _gamepadRecordTimer.Tick -= GamepadRecordTimer_Tick;
         base.OnClosed(e);
-    }
-
-    private static string? ShowColorDialog(string currentHex)
-    {
-        var dlg = new System.Windows.Forms.ColorDialog
-        {
-            FullOpen = true,
-            AnyColor = true
-        };
-
-        try
-        {
-            var wpfColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(currentHex);
-            dlg.Color = System.Drawing.Color.FromArgb(wpfColor.R, wpfColor.G, wpfColor.B);
-        }
-        catch { }
-
-        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
-            return $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}";
-        }
-        return null;
     }
 
     private static string MakeSafeFileName(string value)

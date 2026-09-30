@@ -84,6 +84,48 @@ public sealed class MusicWidgetViewModelTests
     }
 
     [Fact]
+    public void TrackIsPlaying_FollowsTheCurrentTrackAndPlaybackState()
+    {
+        var client = new FakeMicMixerClient();
+        client.NextTrackPage = new MicMixerTrackPage(0, 200, 2, "lib-1", new[]
+        {
+            CreateTrack("t1", "Track one"),
+            CreateTrack("t2", "Track two")
+        });
+        using var viewModel = new MusicWidgetViewModel(client);
+        client.RaiseConnected();
+
+        client.RaiseState(CreateState() with { CurrentTrackId = "t1", CurrentTrackName = "Track one", PlaybackState = "Playing" });
+        Assert.True(viewModel.Tracks[0].IsPlaying);
+        Assert.False(viewModel.Tracks[1].IsPlaying);
+
+        client.RaiseState(CreateState() with { CurrentTrackId = "t1", CurrentTrackName = "Track one", PlaybackState = "Paused" });
+        Assert.True(viewModel.Tracks[0].IsCurrent);
+        Assert.False(viewModel.Tracks[0].IsPlaying);
+    }
+
+    [Fact]
+    public void PlayTrack_OnTheCurrentTrack_PausesAndResumesInsteadOfRestarting()
+    {
+        var client = new FakeMicMixerClient();
+        client.NextTrackPage = new MicMixerTrackPage(0, 200, 2, "lib-1", new[]
+        {
+            CreateTrack("t1", "Track one"),
+            CreateTrack("t2", "Track two")
+        });
+        using var viewModel = new MusicWidgetViewModel(client);
+        client.RaiseConnected();
+        client.RaiseState(CreateState() with { CurrentTrackId = "t1", CurrentTrackName = "Track one", PlaybackState = "Playing" });
+
+        viewModel.PlayTrackCommand.Execute(viewModel.Tracks[0]);
+        viewModel.PlayTrackCommand.Execute(viewModel.Tracks[1]);
+
+        Assert.Contains("togglePlayPause", client.Commands);
+        Assert.DoesNotContain("playTrack:t1", client.Commands);
+        Assert.Contains("playTrack:t2", client.Commands);
+    }
+
+    [Fact]
     public void StateChanged_ShouldUpdateDelayedPlayAndSingleTrackMode()
     {
         var client = new FakeMicMixerClient();
@@ -307,6 +349,21 @@ public sealed class MusicWidgetViewModelTests
         Assert.True(viewModel.IsExternalMode);
         Assert.False(viewModel.ShowPlayerControls);
         Assert.Empty(viewModel.PlaybackBlockedReason);
+    }
+
+    [Theory]
+    [InlineData("empty_library", "MicMixer's music library is empty. Add music in MicMixer to play it from here.")]
+    [InlineData("no_playback_clock", "Start routing or turn on monitoring in MicMixer to play music.")]
+    [InlineData("some_future_reason", "MicMixer can't start music right now.")]
+    public void BlockedPlayback_ShowsAReadableReason(string reason, string expected)
+    {
+        var client = new FakeMicMixerClient();
+        using var viewModel = new MusicWidgetViewModel(client);
+        client.RaiseConnected();
+
+        client.RaiseState(CreateState() with { CanStartPlayback = false, PlaybackBlockedReason = reason });
+
+        Assert.Equal(expected, viewModel.PlaybackBlockedReason);
     }
 
     private static MicMixerTrack CreateTrack(string id, string name) =>

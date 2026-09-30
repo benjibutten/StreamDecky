@@ -9,11 +9,39 @@ namespace StreamDecky.Updates;
 
 internal static class UpdateInstaller
 {
+    /// <summary>Name of every download folder; the cleanup deletes nothing else.</summary>
+    public const string WorkDirectoryPrefix = "StreamDecky-update-";
+
+    public const string ArchiveName = "update.zip";
+
+    /// <summary>Passed to the StreamDecky an update starts, with the download folder to delete. installer/StreamDecky.iss passes it too.</summary>
+    public const string UpdateCleanupArgument = "--update-cleanup";
+
     private const int FileOperationAttempts = 20;
     private static readonly TimeSpan FileOperationDelay = TimeSpan.FromMilliseconds(250);
 
     public static bool IsUpdateMode(string[] args) =>
         args.Contains("--apply-update", StringComparer.OrdinalIgnoreCase);
+
+    public static bool IsCleanupMode(string[] args) =>
+        args.Contains("--cleanup-update", StringComparer.OrdinalIgnoreCase);
+
+    public static async Task RunCleanupAsync(string[] args)
+    {
+        try
+        {
+            int processId = int.Parse(GetRequiredArgument(args, "--process-id"));
+            string workDirectory = GetValidatedWorkDirectory(
+                GetRequiredArgument(args, "--work-directory"),
+                AppContext.BaseDirectory);
+            await Task.Run(() => WaitForProcessToExit(processId));
+            await DeleteWorkDirectoryAsync(workDirectory);
+        }
+        catch
+        {
+            // Cleanup is best effort and must never start the normal application.
+        }
+    }
 
     public static async Task RunAsync(string[] args)
     {
@@ -31,6 +59,7 @@ internal static class UpdateInstaller
                 "StreamDecky Update",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
+            LaunchCleanupProcess(args);
         }
         finally
         {
@@ -45,7 +74,7 @@ internal static class UpdateInstaller
         string expectedHash = GetRequiredArgument(args, "--expected-hash");
         string installDirectory = Path.GetFullPath(GetRequiredArgument(args, "--install-directory"));
         string executablePath = Path.GetFullPath(GetRequiredArgument(args, "--executable-path"));
-        string workDirectory = GetValidatedWorkDirectory(zipPath);
+        string workDirectory = GetValidatedWorkDirectory(Path.GetDirectoryName(zipPath)!, installDirectory);
 
         progress.Report(new UpdateProgress("Waiting for StreamDecky to close…"));
         WaitForProcessToExit(processId);
@@ -70,7 +99,7 @@ internal static class UpdateInstaller
             UseShellExecute = true,
             WorkingDirectory = installDirectory
         };
-        restart.ArgumentList.Add("--update-cleanup");
+        restart.ArgumentList.Add(UpdateCleanupArgument);
         restart.ArgumentList.Add(workDirectory);
         _ = Process.Start(restart)
             ?? throw new InvalidOperationException("The updated application could not be restarted.");
@@ -186,55 +215,94 @@ internal static class UpdateInstaller
         return args[index + 1];
     }
 
-    private static string GetValidatedWorkDirectory(string zipPath)
+    /// <summary>
+    /// Returns <paramref name="workDirectory"/> when it is a StreamDecky download folder
+    /// directly inside %TEMP% or <paramref name="installDirectory"/>, and throws otherwise,
+    /// so a crafted argument can never make the cleanup delete anything else.
+    /// </summary>
+    internal static string GetValidatedWorkDirectory(string workDirectory, string installDirectory)
     {
-        string workDirectory = Path.GetDirectoryName(Path.GetFullPath(zipPath))
-            ?? throw new InvalidOperationException("The update work directory is invalid.");
-        string tempDirectory = Path.GetFullPath(Path.GetTempPath())
-            .TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        string expectedPrefix = Path.Combine(tempDirectory, "StreamDecky-update-");
-        if (!workDirectory.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(
-                Path.GetDirectoryName(workDirectory)?.TrimEnd(Path.DirectorySeparatorChar),
-                tempDirectory.TrimEnd(Path.DirectorySeparatorChar),
-                StringComparison.OrdinalIgnoreCase))
+        string fullPath = Path.GetFullPath(workDirectory).TrimEnd(Path.DirectorySeparatorChar);
+        string? parent = Path.GetDirectoryName(fullPath);
+        bool isInTrustedParent = IsSameDirectory(parent, Path.GetTempPath()) || IsSameDirectory(parent, installDirectory);
+        if (!isInTrustedParent || !Path.GetFileName(fullPath).StartsWith(WorkDirectoryPrefix, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("The update work directory is not trusted.");
         }
-        return workDirectory;
+        return fullPath;
     }
+
+    private static bool IsSameDirectory(string? left, string right) =>
+        left != null && string.Equals(
+            Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar),
+            Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar),
+            StringComparison.OrdinalIgnoreCase);
+
+    private static void LaunchCleanupProcess(string[] args)
+    {
+        try
+        {
+            string executablePath = Path.GetFullPath(GetRequiredArgument(args, "--executable-path"));
+            string zipPath = Path.GetFullPath(GetRequiredArgument(args, "--zip-path"));
+            string workDirectory = GetValidatedWorkDirectory(
+                Path.GetDirectoryName(zipPath)!,
+                GetRequiredArgument(args, "--install-directory"));
+            var cleanup = new ProcessStartInfo(executablePath)
+            {
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                WorkingDirectory = Path.GetDirectoryName(executablePath)!
+            };
+            cleanup.ArgumentList.Add("--cleanup-update");
+            cleanup.ArgumentList.Add("--process-id");
+            cleanup.ArgumentList.Add(Environment.ProcessId.ToString());
+            cleanup.ArgumentList.Add("--work-directory");
+            cleanup.ArgumentList.Add(workDirectory);
+            _ = Process.Start(cleanup);
+        }
+        catch
+        {
+            // The update failure has already been reported; cleanup is best effort.
+        }
+    }
+
+    private static async Task DeleteWorkDirectoryAsync(string workDirectory)
+    {
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            try
+            {
+                Directory.Delete(workDirectory, recursive: true);
+                return;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return;
+            }
+            catch { }
+        }
+    }
+
+    /// <summary>True when an update started this launch.</summary>
+    public static bool IsRestartAfterUpdate(string[] args) =>
+        args.Contains(UpdateCleanupArgument, StringComparer.OrdinalIgnoreCase);
 
     public static void ScheduleCleanup(string[] args)
     {
-        int index = Array.FindIndex(args, value => string.Equals(value, "--update-cleanup", StringComparison.OrdinalIgnoreCase));
+        int index = Array.FindIndex(args, value => string.Equals(value, UpdateCleanupArgument, StringComparison.OrdinalIgnoreCase));
         if (index < 0 || index + 1 >= args.Length)
             return;
 
         string workDirectory;
         try
         {
-            workDirectory = GetValidatedWorkDirectory(Path.Combine(args[index + 1], "update.zip"));
+            workDirectory = GetValidatedWorkDirectory(args[index + 1], AppContext.BaseDirectory);
         }
         catch
         {
             return;
         }
-        _ = Task.Run(async () =>
-        {
-            for (int attempt = 0; attempt < 10; attempt++)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1));
-                try
-                {
-                    Directory.Delete(workDirectory, recursive: true);
-                    return;
-                }
-                catch (DirectoryNotFoundException)
-                {
-                    return;
-                }
-                catch { }
-            }
-        });
+        _ = DeleteWorkDirectoryAsync(workDirectory);
     }
 }

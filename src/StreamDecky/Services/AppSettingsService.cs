@@ -256,6 +256,32 @@ public class AppSettingsService
         }
     }
 
+    public bool RunAsAdministrator
+    {
+        get => Settings.RunAsAdministrator;
+        set
+        {
+            if (Settings.RunAsAdministrator == value)
+                return;
+
+            Settings.RunAsAdministrator = value;
+            Save();
+        }
+    }
+
+    public string? WhatsNewShownForVersion
+    {
+        get => Settings.WhatsNewShownForVersion;
+        set
+        {
+            if (string.Equals(Settings.WhatsNewShownForVersion, value, StringComparison.Ordinal))
+                return;
+
+            Settings.WhatsNewShownForVersion = value;
+            Save();
+        }
+    }
+
     private AppSettings Load()
     {
         if (!File.Exists(_settingsPath))

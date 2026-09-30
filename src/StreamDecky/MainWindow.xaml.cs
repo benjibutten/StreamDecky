@@ -2,14 +2,16 @@
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Navigation;
+using StreamDecky.Admin;
 using StreamDecky.Helpers;
 using StreamDecky.Services;
+using StreamDecky.Updates;
 using StreamDecky.ViewModels;
 using StreamDecky.Views;
 
 namespace StreamDecky;
 
-using Popup = System.Windows.Controls.Primitives.Popup;
+using PlacementMode = System.Windows.Controls.Primitives.PlacementMode;
 
 public partial class MainWindow : Window
 {
@@ -32,6 +34,8 @@ public partial class MainWindow : Window
     private bool _globalHotkeyRegistered;
     private bool _rawInputSinkRegistered;
     private readonly StartupRegistrySyncService _startupRegistrySyncService = new();
+    private readonly StartupTaskService _startupTaskService = new();
+    private int _lastWarnedElevatedProcessId;
     // Keep this short: it bounds the added latency between pressing the gamepad
     // combo and the overlay toggling. The packet-number check in the tick handler
     // keeps idle polling cheap.
@@ -59,6 +63,7 @@ public partial class MainWindow : Window
         InitializeTrayIcon();
         _overlayController = new OverlayWindowController(_viewModel);
         SyncStartWithWindows();
+        InputActionGate.KeysSentToElevatedProgram += OnKeysSentToElevatedProgram;
 
         if (_startHiddenInTray)
             ShowInTaskbar = false;
@@ -70,15 +75,12 @@ public partial class MainWindow : Window
 
     private static bool HasStartHiddenInTrayArgument(string[] args)
     {
-        return args.Contains("--minimized", StringComparer.OrdinalIgnoreCase);
+        return App.HasStartHiddenInTrayArgument(args);
     }
 
     private void SupportLink_RequestNavigate(object sender, RequestNavigateEventArgs e)
     {
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri)
-        {
-            UseShellExecute = true
-        });
+        ShellLauncher.Open(e.Uri.AbsoluteUri);
         e.Handled = true;
     }
 
@@ -100,6 +102,30 @@ public partial class MainWindow : Window
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         UpdateEditorPanelLayoutConstraints();
+        // Loaded waits for the first Show, so a start hidden in the tray offers the
+        // notes when the user first opens the window.
+        Dispatcher.BeginInvoke(OfferWhatsNew, System.Windows.Threading.DispatcherPriority.ContextIdle);
+    }
+
+    /// <summary>
+    /// Shows the release notes of this version once, after an update. A first run only
+    /// records the version, so the notes wait for the next update.
+    /// </summary>
+    private void OfferWhatsNew()
+    {
+        if (AppVersion.Current is not { } current || _viewModel.WhatsNewShownForVersion == current.ToString())
+            return;
+
+        // Profiles are saved only once something changes, so a launch by an update also
+        // counts as set up.
+        bool isSetUp = !_viewModel.IsFirstRun || UpdateInstaller.IsRestartAfterUpdate(Environment.GetCommandLineArgs());
+        if (WhatsNewDialog.ShouldShow(current, _viewModel.WhatsNewShownForVersion, isSetUp)
+            && WhatsNewDialog.ReadBuiltInItems().Count > 0)
+        {
+            WhatsNewDialog.Show(this);
+        }
+
+        _viewModel.WhatsNewShownForVersion = current.ToString();
     }
 
     private void MainWindow_StateChanged(object? sender, EventArgs e)
@@ -192,10 +218,7 @@ public partial class MainWindow : Window
         try
         {
             System.IO.Directory.CreateDirectory(AppDiagnostics.LogDirectory);
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AppDiagnostics.LogDirectory)
-            {
-                UseShellExecute = true
-            });
+            ShellLauncher.Open(AppDiagnostics.LogDirectory);
         }
         catch (Exception ex)
         {
@@ -249,6 +272,7 @@ public partial class MainWindow : Window
 
     private void ExitApplication()
     {
+        InputActionGate.KeysSentToElevatedProgram -= OnKeysSentToElevatedProgram;
         DisposeGamepadTogglePolling();
         DisposeTrayIcon();
         _hotkeyController.Unregister(this, HOTKEY_ID);
@@ -281,6 +305,9 @@ public partial class MainWindow : Window
 
         if (e.PropertyName == nameof(MainViewModel.StartWithWindows))
             SyncStartWithWindows();
+
+        if (e.PropertyName == nameof(MainViewModel.RunAsAdministrator))
+            OnRunAsAdministratorChanged();
     }
 
     private void UpdateGamepadTogglePolling()
@@ -353,16 +380,128 @@ public partial class MainWindow : Window
         _trayIconImage = null;
     }
 
+    private const string StartupHintElevated =
+        "Starts as administrator when you sign in, without asking.";
+    private const string StartupHintTaskPending =
+        "Starts as administrator at sign-in once StreamDecky has run as administrator.";
+    private const string StartupHintTaskPendingRemoval =
+        "Still starts as administrator at sign-in until StreamDecky runs as administrator again.";
+    private const string StartupHintNotProtected =
+        "From this folder, StreamDecky starts without administrator rights at sign-in. Installed with the StreamDecky installer, it starts as administrator at sign-in too.";
+    private const string StartupHintNoAdministratorAccount =
+        "Running as administrator needs a Windows account with administrator rights.";
+
+    /// <summary>
+    /// Mirrors "Start with Windows" into whichever of the two startup mechanisms
+    /// applies, and never both: StreamDecky started twice at sign-in would have the
+    /// second copy hand over to the first.
+    /// </summary>
     private void SyncStartWithWindows()
     {
+        string? exePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(exePath))
+            return;
+
+        bool runAsAdministrator = _viewModel.RunAsAdministrator;
+        bool startElevated = _viewModel.StartWithWindows && runAsAdministrator;
+        // Starting as administrator with no prompt needs a launcher and an exe that nothing
+        // without administrator rights can swap out; from anywhere else it would hand those
+        // rights to whoever replaced a file.
+        bool isProtected = runAsAdministrator
+            && Elevation.IsProtectedFromNonAdministrators(Elevation.LauncherPath)
+            && Elevation.IsProtectedFromNonAdministrators(exePath);
+        string hint = string.Empty;
+
         try
         {
-            _startupRegistrySyncService.Sync(_viewModel.StartWithWindows, Environment.ProcessPath);
+            if (Elevation.IsElevated)
+            {
+                bool useTask = startElevated && isProtected;
+                try
+                {
+                    _startupTaskService.Sync(useTask, Elevation.LauncherPath);
+                }
+                catch (Exception ex)
+                {
+                    // Task Scheduler can be turned off or blocked by policy; the Run key still starts StreamDecky.
+                    AppDiagnostics.Warning("Could not update the startup task; using the Run key instead.", ex);
+                    useTask = false;
+                }
+
+                SyncRunKey(_viewModel.StartWithWindows && !useTask, exePath);
+                hint = useTask ? StartupHintElevated : string.Empty;
+            }
+            else if (_startupTaskService.Exists())
+            {
+                // Registered by StreamDecky running as administrator; only such a copy may change it.
+                SyncRunKey(false, exePath);
+                hint = startElevated ? StartupHintElevated : StartupHintTaskPendingRemoval;
+            }
+            else
+            {
+                SyncRunKey(_viewModel.StartWithWindows, exePath);
+                hint = startElevated && isProtected ? StartupHintTaskPending : string.Empty;
+            }
         }
         catch (Exception ex)
         {
-            AppDiagnostics.Warning("Failed to synchronize the Start with Windows registry setting.", ex);
+            AppDiagnostics.Warning("Failed to synchronize the Start with Windows setting.", ex);
         }
+
+        if (startElevated && !isProtected)
+            hint = StartupHintNotProtected;
+
+        if (!Elevation.CanRunAsAdministrator)
+            hint = StartupHintNoAdministratorAccount;
+
+        _viewModel.StartupHint = hint;
+    }
+
+    private void SyncRunKey(bool startWithWindows, string exePath)
+    {
+        if (!_startupRegistrySyncService.Sync(startWithWindows, exePath))
+            AppDiagnostics.Warning("Could not open the Windows startup registry key.");
+    }
+
+    private void OnRunAsAdministratorChanged()
+    {
+        SyncStartWithWindows();
+        // After the checkbox has taken the new value, which RestartAsAdministrator may undo.
+        if (_viewModel.RunAsAdministrator && !Elevation.IsElevated)
+            Dispatcher.BeginInvoke(RestartAsAdministrator);
+    }
+
+    private void RestartAsAdministrator()
+    {
+        try
+        {
+            if (Elevation.TryStartElevatedCopy([]))
+            {
+                ExitApplication();
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Could not restart StreamDecky as administrator.", ex);
+        }
+
+        // Declined or failed: leaving the setting on would ask again at every launch.
+        _viewModel.RunAsAdministrator = false;
+    }
+
+    private void OnKeysSentToElevatedProgram(string programName, int processId)
+    {
+        // Once per program run: every button press would otherwise repeat it.
+        if (Interlocked.Exchange(ref _lastWarnedElevatedProcessId, processId) == processId)
+            return;
+
+        Dispatcher.BeginInvoke(() => _trayIcon?.ShowBalloonTip(
+            8000,
+            "Keys blocked by Windows",
+            $"{programName} is running as administrator, so Windows drops the keys StreamDecky sends to it. "
+                + "Turn on \"Run StreamDecky as administrator\" in Settings > General.",
+            System.Windows.Forms.ToolTipIcon.Warning));
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -440,11 +579,16 @@ public partial class MainWindow : Window
         ToggleOverlay();
     }
 
-    private void ToggleNotesAreasPopup_Click(object sender, RoutedEventArgs e)
+    /// <summary>Opens the ⋯ button's context menu under the button, as a left click.</summary>
+    private void OpenMoreMenu_Click(object sender, RoutedEventArgs e)
     {
-        var popup = GetNotesAreasPopup();
-        if (popup != null)
-            popup.IsOpen = !popup.IsOpen;
+        if (sender is not FrameworkElement { ContextMenu: { } menu } button)
+            return;
+
+        menu.PlacementTarget = button;
+        menu.Placement = PlacementMode.Bottom;
+        menu.DataContext = button.DataContext;
+        menu.IsOpen = true;
     }
 
     private void ToggleClipboardSettingsPopup_Click(object sender, RoutedEventArgs e)
@@ -512,7 +656,7 @@ public partial class MainWindow : Window
     private void BtnBgColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (_viewModel.SelectedButton == null) return;
-        var color = ShowColorDialog(_viewModel.SelectedButton.BackgroundColor);
+        var color = ColorPickerDialog.Show(this, _viewModel.SelectedButton.BackgroundColor);
         if (color != null)
             _viewModel.SelectedButton.BackgroundColor = color;
     }
@@ -520,7 +664,7 @@ public partial class MainWindow : Window
     private void BtnTextColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (_viewModel.SelectedButton == null) return;
-        var color = ShowColorDialog(_viewModel.SelectedButton.TextColor);
+        var color = ColorPickerDialog.Show(this, _viewModel.SelectedButton.TextColor);
         if (color != null)
             _viewModel.SelectedButton.TextColor = color;
     }
@@ -540,16 +684,6 @@ public partial class MainWindow : Window
         // Sync startup setting if changed
         if (oldStartup != _viewModel.StartWithWindows)
             SyncStartWithWindows();
-    }
-
-    private void PreviousPage_Click(object sender, RoutedEventArgs e)
-    {
-        _viewModel.PreviousPageCommand.Execute(null);
-    }
-
-    private void NextPage_Click(object sender, RoutedEventArgs e)
-    {
-        _viewModel.NextPageCommand.Execute(null);
     }
 
     private void AddPage_Click(object sender, RoutedEventArgs e)
@@ -614,6 +748,29 @@ public partial class MainWindow : Window
             _viewModel.RemovePageCommand.Execute(null);
     }
 
+    private void SetPageTabColor_Click(object sender, RoutedEventArgs e)
+    {
+        string current = _viewModel.HasCurrentPageTabColor
+            ? _viewModel.CurrentPageTabColor
+            : _viewModel.PageTabActiveColor;
+        var color = ColorPickerDialog.Show(this, current);
+        if (color != null)
+            _viewModel.CurrentPageTabColor = color;
+    }
+
+    private void ClearPageTabColor_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.CurrentPageTabColor = string.Empty;
+    }
+
+    private void RemoveLayout_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.IsViewingVirtualLayout)
+            RemoveVirtualLayout_Click(sender, e);
+        else
+            RemovePage_Click(sender, e);
+    }
+
     private void AddVirtualLayout_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.AddVirtualLayoutCommand.Execute(null);
@@ -639,48 +796,6 @@ public partial class MainWindow : Window
     private void ExitVirtualLayout_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.ExitVirtualLayoutCommand.Execute(null);
-    }
-
-    private void AddNotePage_Click(object sender, RoutedEventArgs e)
-    {
-        _viewModel.AddNotePageCommand.Execute(null);
-
-        var popup = GetNotesAreasPopup();
-        if (popup != null)
-            popup.IsOpen = false;
-    }
-
-    private void RemoveNotePage_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_viewModel.CanRemoveNotePage)
-            return;
-
-        int noteCount = _viewModel.CurrentNotePageNoteCount;
-        string message = noteCount > 0
-            ? $"Remove notes area \"{_viewModel.CurrentNotePageName}\"?\n\nThis will permanently delete {noteCount} sticky note(s) in this area."
-            : $"Remove notes area \"{_viewModel.CurrentNotePageName}\"?";
-
-        var result = System.Windows.MessageBox.Show(
-            this,
-            message,
-            "Remove Notes Area",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning,
-            MessageBoxResult.No);
-
-        if (result == MessageBoxResult.Yes)
-        {
-            _viewModel.RemoveNotePageCommand.Execute(null);
-
-            var popup = GetNotesAreasPopup();
-            if (popup != null)
-                popup.IsOpen = false;
-        }
-    }
-
-    private Popup? GetNotesAreasPopup()
-    {
-        return FindName("NotesAreasPopup") as Popup;
     }
 
     private void RenameLayout_Click(object sender, RoutedEventArgs e)
@@ -886,29 +1001,6 @@ public partial class MainWindow : Window
         _viewModel.SelectButtonAndShowEditorCommand.Execute(buttonVm);
         _viewModel.ClearButtonCommand.Execute(null);
     }
-
-    private static string? ShowColorDialog(string currentHex)
-    {
-        var dlg = new System.Windows.Forms.ColorDialog
-        {
-            FullOpen = true,
-            AnyColor = true
-        };
-
-        try
-        {
-            var wpfColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(currentHex);
-            dlg.Color = System.Drawing.Color.FromArgb(wpfColor.R, wpfColor.G, wpfColor.B);
-        }
-        catch { }
-
-        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
-            return $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}";
-        }
-        return null;
-    }
-
 
     protected override void OnClosed(EventArgs e)
     {

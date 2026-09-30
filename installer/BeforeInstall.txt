@@ -1,0 +1,29 @@
+WHAT GETS INSTALLED
+
+StreamDecky goes into Program Files\StreamDecky, with a shortcut in the Start menu. You can uninstall it from Apps in Windows Settings at any time.
+
+Your profiles, settings and logs are kept in %LocalAppData%\StreamDecky. Uninstalling leaves that folder in place.
+
+
+WHAT STREAMDECKY CONNECTS TO
+
+No account, no ads, no analytics, no telemetry. Your profiles stay on this computer, and the keys and text StreamDecky sends go only to the window you were using.
+
+- GitHub, at most every 12 hours, to check for a new version. An update is installed only when you accept it, and only after its SHA-256 checksum matches the one published with the release.
+
+- The text helper widget is off by default. If you turn it on with your own DeepSeek API key, the text in the widget is sent to DeepSeek when you press Fix spelling or Ask. With a Brave Search key as well, Ask can search the web through Brave.
+
+- The MicMixer music widget talks to MicMixer on this computer only.
+
+Privacy policy: https://benjibutten.github.io/StreamDecky/privacy.html
+
+
+LICENSE
+
+StreamDecky is free and open source under the Apache License 2.0, made by BenjiButten. You may use, change and share it, and it comes as is, without warranty. There is nothing to accept.
+
+It uses CommunityToolkit.Mvvm (MIT) and Material Design Icons (Apache 2.0).
+
+LICENSE.txt and THIRD-PARTY-NOTICES.txt are installed next to StreamDecky.exe.
+
+Source code: https://github.com/benjibutten/StreamDecky

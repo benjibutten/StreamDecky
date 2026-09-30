@@ -314,7 +314,7 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
         // the playback gate's machine-readable reason below it is redundant.
         PlaybackBlockedReason = state.CanStartPlayback || state.IsExternalMode
             ? string.Empty
-            : state.PlaybackBlockedReason ?? string.Empty;
+            : DescribePlaybackBlockedReason(state.PlaybackBlockedReason);
         ShowRoutingHint = !state.IsRouting && !state.IsExternalMode;
 
         IsDelayedStartActive = state.IsDelayedStartActive;
@@ -395,9 +395,11 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
             positions.Add(item.Index + 1);
         }
 
+        bool isPlaying = string.Equals(state.PlaybackState, "Playing", StringComparison.OrdinalIgnoreCase);
         foreach (MusicTrackItemViewModel track in Tracks)
         {
             track.IsCurrent = string.Equals(track.Id, state.CurrentTrackId, StringComparison.Ordinal);
+            track.IsPlaying = track.IsCurrent && isPlaying;
             track.QueueBadgeText = queuePositionsByTrack.TryGetValue(track.Id, out List<int>? positions)
                 ? $"Queued #{string.Join(", #", positions)}"
                 : string.Empty;
@@ -572,9 +574,21 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private Task NextAsync() => RunAsync(() => _client.NextAsync());
 
+    /// <summary>
+    /// Starts <paramref name="track"/> from the beginning, or pauses and resumes it when it is
+    /// already the current track.
+    /// </summary>
     [RelayCommand]
-    private Task PlayTrackAsync(MusicTrackItemViewModel? track) =>
-        track == null ? Task.CompletedTask : RunAsync(() => _client.PlayTrackAsync(track.Id));
+    private Task PlayTrackAsync(MusicTrackItemViewModel? track)
+    {
+        if (track == null)
+            return Task.CompletedTask;
+
+        if (track.IsCurrent && (IsPlaying || _isPaused))
+            return RunAsync(() => _client.TogglePlayPauseAsync());
+
+        return RunAsync(() => _client.PlayTrackAsync(track.Id));
+    }
 
     [RelayCommand]
     private Task EnqueueTrackAsync(MusicTrackItemViewModel? track) =>
@@ -728,6 +742,18 @@ public partial class MusicWidgetViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// What the user can do about MicMixer's machine-readable reason for refusing to start
+    /// music. A reason this version does not know still gets a readable sentence.
+    /// </summary>
+    internal static string DescribePlaybackBlockedReason(string? reason) => reason switch
+    {
+        null or "" => string.Empty,
+        "empty_library" => "MicMixer's music library is empty. Add music in MicMixer to play it from here.",
+        "no_playback_clock" => "Start routing or turn on monitoring in MicMixer to play music.",
+        _ => "MicMixer can't start music right now."
+    };
+
     private void ReportCommandError(Exception exception)
     {
         switch (exception)
@@ -787,6 +813,10 @@ public partial class MusicTrackItemViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isCurrent;
+
+    /// <summary>True while this is the current track and it is playing rather than paused.</summary>
+    [ObservableProperty]
+    private bool _isPlaying;
 
     [ObservableProperty]
     private bool _isSelected;

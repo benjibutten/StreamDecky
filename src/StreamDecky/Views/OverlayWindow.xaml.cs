@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using StreamDecky.Admin;
 using StreamDecky.Helpers;
 using StreamDecky.Models;
 using StreamDecky.ViewModels;
@@ -177,7 +178,9 @@ public partial class OverlayWindow : Window
         Activate();
         Focus();
         OverlayInterop.ForceFocus(this);
-        EnsureOverlaySelection();
+        // The gamepad cursor starts on a button; without a gamepad the editor's selection is left alone.
+        if (_viewModel.GamepadSupportEnabled)
+            EnsureOverlaySelection();
         Dispatcher.BeginInvoke(new Action(ClampQuickTextPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         Dispatcher.BeginInvoke(new Action(ClampFormsPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         Dispatcher.BeginInvoke(new Action(ClampMusicWidgetToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
@@ -1650,10 +1653,7 @@ public partial class OverlayWindow : Window
 
         try
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(parsed.AbsoluteUri)
-            {
-                UseShellExecute = true
-            });
+            ShellLauncher.Open(parsed.AbsoluteUri);
         }
         catch (Exception ex)
         {

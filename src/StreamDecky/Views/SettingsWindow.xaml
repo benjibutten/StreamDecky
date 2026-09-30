@@ -21,6 +21,7 @@
     <Window.Resources>
         <helpers:StringToBrushConverter x:Key="StringToBrush"/>
         <helpers:HasTextToVisibilityConverter x:Key="HasTextVisibility"/>
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <ObjectDataProvider x:Key="ActionStepTypeValues"
                             MethodName="GetValues"
                             ObjectType="{x:Type models:ActionStepType}">
@@ -35,41 +36,6 @@
                 <x:Type TypeName="models:TextMode"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
-
-        <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Thumb">
-                        <Border Background="#55FFFFFF" CornerRadius="3" Margin="1"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="ThinScrollBar" TargetType="ScrollBar">
-            <Setter Property="Width" Value="6"/>
-            <Setter Property="MinWidth" Value="6"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ScrollBar">
-                        <Grid Background="Transparent">
-                            <Track x:Name="PART_Track" IsDirectionReversed="True">
-                                <Track.Thumb>
-                                    <Thumb Style="{StaticResource ThinScrollBarThumb}"/>
-                                </Track.Thumb>
-                            </Track>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="Orientation" Value="Horizontal">
-                    <Setter Property="Height" Value="6"/>
-                    <Setter Property="MinHeight" Value="6"/>
-                    <Setter Property="Width" Value="Auto"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
 
         <Style x:Key="DarkScrollViewer" TargetType="ScrollViewer">
             <Setter Property="Template">
@@ -208,6 +174,7 @@
                                VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button DockPanel.Dock="Right" Content="✕" Click="SettingsClose_Click"
+                        AutomationProperties.Name="Close"
                         Width="40" Height="32" FontSize="13"
                         Foreground="#999" Background="Transparent" BorderThickness="0" Cursor="Hand"
                         WindowChrome.IsHitTestVisibleInChrome="True">
@@ -291,6 +258,7 @@
                         </Button.Style>
                     </Button>
                     <Button Grid.Column="2" Content="✕" 
+                            AutomationProperties.Name="Clear background image"
                             Click="BgImageClear_Click"
                             Background="#2D2D44" Foreground="#888"
                             FontSize="12" Padding="8,5" Margin="4,0,0,0"
@@ -350,8 +318,119 @@
                 <CheckBox IsChecked="{Binding OverlayPageTabsEnabled, Mode=TwoWay}"
                           Content="Show page tabs in the overlay"
                           Foreground="#CCC" FontSize="13" Margin="0,0,0,4" Cursor="Hand"/>
-                <TextBlock Text="Replaces the ◀ ▶ arrows under the buttons with one tab per page, so any page is one click away. Also shown inside a virtual layout, as a way back."
+                <TextBlock Text="Replaces the ◀ ▶ arrows under the buttons with one tab per page, so any page is one click away. Also shown inside a virtual layout, as a way back. Give a page its own tab color from the page row's ⋯ menu in the main window."
                            Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,14"/>
+
+                <StackPanel Visibility="{Binding OverlayPageTabsEnabled, Converter={StaticResource BoolToVisibility}}"
+                            Margin="0,0,0,14">
+                    <UniformGrid Columns="3" Margin="0,0,0,10">
+                        <StackPanel Margin="0,0,8,0">
+                            <TextBlock Text="Current Tab" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="30"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding PageTabActiveColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#2D2D44" Foreground="White" FontSize="13" Padding="8,6"
+                                         BorderBrush="#444" BorderThickness="1"/>
+                                <Border Grid.Column="1"
+                                        Background="{Binding PageTabActiveColor, Converter={StaticResource StringToBrush}}"
+                                        CornerRadius="4" Margin="4,0,0,0"
+                                        BorderBrush="#444" BorderThickness="1"
+                                        Cursor="Hand"
+                                        MouseLeftButtonDown="PageTabActiveColorPicker_Click"/>
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Margin="4,0,4,0">
+                            <TextBlock Text="Tab Text" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="30"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding PageTabTextColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#2D2D44" Foreground="White" FontSize="13" Padding="8,6"
+                                         BorderBrush="#444" BorderThickness="1"/>
+                                <Border Grid.Column="1"
+                                        Background="{Binding PageTabTextColor, Converter={StaticResource StringToBrush}}"
+                                        CornerRadius="4" Margin="4,0,0,0"
+                                        BorderBrush="#444" BorderThickness="1"
+                                        Cursor="Hand"
+                                        MouseLeftButtonDown="PageTabTextColorPicker_Click"/>
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Margin="8,0,0,0">
+                            <TextBlock Text="Tab Bar" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="30"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding PageTabBarColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#2D2D44" Foreground="White" FontSize="13" Padding="8,6"
+                                         BorderBrush="#444" BorderThickness="1"/>
+                                <Border Grid.Column="1"
+                                        Background="{Binding PageTabBarColor, Converter={StaticResource StringToBrush}}"
+                                        CornerRadius="4" Margin="4,0,0,0"
+                                        BorderBrush="#444" BorderThickness="1"
+                                        Cursor="Hand"
+                                        MouseLeftButtonDown="PageTabBarColorPicker_Click"/>
+                            </Grid>
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <TextBlock Text="Tab Bar Opacity" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                    <DockPanel Margin="0,0,0,10">
+                        <TextBlock DockPanel.Dock="Right"
+                                   Text="{Binding PageTabBarOpacity, StringFormat={}{0:0.00}}"
+                                   Foreground="#888" FontSize="12" Width="40" TextAlignment="Right" VerticalAlignment="Center"/>
+                        <Slider Value="{Binding PageTabBarOpacity, Mode=TwoWay}"
+                                Minimum="0" Maximum="1"
+                                TickFrequency="0.05" IsSnapToTickEnabled="True"/>
+                    </DockPanel>
+
+                    <TextBlock Text="Tab Text Size" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                    <DockPanel Margin="0,0,0,10">
+                        <TextBlock DockPanel.Dock="Right"
+                                   Text="{Binding PageTabFontSize, StringFormat={}{0:0}}"
+                                   Foreground="#888" FontSize="12" Width="40" TextAlignment="Right" VerticalAlignment="Center"/>
+                        <Slider Value="{Binding PageTabFontSize, Mode=TwoWay}"
+                                Minimum="{Binding MinPageTabFontSize}" Maximum="{Binding MaxPageTabFontSize}"
+                                TickFrequency="1" IsSnapToTickEnabled="True"/>
+                    </DockPanel>
+
+                    <TextBlock Text="Preview" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                    <Border Background="{Binding OverlayBackgroundColor, Converter={StaticResource StringToBrush}}"
+                            CornerRadius="6" Padding="10">
+                        <Border HorizontalAlignment="Left" Padding="4" CornerRadius="7"
+                                Background="{Binding PageTabBarBackground, Converter={StaticResource StringToBrush}}">
+                            <ItemsControl ItemsSource="{Binding PageTabs}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding Background, Converter={StaticResource StringToBrush}}"
+                                                CornerRadius="5" Padding="10,4" Margin="1">
+                                            <TextBlock x:Name="TabText"
+                                                       Text="{Binding Name}"
+                                                       Foreground="{Binding DataContext.PageTabTextColor, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource StringToBrush}}"
+                                                       FontSize="{Binding DataContext.PageTabFontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                <Setter TargetName="TabText" Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </Border>
+                </StackPanel>
 
                         <Expander Header="Profile Grid — All Pages"
                       IsExpanded="True"
@@ -370,6 +449,7 @@
                         <TextBlock Text="Rows" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="-" Command="{Binding DecreaseRowsCommand}"
+                            AutomationProperties.Name="Remove row"
                             Width="22" Height="22"
                             Background="#1E1E2E" Foreground="#DDD"
                             BorderBrush="#444" BorderThickness="1"
@@ -380,6 +460,7 @@
                                    VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         </Border>
                         <Button Content="+" Command="{Binding IncreaseRowsCommand}"
+                            AutomationProperties.Name="Add row"
                             Width="22" Height="22"
                             Background="#1E1E2E" Foreground="#DDD"
                             BorderBrush="#444" BorderThickness="1"
@@ -397,6 +478,7 @@
                         <TextBlock Text="Columns" Foreground="#AAA" FontSize="12" VerticalAlignment="Center"/>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="-" Command="{Binding DecreaseColumnsCommand}"
+                            AutomationProperties.Name="Remove column"
                             Width="22" Height="22"
                             Background="#1E1E2E" Foreground="#DDD"
                             BorderBrush="#444" BorderThickness="1"
@@ -407,6 +489,7 @@
                                    VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         </Border>
                         <Button Content="+" Command="{Binding IncreaseColumnsCommand}"
+                            AutomationProperties.Name="Add column"
                             Width="22" Height="22"
                             Background="#1E1E2E" Foreground="#DDD"
                             BorderBrush="#444" BorderThickness="1"
@@ -420,6 +503,56 @@
                         IsSnapToTickEnabled="True"/>
                     </StackPanel>
                 </Expander>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <TabItem Header="Notes" Style="{StaticResource SettingsNavItem}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource DarkScrollViewer}">
+                <StackPanel Style="{StaticResource SettingsPage}">
+                <TextBlock Text="Notes" Style="{StaticResource SettingsPageTitle}"/>
+                <TextBlock Text="Sticky notes are grouped into areas. Switch between them in the overlay; add and remove them here." Style="{StaticResource SettingsPageSubtitle}"/>
+
+                <TextBlock Text="Notes Area" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,14">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="+ Add Area" Click="AddNotesArea_Click"
+                                Style="{StaticResource SettingsActionButton}"/>
+                        <Button Content="Remove Area" Click="RemoveNotesArea_Click"
+                                IsEnabled="{Binding CanRemoveNotePage}"
+                                Style="{StaticResource SettingsActionButton}"
+                                Margin="6,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="&#x25C0;"
+                                AutomationProperties.Name="Previous notes area"
+                                Command="{Binding PreviousNotePageCommand}"
+                                IsEnabled="{Binding CanGoToPreviousNotePage}"
+                                Style="{StaticResource SettingsActionButton}"
+                                Padding="10,4"/>
+                        <TextBlock Text="{Binding NotePageIndicator}"
+                                   Foreground="#DDD"
+                                   FontSize="13"
+                                   VerticalAlignment="Center"
+                                   Margin="10,0"/>
+                        <Button Content="&#x25B6;"
+                                AutomationProperties.Name="Next notes area"
+                                Command="{Binding NextNotePageCommand}"
+                                IsEnabled="{Binding CanGoToNextNotePage}"
+                                Style="{StaticResource SettingsActionButton}"
+                                Padding="10,4"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <TextBlock Text="Text Size (all notes)" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,14">
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding StickyNoteFontSize, StringFormat={}{0:0}}"
+                               Foreground="#888" FontSize="12" Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
+                    <Slider Value="{Binding StickyNoteFontSize, Mode=TwoWay}"
+                            Minimum="10" Maximum="30"
+                            TickFrequency="1" IsSnapToTickEnabled="True"/>
+                </DockPanel>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -691,9 +824,6 @@
                          FontSize="12" Padding="8,6"
                          BorderBrush="#444" BorderThickness="1"
                          Margin="0,0,0,4">
-                    <TextBox.Resources>
-                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
-                    </TextBox.Resources>
                 </TextBox>
                 <TextBlock Text="This is the instruction sent with every spell fix. The text from the widget is sent separately, so keep the prompt about how to correct it."
                            Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
@@ -710,16 +840,19 @@
                                 <StackPanel>
                                     <DockPanel Margin="0,0,0,6">
                                         <Button Content="✕" DockPanel.Dock="Right"
+                                                AutomationProperties.Name="Remove step"
                                                 Command="{Binding DataContext.RemoveTextHelperActionStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
                                                 Style="{StaticResource SettingsActionButton}"
                                                 Background="#5A2727" FontSize="11" Padding="6,2" Margin="4,0,0,0"/>
                                         <Button Content="▲" DockPanel.Dock="Right"
+                                                AutomationProperties.Name="Move step up"
                                                 Command="{Binding DataContext.MoveTextHelperActionStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
                                                 Style="{StaticResource SettingsActionButton}"
                                                 Background="#3D3D54" FontSize="10" Padding="6,2" Margin="2,0,0,0"/>
                                         <Button Content="▼" DockPanel.Dock="Right"
+                                                AutomationProperties.Name="Move step down"
                                                 Command="{Binding DataContext.MoveTextHelperActionStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
                                                 Style="{StaticResource SettingsActionButton}"
@@ -873,9 +1006,6 @@
                          FontSize="12" Padding="8,6"
                          BorderBrush="#444" BorderThickness="1"
                          Margin="0,0,0,4">
-                    <TextBox.Resources>
-                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}"/>
-                    </TextBox.Resources>
                 </TextBox>
                 <TextBlock Text="This is the instruction sent with every question. The question, today's date and any search results are sent separately, so keep the prompt about how to answer. The rules about only using the search results, and about saying so when they do not answer the question, are what keep the answer card honest — edit those last."
                            Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
@@ -891,8 +1021,17 @@
 
                 <TextBlock Text="STARTUP" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
                 <CheckBox IsChecked="{Binding StartWithWindows, Mode=TwoWay}" 
-                          Content="Start with Windows" 
+                          Content="Start with Windows"
                           Foreground="#CCC" FontSize="13" Margin="0,0,0,10" Cursor="Hand"/>
+                <CheckBox IsChecked="{Binding RunAsAdministrator, Mode=TwoWay}"
+                          IsEnabled="{Binding CanRunAsAdministrator, Mode=OneTime}"
+                          Content="Run StreamDecky as administrator"
+                          Foreground="#CCC" FontSize="13" Margin="0,0,0,4" Cursor="Hand"/>
+                <TextBlock Text="While a game or program running as administrator has focus, Windows drops the keys StreamDecky types and presses into it. Running StreamDecky as administrator too lets them through. StreamDecky restarts as administrator when you tick this."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                <TextBlock Text="{Binding StartupHint}"
+                           Visibility="{Binding StartupHint, Converter={StaticResource HasTextVisibility}}"
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
                 <Border Height="1" Background="#333" Margin="0,4,0,16"/>
 

@@ -21,6 +21,11 @@ public class DeckProfile
     public const double MinTextHelperFontSize = 12;
     public const double MaxTextHelperFontSize = 30;
     public const string DefaultTextHelperFontFamily = "Verdana";
+    public const string DefaultPageTabActiveColor = "#6C5CE7";
+    public const string DefaultPageTabTextColor = "#F2F2F2";
+    public const string DefaultPageTabBarColor = "#000000";
+    public const double MinPageTabFontSize = 10;
+    public const double MaxPageTabFontSize = 22;
     public const double MinFormsPanelWidth = 300;
     public const double MaxFormsPanelWidth = 700;
     public const double MinFormsPanelHeight = 220;
@@ -44,6 +49,11 @@ public class DeckProfile
     public bool GamepadSupportEnabled { get; set; } = false;
     public ushort GamepadToggleButtons { get; set; } = 0x0030; // Back + Start
     public bool OverlayPageTabsEnabled { get; set; }
+    public string PageTabActiveColor { get; set; } = DefaultPageTabActiveColor;
+    public string PageTabTextColor { get; set; } = DefaultPageTabTextColor;
+    public string PageTabBarColor { get; set; } = DefaultPageTabBarColor;
+    public double PageTabBarOpacity { get; set; } = 0.4;
+    public double PageTabFontSize { get; set; } = 12;
     public bool StickyNotesVisible { get; set; }
     public double StickyNoteFontSize { get; set; } = 13;
     public List<QuickTextCollection> QuickTextCollections { get; set; } = new();
@@ -211,5 +221,14 @@ public class DeckProfile
 
         if (string.IsNullOrWhiteSpace(TextHelperFontFamily))
             TextHelperFontFamily = DefaultTextHelperFontFamily;
+
+        if (string.IsNullOrWhiteSpace(PageTabActiveColor))
+            PageTabActiveColor = DefaultPageTabActiveColor;
+        if (string.IsNullOrWhiteSpace(PageTabTextColor))
+            PageTabTextColor = DefaultPageTabTextColor;
+        if (string.IsNullOrWhiteSpace(PageTabBarColor))
+            PageTabBarColor = DefaultPageTabBarColor;
+        PageTabBarOpacity = Math.Clamp(PageTabBarOpacity, 0, 1);
+        PageTabFontSize = Math.Clamp(PageTabFontSize, MinPageTabFontSize, MaxPageTabFontSize);
     }
 }

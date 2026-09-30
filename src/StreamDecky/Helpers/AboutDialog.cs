@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -8,6 +7,7 @@ using Brushes = System.Windows.Media.Brushes;
 using Button = System.Windows.Controls.Button;
 using FontFamily = System.Windows.Media.FontFamily;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
+using StreamDecky.Admin;
 using StreamDecky.Updates;
 
 namespace StreamDecky.Helpers;
@@ -111,10 +111,18 @@ internal static class AboutDialog
         };
         hyperlink.RequestNavigate += (_, e) =>
         {
-            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+            ShellLauncher.Open(e.Uri.AbsoluteUri);
             e.Handled = true;
         };
         sourceLink.Inlines.Add(hyperlink);
+        var whatsNewLink = new Hyperlink(new Run("What's new in this version"))
+        {
+            Foreground = Accent,
+            FontWeight = FontWeights.SemiBold
+        };
+        whatsNewLink.Click += (_, _) => WhatsNewDialog.Show(window);
+        sourceLink.Inlines.Add(new LineBreak());
+        sourceLink.Inlines.Add(whatsNewLink);
         footer.Children.Add(sourceLink);
 
         var updateButton = new Button
@@ -235,7 +243,7 @@ internal static class AboutDialog
         };
         pixlexiLink.RequestNavigate += (_, e) =>
         {
-            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+            ShellLauncher.Open(e.Uri.AbsoluteUri);
             e.Handled = true;
         };
         supportText.Inlines.Add(pixlexiLink);
