@@ -21,5 +21,9 @@
   music library, instead of showing a code like `empty_library`.
 - After an update, StreamDecky shows what's new once. **About** links to the
   same list.
+- Colors are picked in a dark color picker of StreamDecky's own, with a
+  gradient, presets and a hex field, instead of the Windows dialog. It keeps
+  the last ten colors you chose until StreamDecky closes, so several buttons
+  are quick to give the same color.
 - Every window uses the thin scrollbar, and screen readers announce the
   icon-only buttons.

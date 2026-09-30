@@ -145,7 +145,7 @@ public partial class SettingsWindow : Window
 
     private void OverlayBgColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        var color = ShowColorDialog(_viewModel.OverlayBackgroundColor);
+        var color = ColorPickerDialog.Show(this, _viewModel.OverlayBackgroundColor);
         if (color != null)
             _viewModel.OverlayBackgroundColor = color;
     }
@@ -384,28 +384,6 @@ public partial class SettingsWindow : Window
         _gamepadRecordTimer.Stop();
         _gamepadRecordTimer.Tick -= GamepadRecordTimer_Tick;
         base.OnClosed(e);
-    }
-
-    private static string? ShowColorDialog(string currentHex)
-    {
-        var dlg = new System.Windows.Forms.ColorDialog
-        {
-            FullOpen = true,
-            AnyColor = true
-        };
-
-        try
-        {
-            var wpfColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(currentHex);
-            dlg.Color = System.Drawing.Color.FromArgb(wpfColor.R, wpfColor.G, wpfColor.B);
-        }
-        catch { }
-
-        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
-            return $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}";
-        }
-        return null;
     }
 
     private static string MakeSafeFileName(string value)

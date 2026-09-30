@@ -651,7 +651,7 @@ public partial class MainWindow : Window
     private void BtnBgColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (_viewModel.SelectedButton == null) return;
-        var color = ShowColorDialog(_viewModel.SelectedButton.BackgroundColor);
+        var color = ColorPickerDialog.Show(this, _viewModel.SelectedButton.BackgroundColor);
         if (color != null)
             _viewModel.SelectedButton.BackgroundColor = color;
     }
@@ -659,7 +659,7 @@ public partial class MainWindow : Window
     private void BtnTextColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (_viewModel.SelectedButton == null) return;
-        var color = ShowColorDialog(_viewModel.SelectedButton.TextColor);
+        var color = ColorPickerDialog.Show(this, _viewModel.SelectedButton.TextColor);
         if (color != null)
             _viewModel.SelectedButton.TextColor = color;
     }
@@ -1025,29 +1025,6 @@ public partial class MainWindow : Window
         _viewModel.SelectButtonAndShowEditorCommand.Execute(buttonVm);
         _viewModel.ClearButtonCommand.Execute(null);
     }
-
-    private static string? ShowColorDialog(string currentHex)
-    {
-        var dlg = new System.Windows.Forms.ColorDialog
-        {
-            FullOpen = true,
-            AnyColor = true
-        };
-
-        try
-        {
-            var wpfColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(currentHex);
-            dlg.Color = System.Drawing.Color.FromArgb(wpfColor.R, wpfColor.G, wpfColor.B);
-        }
-        catch { }
-
-        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
-            return $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}";
-        }
-        return null;
-    }
-
 
     protected override void OnClosed(EventArgs e)
     {
