@@ -32,8 +32,9 @@
   is open.
 - **A tidier main window.** Each of the profile and page rows keeps its add
   button and moves the rest into a ⋯ menu, including new and deleted virtual
-  layouts, which could only be deleted while one was open. The page dropdown
-  sits between the arrows, and the grid size lives in Settings › Overlay only.
+  layouts, which could only be deleted while one was open. The profile and page
+  dropdowns share the row's width, the page arrows are gone, and the grid size
+  lives in Settings › Overlay only.
 - Right-click menus are dark, like the rest of StreamDecky, and buttons no longer
   turn pale blue with unreadable text when you point at them.
 - The overlay only rings a button when gamepad support is on, where the ring is

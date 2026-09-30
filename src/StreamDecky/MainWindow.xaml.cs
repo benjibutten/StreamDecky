@@ -686,16 +686,6 @@ public partial class MainWindow : Window
             SyncStartWithWindows();
     }
 
-    private void PreviousPage_Click(object sender, RoutedEventArgs e)
-    {
-        _viewModel.PreviousPageCommand.Execute(null);
-    }
-
-    private void NextPage_Click(object sender, RoutedEventArgs e)
-    {
-        _viewModel.NextPageCommand.Execute(null);
-    }
-
     private void AddPage_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.AddPageCommand.Execute(null);

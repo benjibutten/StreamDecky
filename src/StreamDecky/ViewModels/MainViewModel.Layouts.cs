@@ -49,8 +49,6 @@ public partial class MainViewModel
 
     public string CurrentPageName => CurrentLayout.Name;
     public int PageCount => _profile.Pages.Count;
-    public bool CanGoToPreviousPage => !IsViewingVirtualLayout && CurrentPageIndex > 0;
-    public bool CanGoToNextPage => !IsViewingVirtualLayout && CurrentPageIndex < _profile.Pages.Count - 1;
     public string PageIndicator => IsViewingVirtualLayout
         ? $"V {_currentVirtualLayoutIndex + 1} / {_profile.VirtualLayouts.Count}"
         : $"{CurrentPageIndex + 1} / {PageCount}";
@@ -490,8 +488,6 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(CanColorCurrentPage));
         OnPropertyChanged(nameof(CurrentPageName));
         OnPropertyChanged(nameof(PageCount));
-        OnPropertyChanged(nameof(CanGoToPreviousPage));
-        OnPropertyChanged(nameof(CanGoToNextPage));
         OnPropertyChanged(nameof(PageIndicator));
         OnPropertyChanged(nameof(HasMultiplePages));
         OnPropertyChanged(nameof(ShowOverlayPageTabs));
