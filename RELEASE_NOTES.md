@@ -7,7 +7,8 @@
   updates itself through it from then on. The zip is still in every release,
   and a copy extracted from it keeps updating itself as before. To move to the
   installer, run it and then delete the old StreamDecky folder; your profiles
-  and settings stay where they are.
+  and settings stay where they are. If the old copy is still running, Setup
+  asks you to exit it first.
 - **New setting, "Run StreamDecky as administrator"** in Settings › General.
   While a game or program running as administrator has focus, Windows drops the
   keys StreamDecky types and presses into it. Running StreamDecky as
