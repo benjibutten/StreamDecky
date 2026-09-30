@@ -24,4 +24,5 @@ Process.Start(startInfo)?.Dispose();
 static bool IsRuntimeVariable(string name) =>
     name.StartsWith("DOTNET_", StringComparison.OrdinalIgnoreCase)
     || name.StartsWith("COMPlus_", StringComparison.OrdinalIgnoreCase)
-    || name.StartsWith("CORECLR_", StringComparison.OrdinalIgnoreCase);
+    || name.StartsWith("CORECLR_", StringComparison.OrdinalIgnoreCase)
+    || name.StartsWith("COREHOST_", StringComparison.OrdinalIgnoreCase);
