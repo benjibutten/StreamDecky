@@ -1,4 +1,6 @@
 using System.IO.Pipes;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text.Json;
 using StreamDecky.Integrations.MicMixer;
 using Xunit;
@@ -125,14 +127,22 @@ public sealed class MicMixerClientTests
         await serverTask.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
+    // Created like MicMixer's pipe: owned by the account itself. PipeOptions.CurrentUserOnly
+    // would make the Administrators group the owner when the tests run elevated, as on CI,
+    // and the client rejects a pipe it does not own.
+    private static NamedPipeServerStream CreateServerPipe(string pipeName)
+    {
+        SecurityIdentifier user = WindowsIdentity.GetCurrent().User!;
+        var security = new PipeSecurity();
+        security.AddAccessRule(new PipeAccessRule(user, PipeAccessRights.FullControl, AccessControlType.Allow));
+        security.SetOwner(user);
+        return NamedPipeServerStreamAcl.Create(
+            pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 0, 0, security);
+    }
+
     private static async Task RunFakeServerAsync(string pipeName, CancellationToken cancellationToken)
     {
-        await using var pipe = new NamedPipeServerStream(
-            pipeName,
-            PipeDirection.InOut,
-            1,
-            PipeTransmissionMode.Byte,
-            PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        await using var pipe = CreateServerPipe(pipeName);
         await pipe.WaitForConnectionAsync(cancellationToken);
         using var reader = new StreamReader(pipe, leaveOpen: true);
         var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
@@ -250,12 +260,7 @@ public sealed class MicMixerClientTests
         string pipeName,
         CancellationToken cancellationToken)
     {
-        await using var pipe = new NamedPipeServerStream(
-            pipeName,
-            PipeDirection.InOut,
-            1,
-            PipeTransmissionMode.Byte,
-            PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        await using var pipe = CreateServerPipe(pipeName);
         await pipe.WaitForConnectionAsync(cancellationToken);
         using var reader = new StreamReader(pipe, leaveOpen: true);
         var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
