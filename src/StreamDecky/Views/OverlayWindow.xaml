@@ -1347,7 +1347,8 @@
                                                 Margin="0,0,4,0"
                                                 Cursor="Hand">
                                             <Button.Style>
-                                                <Style TargetType="Button">
+                                                <Style TargetType="Button"
+                                                       BasedOn="{StaticResource {x:Type Button}}">
                                                     <Setter Property="Content"
                                                             Value="_"/>
                                                     <Style.Triggers>

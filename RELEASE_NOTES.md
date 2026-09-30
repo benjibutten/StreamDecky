@@ -21,6 +21,8 @@
   music library, instead of showing a code like `empty_library`.
 - After an update, StreamDecky shows what's new once. **About** links to the
   same list.
+- Right-click menus are dark, like the rest of StreamDecky, and buttons no longer
+  turn pale blue with unreadable text when you point at them.
 - Colors are picked in a dark color picker of StreamDecky's own, with a
   gradient, presets and a hex field, instead of the Windows dialog. It keeps
   the last ten colors you chose until StreamDecky closes, so several buttons
