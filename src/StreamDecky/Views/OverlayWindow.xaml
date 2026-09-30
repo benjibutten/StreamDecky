@@ -1036,8 +1036,16 @@
                                                                                     Property="Opacity"
                                                                                     Value="0.8"/>
                                                                         </Trigger>
-                                                                        <DataTrigger Binding="{Binding IsSelected}"
-                                                                                Value="True">
+                                                                        <!-- The selection is the gamepad cursor here. Without a
+                                                                             gamepad it is only the editor's selection, which
+                                                                             means nothing in the overlay. -->
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsSelected}"
+                                                                                        Value="True"/>
+                                                                                <Condition Binding="{Binding DataContext.GamepadSupportEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                                        Value="True"/>
+                                                                            </MultiDataTrigger.Conditions>
                                                                             <Setter TargetName="RegularBg"
                                                                                     Property="BorderBrush"
                                                                                     Value="#6C5CE7"/>
@@ -1050,7 +1058,7 @@
                                                                             <Setter TargetName="ShapeBg"
                                                                                     Property="StrokeThickness"
                                                                                     Value="3"/>
-                                                                        </DataTrigger>
+                                                                        </MultiDataTrigger>
                                                                     </ControlTemplate.Triggers>
                                                                 </ControlTemplate>
                                                             </Setter.Value>

@@ -35,6 +35,9 @@
   sits between the arrows, and the grid size lives in Settings › Overlay only.
 - Right-click menus are dark, like the rest of StreamDecky, and buttons no longer
   turn pale blue with unreadable text when you point at them.
+- The overlay only rings a button when gamepad support is on, where the ring is
+  the gamepad cursor. It no longer shows the button selected in the editor,
+  and opening the overlay no longer changes that selection.
 - Colors are picked in a dark color picker of StreamDecky's own, with a
   gradient, presets and a hex field, instead of the Windows dialog. It keeps
   the last ten colors you chose until StreamDecky closes, so several buttons

@@ -178,7 +178,9 @@ public partial class OverlayWindow : Window
         Activate();
         Focus();
         OverlayInterop.ForceFocus(this);
-        EnsureOverlaySelection();
+        // The gamepad cursor starts on a button; without a gamepad the editor's selection is left alone.
+        if (_viewModel.GamepadSupportEnabled)
+            EnsureOverlaySelection();
         Dispatcher.BeginInvoke(new Action(ClampQuickTextPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         Dispatcher.BeginInvoke(new Action(ClampFormsPanelToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
         Dispatcher.BeginInvoke(new Action(ClampMusicWidgetToBounds), System.Windows.Threading.DispatcherPriority.Loaded);
