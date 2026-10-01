@@ -5,6 +5,7 @@ using System.Windows.Navigation;
 using StreamDecky.Admin;
 using StreamDecky.Helpers;
 using StreamDecky.Services;
+using StreamDecky.SpeedReader;
 using StreamDecky.Updates;
 using StreamDecky.ViewModels;
 using StreamDecky.Views;
@@ -21,11 +22,13 @@ public partial class MainWindow : Window
     private readonly MainViewModel _viewModel = new();
     private readonly bool _startHiddenInTray;
     private const int HOTKEY_ID = 9000;
+    private const int SPEED_READER_HOTKEY_ID = 9001;
     private static readonly TimeSpan GamepadToggleCooldown = TimeSpan.FromMilliseconds(350);
     private HwndSource? _hwndSource;
     private System.Windows.Forms.NotifyIcon? _trayIcon;
     private System.Drawing.Icon? _trayIconImage;
     private readonly OverlayWindowController _overlayController;
+    private readonly SpeedReaderController _speedReaderController;
     private readonly HotkeyRegistrationController _hotkeyController = new();
     private readonly RawInputHotkeyMatcher _rawInputHotkeyMatcher = new();
     // The raw-input fallback only runs when we actually own the hotkey via
@@ -62,6 +65,7 @@ public partial class MainWindow : Window
         StateChanged += MainWindow_StateChanged;
         InitializeTrayIcon();
         _overlayController = new OverlayWindowController(_viewModel);
+        _speedReaderController = new SpeedReaderController(_viewModel);
         SyncStartWithWindows();
         InputActionGate.KeysSentToElevatedProgram += OnKeysSentToElevatedProgram;
 
@@ -242,6 +246,21 @@ public partial class MainWindow : Window
             System.Windows.Forms.ToolTipIcon.Warning);
     }
 
+    private void RegisterSpeedReaderHotkey()
+    {
+        if (_hotkeyController.ReRegister(this, SPEED_READER_HOTKEY_ID, _viewModel.SpeedReaderHotkeyModifiers, _viewModel.SpeedReaderHotkeyVk)
+            || _trayIcon == null)
+        {
+            return;
+        }
+
+        _trayIcon.ShowBalloonTip(
+            5000,
+            "StreamDecky hotkey unavailable",
+            $"{_viewModel.SpeedReaderHotkeyDisplayText} is already in use, so the speed reader cannot use it. Choose a different combination in Settings.",
+            System.Windows.Forms.ToolTipIcon.Warning);
+    }
+
     public void ShowAndActivate()
     {
         // An open overlay re-asserts topmost on deactivation and would sit as a
@@ -276,6 +295,8 @@ public partial class MainWindow : Window
         DisposeGamepadTogglePolling();
         DisposeTrayIcon();
         _hotkeyController.Unregister(this, HOTKEY_ID);
+        _hotkeyController.Unregister(this, SPEED_READER_HOTKEY_ID);
+        _speedReaderController.Close();
         RawInputInterop.UnregisterKeyboardSink();
         _hwndSource?.RemoveHook(WndProc);
         System.Windows.Application.Current.Shutdown();
@@ -300,6 +321,12 @@ public partial class MainWindow : Window
             }
 
             ConfigureRawInputHotkeyMatcher();
+            return;
+        }
+
+        if (e.PropertyName == nameof(MainViewModel.SpeedReaderHotkeyVk) && _hwndSource != null)
+        {
+            RegisterSpeedReaderHotkey();
             return;
         }
 
@@ -512,6 +539,7 @@ public partial class MainWindow : Window
         _hwndSource?.AddHook(WndProc);
         _globalHotkeyRegistered = _hotkeyController.Register(this, HOTKEY_ID, _viewModel.HotkeyModifiers, _viewModel.HotkeyVk);
         NotifyIfHotkeyUnavailable();
+        RegisterSpeedReaderHotkey();
 
         // Fallback path: some games (raw-input titles like Doom: The Dark Ages)
         // suppress WM_HOTKEY delivery while they have focus. The raw-input sink
@@ -545,6 +573,11 @@ public partial class MainWindow : Window
             if (!_rawInputSinkRegistered || _rawInputHotkeyMatcher.TryHandleHotkeyMessage())
                 ToggleOverlay();
 
+            handled = true;
+        }
+        else if (msg == WM_HOTKEY && wParam.ToInt32() == SPEED_READER_HOTKEY_ID)
+        {
+            _ = _speedReaderController.HandleHotkeyAsync();
             handled = true;
         }
         else if (msg == WM_INPUT)
@@ -1008,6 +1041,8 @@ public partial class MainWindow : Window
         _viewModel.Dispose();
         DisposeTrayIcon();
         _hotkeyController.Unregister(this, HOTKEY_ID);
+        _hotkeyController.Unregister(this, SPEED_READER_HOTKEY_ID);
+        _speedReaderController.Close();
         RawInputInterop.UnregisterKeyboardSink();
         _hwndSource?.RemoveHook(WndProc);
         base.OnClosed(e);

@@ -1013,6 +1013,87 @@
             </ScrollViewer>
         </TabItem>
 
+        <TabItem Header="Speed Reader" Style="{StaticResource SettingsNavItem}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource DarkScrollViewer}"
+                          Unloaded="SpeedReaderPage_Unloaded">
+                <StackPanel Style="{StaticResource SettingsPage}">
+                <TextBlock Text="Speed Reader" Style="{StaticResource SettingsPageTitle}"/>
+                <TextBlock Text="Select text in any app and press the hotkey. The text flashes one word at a time in one spot on the screen, so your eyes never have to move."
+                           Style="{StaticResource SettingsPageSubtitle}" TextWrapping="Wrap"/>
+
+                <TextBlock Text="HOTKEY" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                <TextBlock Text="Read selected text" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <Grid Margin="0,0,0,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Background="#2D2D44" BorderBrush="#444" BorderThickness="1" CornerRadius="4" Padding="8,6">
+                        <TextBlock Text="{Binding SpeedReaderHotkeyDisplayText}"
+                                   Foreground="#6C5CE7"
+                                   FontSize="13"
+                                   FontWeight="Bold"/>
+                    </Border>
+                    <Button x:Name="RecordSpeedReaderHotkeyButton"
+                            Grid.Column="1"
+                            Content="⌨ Record"
+                            Click="RecordSpeedReaderHotkey_Click"
+                            Style="{StaticResource SettingsActionButton}"
+                            Padding="10,5" Margin="4,0,0,0"/>
+                </Grid>
+                <TextBlock Text="StreamDecky copies the selection with Ctrl+C, so the selected text also ends up on the clipboard."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                <Border Height="1" Background="#333" Margin="0,4,0,16"/>
+
+                <TextBlock Text="SPEED" Foreground="#666" FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
+                <TextBlock Text="Words per minute" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,4">
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding SpeedReaderWpm}"
+                               Foreground="#888" FontSize="12" Width="40" TextAlignment="Right" VerticalAlignment="Center"/>
+                    <Slider Value="{Binding SpeedReaderWpm, Mode=TwoWay}"
+                            Minimum="100" Maximum="1000"
+                            TickFrequency="25" IsSnapToTickEnabled="True"/>
+                </DockPanel>
+                <TextBlock Text="In the reader: Space pauses, ← → step one word, ↑ ↓ change the speed and Esc closes. Pressing the hotkey again closes the reader."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                <Border Height="1" Background="#333" Margin="0,4,0,16"/>
+
+                <DockPanel Margin="0,0,0,10">
+                    <Button DockPanel.Dock="Right"
+                            Content="Show preview"
+                            Click="SpeedReaderPreview_Click"
+                            Style="{StaticResource SettingsActionButton}"
+                            Padding="10,4"/>
+                    <TextBlock Text="LAYOUT" Foreground="#666" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                </DockPanel>
+                <TextBlock Text="Size" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,12">
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding SpeedReaderScalePercent, StringFormat={}{0} %}"
+                               Foreground="#888" FontSize="12" Width="40" TextAlignment="Right" VerticalAlignment="Center"/>
+                    <Slider Value="{Binding SpeedReaderScalePercent, Mode=TwoWay}"
+                            Minimum="60" Maximum="160"
+                            TickFrequency="5" IsSnapToTickEnabled="True"/>
+                </DockPanel>
+                <TextBlock Text="Height on screen" Foreground="#AAA" FontSize="12" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,4">
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding SpeedReaderVerticalPositionPercent, StringFormat={}{0} %}"
+                               Foreground="#888" FontSize="12" Width="40" TextAlignment="Right" VerticalAlignment="Center"/>
+                    <Slider Value="{Binding SpeedReaderVerticalPositionPercent, Mode=TwoWay}"
+                            Minimum="10" Maximum="90"
+                            TickFrequency="5" IsSnapToTickEnabled="True"/>
+                </DockPanel>
+                <TextBlock Text="How far down the screen the reader's centre sits: 50 % is the middle, lower values move it up. Open the preview to see changes as you drag."
+                           Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
         <TabItem Header="General" Style="{StaticResource SettingsNavItem}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource DarkScrollViewer}">
                 <StackPanel Style="{StaticResource SettingsPage}">

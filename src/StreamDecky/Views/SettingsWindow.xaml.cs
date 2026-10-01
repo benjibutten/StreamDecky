@@ -7,6 +7,7 @@ using StreamDecky.Models;
 using StreamDecky.Services;
 using StreamDecky.ViewModels;
 
+using Button = System.Windows.Controls.Button;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
 namespace StreamDecky.Views;
@@ -35,6 +36,8 @@ public partial class SettingsWindow : Window
         Interval = TimeSpan.FromMilliseconds(33)
     };
 
+    private Button? _recordingHotkeyButton;
+    private Action<uint, uint, string>? _applyRecordedHotkey;
     private bool _hasPendingDeepSeekApiKey;
     private bool _hasPendingBraveApiKey;
     private bool _isRecordingGamepadCombo;
@@ -222,6 +225,11 @@ public partial class SettingsWindow : Window
             StopRecordingGamepadCombo();
     }
 
+    private void SpeedReaderPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        StopRecordingHotkey();
+    }
+
     private void BgImageBrowse_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new Microsoft.Win32.OpenFileDialog
@@ -314,8 +322,31 @@ public partial class SettingsWindow : Window
 
     private void RecordHotkey_Click(object sender, RoutedEventArgs e)
     {
-        RecordHotkeyButton.Content = "⏺ Press keys...";
-        RecordHotkeyButton.Background = new System.Windows.Media.SolidColorBrush(
+        StartRecordingHotkey(RecordHotkeyButton, (modifiers, vk, displayText) =>
+        {
+            _viewModel.HotkeyModifiers = modifiers;
+            _viewModel.HotkeyVk = vk;
+            _viewModel.HotkeyDisplayText = displayText;
+        });
+    }
+
+    private void RecordSpeedReaderHotkey_Click(object sender, RoutedEventArgs e)
+    {
+        StartRecordingHotkey(RecordSpeedReaderHotkeyButton, _viewModel.SetSpeedReaderHotkey);
+    }
+
+    private void SpeedReaderPreview_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.ShowSpeedReaderPreview();
+    }
+
+    private void StartRecordingHotkey(Button button, Action<uint, uint, string> apply)
+    {
+        StopRecordingHotkey();
+        _recordingHotkeyButton = button;
+        _applyRecordedHotkey = apply;
+        button.Content = "⏺ Press keys...";
+        button.Background = new System.Windows.Media.SolidColorBrush(
             (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#5A2727"));
         PreviewKeyDown += OnHotkeyRecordKeyDown;
         Focus();
@@ -344,14 +375,13 @@ public partial class SettingsWindow : Window
         if (modifiers.HasFlag(ModifierKeys.Control)) { mod |= 0x0002; parts.Add("Ctrl"); }
         if (modifiers.HasFlag(ModifierKeys.Alt))     { mod |= 0x0001; parts.Add("Alt"); }
         if (modifiers.HasFlag(ModifierKeys.Shift))   { mod |= 0x0004; parts.Add("Shift"); }
-        if (modifiers.HasFlag(ModifierKeys.Windows)) { mod |= 0x0008; parts.Add("Win"); }
+        // Keyboard.Modifiers never reports the Windows key, so read the keys themselves.
+        if (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin)) { mod |= 0x0008; parts.Add("Win"); }
 
         uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);
         parts.Add(key.ToString());
 
-        _viewModel.HotkeyModifiers = mod;
-        _viewModel.HotkeyVk = vk;
-        _viewModel.HotkeyDisplayText = string.Join(" + ", parts);
+        _applyRecordedHotkey?.Invoke(mod, vk, string.Join(" + ", parts));
 
         StopRecordingHotkey();
     }
@@ -359,9 +389,15 @@ public partial class SettingsWindow : Window
     private void StopRecordingHotkey()
     {
         PreviewKeyDown -= OnHotkeyRecordKeyDown;
-        RecordHotkeyButton.Content = "⌨ Record";
-        RecordHotkeyButton.Background = new System.Windows.Media.SolidColorBrush(
+        _applyRecordedHotkey = null;
+
+        if (_recordingHotkeyButton == null)
+            return;
+
+        _recordingHotkeyButton.Content = "⌨ Record";
+        _recordingHotkeyButton.Background = new System.Windows.Media.SolidColorBrush(
             (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2D2D44"));
+        _recordingHotkeyButton = null;
     }
 
     private void RecordGamepadCombo_Click(object sender, RoutedEventArgs e)

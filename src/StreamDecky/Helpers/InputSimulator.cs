@@ -243,7 +243,14 @@ public static class InputSimulator
     /// <summary>
     /// Send Ctrl+V (paste) via SendInput (scan code mode).
     /// </summary>
-    public static async Task SendPasteAsync()
+    public static Task SendPasteAsync() => SendCtrlChordAsync(0x56 /* V */);
+
+    /// <summary>
+    /// Send Ctrl+C (copy) via SendInput (scan code mode).
+    /// </summary>
+    public static Task SendCopyAsync() => SendCtrlChordAsync(0x43 /* C */);
+
+    private static async Task SendCtrlChordAsync(ushort vk)
     {
         // Injected modifier state outlives the process, so an exception between
         // down and up would leave the user's Ctrl key stuck.
@@ -251,7 +258,7 @@ public static class InputSimulator
         try
         {
             await Task.Delay(30);
-            await PressKeyAsync(0x56 /* V */);
+            await PressKeyAsync(vk);
         }
         finally
         {

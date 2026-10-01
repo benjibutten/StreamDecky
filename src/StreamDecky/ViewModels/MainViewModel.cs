@@ -9,6 +9,7 @@ using StreamDecky.Admin;
 using StreamDecky.Helpers;
 using StreamDecky.Models;
 using StreamDecky.Services;
+using StreamDecky.SpeedReader;
 
 namespace StreamDecky.ViewModels;
 
@@ -51,7 +52,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         AppSettingsService? appSettingsService = null,
         DeepSeekSpellCheckService? spellCheckService = null,
         QuickAnswerService? quickAnswerService = null,
-        BraveSearchService? braveSearchService = null)
+        BraveSearchService? braveSearchService = null,
+        SpeedReaderSettingsStore? speedReaderStore = null)
     {
         _profileService = profileService ?? new ProfileService();
         _textInputService = textInputService ?? new TextInputActionService();
@@ -61,6 +63,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _spellCheckService = spellCheckService;
         _quickAnswerService = quickAnswerService;
         _braveSearchService = braveSearchService;
+        _speedReaderStore = speedReaderStore ?? new SpeedReaderSettingsStore();
+        _speedReaderSettings = _speedReaderStore.Load();
 
         // Auto-save: debounce 1 second after last change
         _autoSaveTimer = new System.Timers.Timer(1000) { AutoReset = false };
