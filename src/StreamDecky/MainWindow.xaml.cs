@@ -193,6 +193,23 @@ public partial class MainWindow : Window
         contextMenu.Items.Add("Exit", null, (_, _) => ExitApplication());
         _trayIcon.ContextMenuStrip = contextMenu;
         _trayIcon.DoubleClick += (_, _) => ShowFromTray();
+
+        PromoteTrayIcon();
+    }
+
+    private static void PromoteTrayIcon()
+    {
+        if (Environment.ProcessPath is not { } executablePath)
+            return;
+
+        try
+        {
+            TrayIconPromotion.PromoteUnlessUserChose(executablePath);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Could not move the tray icon out of the overflow menu.", ex);
+        }
     }
 
     private static System.Drawing.Icon? TryLoadTrayIcon()
