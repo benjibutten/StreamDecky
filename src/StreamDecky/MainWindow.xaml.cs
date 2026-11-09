@@ -132,10 +132,11 @@ public partial class MainWindow : Window
         _viewModel.WhatsNewShownForVersion = current.ToString();
     }
 
+    // Windows can maximize or restore the window without the title bar button:
+    // dragging the title bar, Win+arrow keys, snapping, showing it from the tray.
     private void MainWindow_StateChanged(object? sender, EventArgs e)
     {
-        if (WindowState == WindowState.Minimized)
-            HideToTray();
+        MaximizeBtn.Content = WindowState == WindowState.Maximized ? "❐" : "☐";
     }
 
     private void MainContentGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -193,6 +194,23 @@ public partial class MainWindow : Window
         contextMenu.Items.Add("Exit", null, (_, _) => ExitApplication());
         _trayIcon.ContextMenuStrip = contextMenu;
         _trayIcon.DoubleClick += (_, _) => ShowFromTray();
+
+        PromoteTrayIcon();
+    }
+
+    private static void PromoteTrayIcon()
+    {
+        if (Environment.ProcessPath is not { } executablePath)
+            return;
+
+        try
+        {
+            TrayIconPromotion.PromoteUnlessUserChose(executablePath);
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Warning("Could not move the tray icon out of the overflow menu.", ex);
+        }
     }
 
     private static System.Drawing.Icon? TryLoadTrayIcon()
@@ -1071,13 +1089,12 @@ public partial class MainWindow : Window
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
     {
-        HideToTray();
+        WindowState = WindowState.Minimized;
     }
 
     private void MaximizeButton_Click(object sender, RoutedEventArgs e)
     {
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-        MaximizeBtn.Content = WindowState == WindowState.Maximized ? "❐" : "☐";
     }
 
     private void TitleBarClose_Click(object sender, RoutedEventArgs e)
