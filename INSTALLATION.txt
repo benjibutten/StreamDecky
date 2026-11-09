@@ -96,5 +96,5 @@ Important:
 
 More help
 ---------
-Full documentation is available at:
-https://github.com/benjibutten/StreamDecky
+The full manual is available at:
+https://github.com/benjibutten/StreamDecky/blob/main/docs/manual.md
